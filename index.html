@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <meta
+      name="description"
+      content="LINEPOOL 桌面端 WebGL 交互原型，全部业务数据均为演示数据。"
+    />
+    <title>LINEPOOL · WebGL Prototype</title>
+  </head>
+  <body>
+    <main id="app" aria-label="LINEPOOL WebGL 应用"></main>
+    <div id="a11y-root" class="visually-hidden"></div>
+    <div id="webgl-fallback" role="alert" hidden>
+      当前浏览器无法启动 WebGL。请开启硬件加速，或使用最新版 Chrome / Edge。
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

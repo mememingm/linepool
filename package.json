@@ -1,0 +1,23 @@
+{
+  "name": "linepool-webgl-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0",
+    "lucide-static": "^1.48.0",
+    "three": "^0.180.0",
+    "troika-three-text": "^0.52.4"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  }
+}
