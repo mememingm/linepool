@@ -248,6 +248,72 @@ describe.skipIf(!testDatabaseUrl)('LINEPOOL API', () => {
     expect(after.rows[0]).toEqual(before.rows[0]);
   });
 
+  it('lists only the current user orders and returns owned order detail', async () => {
+    const list = await agent.get('/api/orders?page=1&pageSize=20').expect(200);
+    expect(list.body.pagination.totalItems).toBe(2);
+    expect(list.body.data[0]).toMatchObject({
+      quantity: 2,
+      totalPoints: 2400,
+      status: 'COMPLETED',
+    });
+
+    const detail = await agent
+      .get(`/api/orders/${list.body.data[0].id}`)
+      .expect(200);
+    expect(detail.body.data.numbers).toHaveLength(2);
+
+    await agent
+      .get('/api/orders/99999999-9999-4999-8999-999999999999')
+      .expect(404);
+  });
+
+  it('shows purchased numbers and the updated point ledger', async () => {
+    const numbers = await agent
+      .get('/api/numbers?page=1&pageSize=20&status=ACTIVE')
+      .expect(200);
+    expect(numbers.body.pagination.totalItems).toBe(3);
+    expect(numbers.body.data).toHaveLength(3);
+    expect(numbers.body.data.every((number: { status: string }) => number.status === 'ACTIVE')).toBe(true);
+
+    const points = await agent
+      .get('/api/points?page=1&pageSize=20')
+      .expect(200);
+    expect(points.body.data.balance).toBe(16400);
+    expect(points.body.data.entries).toHaveLength(3);
+    expect(points.body.data.entries[0]).toMatchObject({
+      type: 'ORDER_DEBIT',
+      delta: -2400,
+      balanceAfter: 16400,
+    });
+  });
+
+  it('lists inbox messages and marks only an owned message as read', async () => {
+    const list = await agent.get('/api/inbox?page=1&pageSize=20').expect(200);
+    expect(list.body.data).toHaveLength(2);
+    const unread = list.body.data.find((message: { isRead: boolean }) => !message.isRead);
+    expect(unread).toBeDefined();
+
+    const updated = await agent
+      .post(`/api/inbox/${unread.id}/read`)
+      .expect(200);
+    expect(updated.body.data).toMatchObject({ id: unread.id, isRead: true });
+
+    await agent
+      .post('/api/inbox/99999999-9999-4999-8999-999999999999/read')
+      .expect(404);
+  });
+
+  it('returns public account fields without credential material', async () => {
+    const response = await agent.get('/api/account').expect(200);
+    expect(response.body.data).toMatchObject({
+      email: testAccount.email,
+      displayName: testAccount.displayName,
+      isDemo: true,
+    });
+    expect(response.body.data).not.toHaveProperty('passwordHash');
+    expect(response.body.data).not.toHaveProperty('pointsBalance');
+  });
+
   it('revokes the session on logout', async () => {
     await agent.post('/api/auth/logout').expect(200, { data: null });
     await agent.get('/api/auth/me').expect(401);

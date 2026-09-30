@@ -1,6 +1,12 @@
 import { randomBytes } from 'node:crypto';
 
-import type { CreateOrderInput, OrderDetail } from '@linepool/contracts';
+import type {
+  CreateOrderInput,
+  OrderDetail,
+  OrderSummary,
+  PaginatedResponse,
+  PaginationQuery,
+} from '@linepool/contracts';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
@@ -42,11 +48,28 @@ function createOrderNumber(): string {
   return `LP-${date}-${randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
+function mapOrder(row: OrderRow): OrderSummary {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    project: { id: row.project_id, name: row.project_name },
+    plan: { id: row.plan_id, name: row.plan_name },
+    quantity: row.quantity,
+    totalPoints: row.total_points,
+    status: row.status,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly database: DatabaseService) {}
 
-  private async detail(client: PoolClient, orderId: string): Promise<OrderDetail> {
+  private async detail(
+    client: PoolClient,
+    orderId: string,
+    userId: string | null = null,
+  ): Promise<OrderDetail> {
     const orderResult = await client.query<OrderRow>(
       `
         SELECT o.id, o.order_number, o.project_id, p.name AS project_name,
@@ -55,9 +78,9 @@ export class OrdersService {
         FROM orders o
         JOIN projects p ON p.id = o.project_id
         JOIN plans pl ON pl.id = o.plan_id
-        WHERE o.id = $1
+        WHERE o.id = $1 AND ($2::uuid IS NULL OR o.user_id = $2)
       `,
-      [orderId],
+      [orderId, userId],
     );
     const row = orderResult.rows[0];
     if (!row) {
@@ -77,14 +100,7 @@ export class OrdersService {
     );
 
     return {
-      id: row.id,
-      orderNumber: row.order_number,
-      project: { id: row.project_id, name: row.project_name },
-      plan: { id: row.plan_id, name: row.plan_name },
-      quantity: row.quantity,
-      totalPoints: row.total_points,
-      status: row.status,
-      createdAt: row.created_at.toISOString(),
+      ...mapOrder(row),
       numbers: numbers.rows.map((number) => ({
         id: number.id,
         phoneNumber: number.phone_number,
@@ -95,6 +111,48 @@ export class OrdersService {
         expiresAt: number.expires_at.toISOString(),
       })),
     };
+  }
+
+  async list(
+    userId: string,
+    query: PaginationQuery,
+  ): Promise<PaginatedResponse<OrderSummary>> {
+    const offset = (query.page - 1) * query.pageSize;
+    const [orders, count] = await Promise.all([
+      this.database.query<OrderRow>(
+        `
+          SELECT o.id, o.order_number, o.project_id, p.name AS project_name,
+                 o.plan_id, pl.name AS plan_name, o.quantity, o.total_points,
+                 o.status, o.created_at
+          FROM orders o
+          JOIN projects p ON p.id = o.project_id
+          JOIN plans pl ON pl.id = o.plan_id
+          WHERE o.user_id = $1
+          ORDER BY o.created_at DESC
+          LIMIT $2 OFFSET $3
+        `,
+        [userId, query.pageSize, offset],
+      ),
+      this.database.query<{ count: string }>(
+        'SELECT count(*) FROM orders WHERE user_id = $1',
+        [userId],
+      ),
+    ]);
+    const totalItems = Number(count.rows[0]?.count ?? 0);
+    return {
+      data: orders.rows.map(mapOrder),
+      pagination: {
+        ...query,
+        totalItems,
+        totalPages: Math.ceil(totalItems / query.pageSize),
+      },
+    };
+  }
+
+  get(userId: string, orderId: string): Promise<OrderDetail> {
+    return this.database.transaction((client) =>
+      this.detail(client, orderId, userId),
+    );
   }
 
   async create(userId: string, input: CreateOrderInput): Promise<OrderDetail> {

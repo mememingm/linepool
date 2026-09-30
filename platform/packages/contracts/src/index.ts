@@ -119,6 +119,11 @@ export const pointLedgerEntrySchema = z.object({
   createdAt: isoDateSchema,
 });
 
+export const pointsOverviewSchema = z.object({
+  balance: z.number().int().min(0),
+  entries: z.array(pointLedgerEntrySchema),
+});
+
 export const dashboardSchema = z.object({
   pointsBalance: z.number().int().min(0),
   availableProjects: z.array(projectSummarySchema),
@@ -147,6 +152,7 @@ export type CreateOrderInput = z.infer<typeof createOrderInputSchema>;
 export type AssignedNumber = z.infer<typeof assignedNumberSchema>;
 export type SmsMessage = z.infer<typeof smsMessageSchema>;
 export type PointLedgerEntry = z.infer<typeof pointLedgerEntrySchema>;
+export type PointsOverview = z.infer<typeof pointsOverviewSchema>;
 export type Dashboard = z.infer<typeof dashboardSchema>;
 export type Account = z.infer<typeof accountSchema>;
 
@@ -155,5 +161,9 @@ export interface DataResponse<T> {
 }
 
 export interface PaginatedResponse<T> extends DataResponse<T[]> {
+  pagination: Pagination;
+}
+
+export interface PointsResponse extends DataResponse<PointsOverview> {
   pagination: Pagination;
 }
