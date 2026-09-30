@@ -75,6 +75,14 @@ export async function apiRequest<T>(
   return payload.data;
 }
 
+export async function apiEnvelopeRequest<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const response = await apiFetch(path, init);
+  return (await response.json()) as T;
+}
+
 export async function apiPaginatedRequest<T>(
   path: string,
   init: RequestInit = {},

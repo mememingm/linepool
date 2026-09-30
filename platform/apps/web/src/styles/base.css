@@ -142,6 +142,42 @@ a { color: inherit; text-decoration: none; }
 .order-summary .el-button { width: 100%; }
 .order-summary > p:last-child { margin: 14px 0 0; color: var(--lp-text-muted); text-align: center; font-size: 11px; }
 
+.activity-toolbar { display: flex; justify-content: flex-end; margin-top: 48px; padding-bottom: 16px; border-bottom: 1px solid var(--lp-border); }
+.segmented-control { display: inline-flex; padding: 3px; background: var(--lp-surface-muted); border: 1px solid var(--lp-border); border-radius: var(--lp-radius-md); }
+.segmented-control button { min-height: 34px; padding: 0 14px; color: var(--lp-text-muted); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.segmented-control button:hover { color: var(--lp-text); }
+.segmented-control button.active { color: var(--lp-text); background: var(--lp-surface); box-shadow: 0 1px 2px rgb(0 0 0 / 7%); font-weight: 600; }
+.activity-list { margin-top: 48px; border-top: 1px solid var(--lp-border); }
+.activity-list--compact { margin-top: 24px; }
+.activity-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .65fr); gap: 40px; align-items: center; padding: 24px 0; border-bottom: 1px solid var(--lp-border); }
+.activity-main { min-width: 0; }
+.activity-title-line { display: flex; align-items: center; gap: 12px; }
+.activity-title-line h2, .activity-title-line h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 16px; }
+.activity-main > p { margin: 8px 0 5px; color: var(--lp-text-muted); font-size: 13px; line-height: 1.6; }
+.activity-main > span, .message-source { color: var(--lp-text-muted); font-size: 12px; }
+.numeric-title { font-variant-numeric: tabular-nums; }
+.activity-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 0; }
+.activity-meta div { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.activity-meta dt, .account-list dt { color: var(--lp-text-muted); font-size: 12px; }
+.activity-meta dd, .account-list dd { margin: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+.message-row { grid-template-columns: minmax(0, 1fr) auto; }
+.message-row.unread { box-shadow: inset 3px 0 var(--lp-brand); padding-left: 20px; }
+.message-content > p { color: var(--lp-text); font-size: 14px; }
+.message-source { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.message-actions { display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+.verification-code { display: grid; gap: 5px; text-align: right; }
+.verification-code span { color: var(--lp-text-muted); font-size: 11px; }
+.verification-code strong { font-size: 20px; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.compact-balance { margin-top: 48px; }
+.positive-value { color: #187149; }
+.account-section { margin-top: 56px; }
+.account-list { margin: 24px 0 0; border-top: 1px solid var(--lp-border); }
+.account-list > div { display: grid; grid-template-columns: minmax(120px, .35fr) minmax(0, 1fr); gap: 24px; padding: 20px 0; border-bottom: 1px solid var(--lp-border); }
+.account-list dd { overflow-wrap: anywhere; }
+.account-actions { display: flex; align-items: center; justify-content: space-between; gap: 32px; margin-top: 64px; padding: 32px 0; border-block: 1px solid var(--lp-border); }
+.account-actions h2 { margin: 0; font-size: 18px; }
+.account-actions p:last-child { margin: 8px 0 0; color: var(--lp-text-muted); font-size: 13px; }
+
 @media (max-width: 900px) {
   .login-page { grid-template-columns: 1fr; }
   .login-intro { min-height: auto; padding: 56px 32px 40px; }
@@ -167,6 +203,14 @@ a { color: inherit; text-decoration: none; }
   .balance-band p { max-width: none; }
   .inventory-note { justify-items: start; }
   .simple-list-row { align-items: flex-start; }
+  .activity-toolbar { justify-content: flex-start; margin-top: 36px; overflow-x: auto; }
+  .activity-row, .message-row { grid-template-columns: 1fr; gap: 20px; align-items: start; }
+  .activity-meta { width: 100%; }
+  .activity-meta div { justify-items: start; text-align: left; }
+  .message-actions { justify-content: space-between; }
+  .verification-code { text-align: left; }
+  .account-actions { align-items: flex-start; flex-direction: column; }
+  .account-actions .el-button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
