@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Lock, Message } from '@element-plus/icons-vue';
 import { ElButton, ElIcon, ElInput } from 'element-plus';
-import { reactive, ref } from 'vue';
+import { gsap } from 'gsap';
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { ApiClientError } from '../services/api-client.js';
@@ -12,7 +13,47 @@ const router = useRouter();
 const session = useSessionStore();
 const form = reactive({ email: '', password: '' });
 const isSubmitting = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref(
+  route.query.sessionError === 'rate-limited'
+    ? '请求过于频繁，请稍后再试'
+    : route.query.sessionError === 'unavailable'
+      ? '暂时无法检查登录状态，请稍后重试'
+      : '',
+);
+const page = ref<HTMLElement | null>(null);
+let context: gsap.Context | undefined;
+let media: gsap.MatchMedia | undefined;
+let errorTween: gsap.core.Tween | undefined;
+
+onMounted(() => {
+  if (!page.value) return;
+  const element = page.value;
+  context = gsap.context(() => {
+    media = gsap.matchMedia();
+    media.add('(min-width: 901px) and (prefers-reduced-motion: no-preference)', () => {
+      gsap.timeline({ defaults: { ease: 'power2.out', clearProps: 'transform,opacity,visibility' } })
+        .from(element.querySelector('.login-intro .eyebrow'), { y: 10, autoAlpha: 0, duration: 0.32 })
+        .from(element.querySelector('.login-intro h1'), { y: 16, autoAlpha: 0, duration: 0.45 }, '<0.08')
+        .from(element.querySelector('.login-copy'), { y: 12, autoAlpha: 0, duration: 0.38 }, '<0.12')
+        .from(element.querySelector('.login-form-panel'), { x: 18, autoAlpha: 0, duration: 0.42 }, '<0.02');
+    });
+  }, element);
+});
+
+watch(errorMessage, async (message) => {
+  if (!message || !page.value || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  await nextTick();
+  const alert = page.value?.querySelector('.form-error');
+  if (!alert) return;
+  errorTween?.kill();
+  errorTween = gsap.from(alert, { y: -5, autoAlpha: 0, duration: 0.22, ease: 'power1.out', clearProps: 'transform,opacity,visibility' });
+});
+
+onBeforeUnmount(() => {
+  errorTween?.kill();
+  media?.revert();
+  context?.revert();
+});
 
 async function submit(): Promise<void> {
   isSubmitting.value = true;
@@ -31,7 +72,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <main class="login-page">
+  <main ref="page" class="login-page">
     <section class="login-intro" aria-labelledby="login-title">
       <p class="eyebrow">LINEPOOL / TO C</p>
       <h1 id="login-title">号码服务，清晰掌控。</h1>
@@ -51,7 +92,7 @@ async function submit(): Promise<void> {
         <h2>登录演示账户</h2>
         <p>请输入本地 seed 配置的专用演示账号。</p>
       </div>
-      <form @submit.prevent="submit">
+      <form :aria-busy="isSubmitting" @submit.prevent="submit">
         <label for="email">邮箱</label>
         <ElInput id="email" v-model="form.email" autocomplete="username" size="large">
           <template #prefix><ElIcon><Message /></ElIcon></template>
@@ -67,7 +108,7 @@ async function submit(): Promise<void> {
         >
           <template #prefix><ElIcon><Lock /></ElIcon></template>
         </ElInput>
-        <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
+        <p v-if="errorMessage" id="login-error" class="form-error" role="alert">{{ errorMessage }}</p>
         <ElButton
           class="submit-button"
           type="primary"

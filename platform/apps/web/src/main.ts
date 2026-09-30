@@ -3,7 +3,6 @@ import { createApp } from 'vue';
 
 import App from './App.vue';
 import { router } from './router.js';
-import './styles/base.css';
 import 'element-plus/theme-chalk/base.css';
 import 'element-plus/theme-chalk/el-button.css';
 import 'element-plus/theme-chalk/el-dialog.css';
@@ -19,5 +18,6 @@ import 'element-plus/theme-chalk/el-skeleton.css';
 import 'element-plus/theme-chalk/el-skeleton-item.css';
 import 'element-plus/theme-chalk/el-table.css';
 import 'element-plus/theme-chalk/el-tag.css';
+import './styles/base.css';
 
 createApp(App).use(createPinia()).use(router).mount('#app');

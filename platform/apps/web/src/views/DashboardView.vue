@@ -40,28 +40,30 @@ onMounted(load);
 
 <template>
   <section class="page-section dashboard-page" aria-labelledby="dashboard-title">
-    <div class="page-heading heading-row">
-      <div>
+    <div class="dashboard-hero" data-testid="dashboard-hero">
+      <div class="page-heading dashboard-intro">
         <p class="eyebrow">LINEPOOL / 演示数据</p>
         <h1 id="dashboard-title">你好，{{ session.user?.displayName }}</h1>
-        <p>这里是你的号码服务摘要。</p>
+        <p class="dashboard-summary-copy">这里是你的号码服务摘要。</p>
+        <ElButton
+          class="dashboard-primary-action"
+          type="primary"
+          @click="$router.push({ name: 'projects' })"
+        >
+          浏览项目
+          <ElIcon class="el-icon--right"><ArrowRight /></ElIcon>
+        </ElButton>
       </div>
-      <ElButton type="primary" @click="$router.push({ name: 'projects' })">
-        浏览项目
-        <ElIcon class="el-icon--right"><ArrowRight /></ElIcon>
-      </ElButton>
+
+      <aside class="dashboard-balance" aria-label="积分摘要" :aria-busy="isLoading">
+        <span>可用积分</span>
+        <strong v-if="dashboard">{{ dashboard.pointsBalance.toLocaleString('zh-CN') }}</strong>
+        <strong v-else aria-hidden="true">--</strong>
+      </aside>
     </div>
 
     <DataState :is-loading="isLoading" :error-message="errorMessage" @retry="load">
       <template v-if="dashboard">
-        <div class="balance-band">
-          <div>
-            <span>可用积分</span>
-            <strong>{{ dashboard.pointsBalance.toLocaleString('zh-CN') }}</strong>
-          </div>
-          <p>所有购买均为本地 mock 流程，不发生真实支付。</p>
-        </div>
-
         <section class="content-section" aria-labelledby="recommended-title">
           <div class="section-heading-row">
             <div>
@@ -100,7 +102,13 @@ onMounted(load);
             <RouterLink class="text-link" :to="{ name: 'orders' }">查看全部</RouterLink>
           </div>
           <div v-if="dashboard.recentOrders.length" class="simple-list">
-            <div v-for="order in dashboard.recentOrders" :key="order.id" class="simple-list-row">
+            <RouterLink
+              v-for="order in dashboard.recentOrders"
+              :key="order.id"
+              class="simple-list-row simple-list-row-link"
+              :to="{ name: 'order-detail', params: { id: order.id } }"
+              :aria-label="`查看订单 ${order.orderNumber}`"
+            >
               <div>
                 <strong>{{ order.project.name }}</strong>
                 <span>{{ order.plan.name }} · {{ order.quantity }} 个号码</span>
@@ -109,7 +117,7 @@ onMounted(load);
                 <strong>-{{ order.totalPoints.toLocaleString('zh-CN') }}</strong>
                 <span>{{ formatDate(order.createdAt) }}</span>
               </div>
-            </div>
+            </RouterLink>
           </div>
           <div v-else class="inline-empty">暂无订单</div>
         </section>
