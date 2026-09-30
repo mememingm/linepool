@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+import { ApiClientError } from './services/api-client.js';
 import { useSessionStore } from './stores/session.js';
 
 export const router = createRouter({
@@ -20,6 +21,7 @@ export const router = createRouter({
         { path: 'projects', name: 'projects', component: () => import('./views/ProjectsView.vue') },
         { path: 'projects/:id', name: 'project-detail', component: () => import('./views/ProjectDetailView.vue') },
         { path: 'orders', name: 'orders', component: () => import('./views/OrdersView.vue') },
+        { path: 'orders/:id', name: 'order-detail', component: () => import('./views/OrderDetailView.vue') },
         { path: 'numbers', name: 'numbers', component: () => import('./views/NumbersView.vue') },
         { path: 'inbox', name: 'inbox', component: () => import('./views/InboxView.vue') },
         { path: 'points', name: 'points', component: () => import('./views/PointsView.vue') },
@@ -33,7 +35,21 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   const session = useSessionStore();
   if (!session.user && !session.isChecking) {
-    await session.restore();
+    try {
+      await session.restore();
+    } catch (error) {
+      if (to.name !== 'login') {
+        return {
+          name: 'login',
+          query: {
+            redirect: to.fullPath,
+            sessionError: error instanceof ApiClientError && error.status === 429
+              ? 'rate-limited'
+              : 'unavailable',
+          },
+        };
+      }
+    }
   }
 
   if (!to.meta.public && !session.isAuthenticated) {

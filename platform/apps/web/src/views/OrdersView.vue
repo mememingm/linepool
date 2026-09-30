@@ -66,7 +66,13 @@ onMounted(() => load());
       @retry="load()"
     >
       <div class="activity-list" aria-label="订单列表">
-        <article v-for="order in orders" :key="order.id" class="activity-row">
+        <RouterLink
+          v-for="order in orders"
+          :key="order.id"
+          class="activity-row activity-row-link"
+          :to="{ name: 'order-detail', params: { id: order.id } }"
+          :aria-label="`查看订单 ${order.orderNumber}`"
+        >
           <div class="activity-main">
             <div class="activity-title-line">
               <h2>{{ order.project.name }}</h2>
@@ -85,7 +91,7 @@ onMounted(() => load());
               <dd>{{ formatDate(order.createdAt) }}</dd>
             </div>
           </dl>
-        </article>
+        </RouterLink>
       </div>
 
       <ElPagination

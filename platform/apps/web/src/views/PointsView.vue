@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Pagination, PointLedgerEntry, PointsResponse } from '@linepool/contracts';
-import { ElPagination, ElTag } from 'element-plus';
+import { ElButton, ElPagination, ElTag } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
 import DataState from '../components/DataState.vue';
@@ -82,6 +82,7 @@ onMounted(() => load());
             <p class="section-kicker">LEDGER</p>
             <h2 id="ledger-title">积分流水</h2>
           </div>
+          <ElButton disabled title="真实充值接口待提供">充值（待提供）</ElButton>
         </div>
 
         <div v-if="entries.length" class="activity-list activity-list--compact">
@@ -92,6 +93,13 @@ onMounted(() => load());
                 <ElTag effect="plain" type="info">{{ typeLabel(entry.type) }}</ElTag>
               </div>
               <span>{{ formatDate(entry.createdAt) }}</span>
+              <RouterLink
+                v-if="entry.type === 'ORDER_DEBIT' && entry.referenceId"
+                class="inline-record-link"
+                :to="{ name: 'order-detail', params: { id: entry.referenceId } }"
+              >
+                查看关联订单
+              </RouterLink>
             </div>
             <dl class="activity-meta">
               <div>
