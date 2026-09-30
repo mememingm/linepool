@@ -67,7 +67,7 @@ The interface applies the user-provided Kimi K3 qualities—minimal, content-fir
 
 - Routine CSS feedback: 120–180 ms and interruptible.
 - Honor `prefers-reduced-motion`; functional content never depends on animation.
-- Three.js and GSAP are deferred by ADR-004 and are not current runtime dependencies.
+- GSAP provides restrained desktop entrance and feedback motion under ADR-005. Three.js remains deferred by ADR-004.
 
 ## Performance rules
 
