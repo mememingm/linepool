@@ -19,15 +19,15 @@
 
 ## Vertical slices
 
-- [ ] Task 4: Login session slice
+- [x] Task 4: Login session slice
   - Acceptance: login sets HttpOnly cookie; `/auth/me` works; logout revokes it; invalid login is rate limited and generic.
   - Verify: authentication integration tests and browser login.
 
-- [ ] Task 5: Project browsing slice
+- [x] Task 5: Project browsing slice
   - Acceptance: paginated catalogue and detail are API-backed; home can reach a detail page.
   - Verify: API tests plus component/browser navigation.
 
-- [ ] Task 6: Transactional ordering slice
+- [x] Task 6: Transactional ordering slice
   - Acceptance: one purchase creates an order, assigns inventory and debits points; replay returns the same result; failure rolls back.
   - Verify: real PostgreSQL integration tests for success, idempotency, insufficient points and stock.
 

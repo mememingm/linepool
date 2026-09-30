@@ -9,8 +9,8 @@ export const useSessionStore = defineStore('session', () => {
   const isChecking = ref(false);
   const isAuthenticated = computed(() => user.value !== null);
 
-  async function restore(): Promise<void> {
-    if (isChecking.value || user.value) return;
+  async function restore(force = false): Promise<void> {
+    if (isChecking.value || (user.value && !force)) return;
     isChecking.value = true;
     try {
       user.value = await apiRequest<User>('/auth/me');
