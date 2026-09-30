@@ -5,3 +5,5 @@ dist/
 *.log
 .DS_Store
 /platform/output/
+/platform/.archify/
+/platform/.playwright-cli/
