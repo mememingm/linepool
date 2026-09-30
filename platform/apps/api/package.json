@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start:dev": "npm run build && concurrently -k -n tsc,api -c yellow,blue \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --enable-source-maps dist/main.js\"",
+    "start:dev": "npm run build && concurrently -k -n tsc,api -c yellow,blue \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch --watch-path=dist --enable-source-maps dist/main.js\"",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
