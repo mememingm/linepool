@@ -18,6 +18,10 @@
     "db:seed": "npm run db:seed -w @linepool/api"
   },
   "devDependencies": {
-    "concurrently": "10.0.5"
+    "concurrently": "10.0.5",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "typescript": "5.9.3"
   }
 }

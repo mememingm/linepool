@@ -12,7 +12,7 @@
   - Verify: run migrate and seed twice; query counts in an integration test.
   - Files: `db/migrations/*`, API database scripts, Compose and env example.
 
-- [ ] Task 3: Add API and web application shells
+- [x] Task 3: Add API and web application shells
   - Acceptance: health endpoint and Vue routed shell run; error envelopes and API client are typed.
   - Verify: API/web tests, typecheck and build.
   - Files: app bootstrap and focused configuration files.
@@ -52,4 +52,3 @@
 - [ ] Task 11: Final documentation and verification
   - Acceptance: README quick start is reproducible; no secrets or real endpoints; test/typecheck/build/audit results are recorded.
   - Verify: clean bootstrap, full automated suite and complete browser flow.
-
