@@ -7,7 +7,7 @@
   - Verify: `npm run build -w @linepool/contracts`; `npm test -w @linepool/contracts`.
   - Files: root workspace config, `packages/contracts/*`.
 
-- [ ] Task 2: Add PostgreSQL migration and idempotent seed
+- [x] Task 2: Add PostgreSQL migration and idempotent seed
   - Acceptance: repeated migrate/seed runs create no duplicate users, projects, plans or inventory.
   - Verify: run migrate and seed twice; query counts in an integration test.
   - Files: `db/migrations/*`, API database scripts, Compose and env example.

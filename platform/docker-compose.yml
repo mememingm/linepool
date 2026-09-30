@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-linepool}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linepool_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-linepool}
+    ports:
+      - "55432:5432"
+    volumes:
+      - linepool_postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-linepool} -d ${POSTGRES_DB:-linepool}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  linepool_postgres_data:
