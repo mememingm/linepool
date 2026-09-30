@@ -2,7 +2,7 @@
 
 ## Foundation
 
-- [ ] Task 1: Create npm workspace and shared API contracts
+- [x] Task 1: Create npm workspace and shared API contracts
   - Acceptance: strict TypeScript contracts build; response/error/pagination schemas are tested.
   - Verify: `npm run build -w @linepool/contracts`; `npm test -w @linepool/contracts`.
   - Files: root workspace config, `packages/contracts/*`.
