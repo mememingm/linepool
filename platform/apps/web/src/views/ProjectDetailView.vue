@@ -78,7 +78,7 @@ watch([selectedPlanId, quantity], () => {
 
 <template>
   <section class="page-section" aria-labelledby="project-title">
-    <RouterLink class="back-link" :to="{ name: 'projects' }">
+    <RouterLink class="back-link" :to="{ name: 'projects' }" aria-label="返回项目市场">
       <ElIcon><ArrowLeft /></ElIcon>
       返回项目市场
     </RouterLink>

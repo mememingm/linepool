@@ -32,7 +32,20 @@ const activeName = computed(() => {
   <div class="app-frame">
     <header class="mobile-header">
       <RouterLink class="brand" :to="{ name: 'dashboard' }">LINEPOOL</RouterLink>
-      <span class="demo-mark">演示数据</span>
+      <div class="mobile-header-actions">
+        <span class="demo-mark">演示数据</span>
+        <RouterLink
+          v-for="item in navItems.slice(5)"
+          :key="item.name"
+          class="mobile-utility-link"
+          :class="{ active: activeName === item.name }"
+          :to="{ name: item.name }"
+          :aria-label="item.label"
+          :title="item.label"
+        >
+          <component :is="item.icon" aria-hidden="true" />
+        </RouterLink>
+      </div>
     </header>
 
     <aside class="side-rail" aria-label="主导航">
