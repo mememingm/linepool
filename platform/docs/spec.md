@@ -54,6 +54,19 @@ tasks/                    Implementation plan and status
 docker-compose.yml        Local PostgreSQL service
 ```
 
+## Product design direction
+
+Translate the user-provided Kimi K3 principles to a transactional To C product rather than imitating an AI chat layout:
+
+- Content first: generous whitespace, restrained black/white/gray surfaces and one blue brand accent.
+- Clear hierarchy: precise type scale, weight and spacing; use cards only where they clarify a boundary.
+- Frictionless feedback: short transitions, visible request states and immediate success/error confirmation.
+- Consistent responsive behavior: preserve information priority across mobile and desktop.
+- Performance by default: route-level lazy loading, bounded list rendering and lazy optional visual effects.
+- Do not introduce chat history, upload or conversational UI unless LINEPOOL later gains an actual conversational workflow.
+
+Detailed tokens and interaction rules live in `docs/design-system.md`.
+
 ## Code style
 
 - TypeScript strict mode; exported functions and public API shapes have explicit types.
