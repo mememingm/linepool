@@ -9,7 +9,7 @@
 ## Validated assumptions
 
 1. 正式应用位于 `D:\linepool\platform`；根目录现有 pure WebGL 原型保持不变。
-2. 前端采用 Vue 3 + TypeScript；Three.js 与 GSAP 只用于可降级的局部视觉增强。
+2. 前端采用 Vue 3 + TypeScript；当前阶段按 ADR-004 暂缓 Three.js 与 GSAP 增强。
 3. 登录使用服务端保存的随机会话和 HttpOnly Cookie，不在 localStorage 保存认证令牌。
 4. 演示账号由 seed 创建，凭据来自本地环境变量；仓库只提交无敏感信息的示例值。
 5. PostgreSQL 开发容器映射到主机 `55432`，避免占用本机已有的 `5432`。
@@ -20,7 +20,7 @@
 | Layer | Technology |
 |---|---|
 | Web | Vue 3, TypeScript, Vite, Vue Router, Pinia, Element Plus |
-| Visual enhancement | Three.js (lazy-loaded dashboard decoration), GSAP (short transitions) |
+| Visual enhancement | 当前阶段不引入额外运行时；使用克制的 CSS 反馈 |
 | API | NestJS, TypeScript, REST, Zod boundary validation |
 | Database | PostgreSQL, parameterized `pg` queries, SQL migrations |
 | Shared contract | Workspace package exporting TypeScript types and Zod schemas |
@@ -62,7 +62,7 @@ Translate the user-provided Kimi K3 principles to a transactional To C product r
 - Clear hierarchy: precise type scale, weight and spacing; use cards only where they clarify a boundary.
 - Frictionless feedback: short transitions, visible request states and immediate success/error confirmation.
 - Consistent responsive behavior: preserve information priority across mobile and desktop.
-- Performance by default: route-level lazy loading, bounded list rendering and lazy optional visual effects.
+- Performance by default: route-level lazy loading and bounded list rendering; 当前版本不加载 3D 运行时。
 - Do not introduce chat history, upload or conversational UI unless LINEPOOL later gains an actual conversational workflow.
 
 Detailed tokens and interaction rules live in `docs/design-system.md`.
@@ -173,4 +173,3 @@ Every success response is `{ data: ... }`; paginated responses add `pagination`.
 - Company API address, authentication, field mapping and synchronization.
 - Production hosting, observability, backups and secret management service.
 - Real payment and real SMS ingestion.
-

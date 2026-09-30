@@ -31,24 +31,26 @@
   - Acceptance: one purchase creates an order, assigns inventory and debits points; replay returns the same result; failure rolls back.
   - Verify: real PostgreSQL integration tests for success, idempotency, insufficient points and stock.
 
-- [ ] Task 7: Orders, numbers and points slice
+- [x] Task 7: Orders, numbers and points slice
   - Acceptance: protected paginated pages reflect the purchase and persist after refresh.
   - Verify: API ownership tests and browser refresh check.
 
-- [ ] Task 8: Inbox and account slice
+- [x] Task 8: Inbox and account slice
   - Acceptance: owned messages list and mark read; account returns only public fields.
   - Verify: API and component tests plus browser mark-read check.
 
 ## Product quality
 
-- [ ] Task 9: Responsive and accessible page states
+- [x] Task 9: Responsive and accessible page states
   - Acceptance: 320/768/1024/1440 layouts have no blocking overflow; keyboard access and loading/empty/error states are present.
   - Verify: component tests and real-browser inspection.
 
 - [ ] Task 10: Add bounded visual enhancements
+  - Status: deferred by user decision; see ADR-004.
   - Acceptance: Three.js is lazy and decorative; GSAP honors reduced motion; core flow works with WebGL unavailable.
   - Verify: production bundle inspection and browser fallback test.
 
 - [ ] Task 11: Final documentation and verification
+  - Status: implementation and pre-fix checks are recorded; post-security-fix verification is delegated to the user.
   - Acceptance: README quick start is reproducible; no secrets or real endpoints; test/typecheck/build/audit results are recorded.
   - Verify: clean bootstrap, full automated suite and complete browser flow.

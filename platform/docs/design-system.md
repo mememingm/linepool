@@ -65,14 +65,13 @@ The interface applies the user-provided Kimi K3 qualities—minimal, content-fir
 
 ## Motion and progressive enhancement
 
-- Routine feedback: 120–180 ms. Page/section transition: 180–260 ms.
-- GSAP animates opacity and small transforms only; it must honor `prefers-reduced-motion`.
-- The dashboard's Three.js scene is decorative, dynamically imported after essential content and marked `aria-hidden`.
-- WebGL failure, slow devices or reduced motion must leave a complete static experience.
+- Routine CSS feedback: 120–180 ms and interruptible.
+- Honor `prefers-reduced-motion`; functional content never depends on animation.
+- Three.js and GSAP are deferred by ADR-004 and are not current runtime dependencies.
 
 ## Performance rules
 
-- Lazy-load routes and the Three.js decoration.
+- Lazy-load routes and keep optional visual runtimes out of the current bundle.
 - Keep Element Plus imports tree-shakeable; avoid importing the full component library globally.
 - Paginate server lists. Add virtual scrolling only after a measured need; the current demo data does not justify it.
 - Reserve dimensions for asynchronously loaded blocks to prevent layout shift.

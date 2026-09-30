@@ -9,7 +9,7 @@ Build the approved Vue 3 + TypeScript To C web application, NestJS REST API and 
 - Contract-first npm workspaces: `contracts` → `api` and `web`.
 - SQL migrations and parameterized `pg` queries keep PostgreSQL behavior explicit.
 - Opaque server sessions and transactional idempotent purchases own all sensitive state.
-- Vue DOM UI is primary; Three.js/GSAP are optional progressive enhancement.
+- Vue DOM UI is primary; Three.js/GSAP are deferred by ADR-004 and outside the current implementation scope.
 
 ## Dependency graph
 
@@ -52,7 +52,7 @@ workspace + contracts
 ### Phase 3: Product quality
 
 - Responsive navigation and all page states.
-- Lazy Three.js dashboard decoration and reduced-motion-aware GSAP transitions.
+- Record Three.js/GSAP as deferred; keep the current UI independent of WebGL.
 - README, API contract notes, dependency audit and final browser checks.
 
 ### Checkpoint: Complete
@@ -67,10 +67,9 @@ workspace + contracts
 | Local port 5432 is already used | Medium | Compose maps PostgreSQL to 55432 |
 | Docker Desktop is not running | Medium | Document startup and report verification boundary if daemon cannot be started |
 | Double submit or concurrent stock allocation | High | Unique idempotency key, row locks, one transaction, integration tests |
-| 3D bundle harms initial load | Medium | Lazy-load after dashboard content; UI works without it |
+| Optional visual runtime increases scope and bundle size | Medium | Deferred by ADR-004; reconsider only with an explicit budget |
 | Demo credentials mistaken for production | Medium | Environment-provided seed, explicit demo labeling, no real endpoints |
 
 ## Open questions
 
 None blocking. Company integration and production deployment are explicitly out of scope.
-
