@@ -1,0 +1,16 @@
+# Read-only upstream source and resources
+src/vendor/
+public/
+upstream-lock.json
+catalog-upstream-lock.json
+
+# Dependencies and generated files
+**/node_modules/
+**/dist/
+**/dist-test/
+web-dist/
+catalog-dist/
+**/.local/
+output/
+package-lock.json
+*.log

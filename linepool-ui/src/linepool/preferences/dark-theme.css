@@ -1,0 +1,27 @@
+/* One graphite palette for the live site, including detached dropdown portals.
+   These tokens alone do not change light-mode surfaces. */
+:root {
+  --lp-dark-page: #0f1115;
+  --lp-dark-sidebar: #171a21;
+  --lp-dark-surface: #1d222b;
+  --lp-dark-field: #171a21;
+  --lp-dark-hover: #252b35;
+  --lp-dark-selected: #252b35;
+  --lp-dark-line: #303641;
+  --lp-dark-line-strong: #495361;
+  --lp-dark-ink: #f3f4f6;
+  --lp-dark-muted: #adb4c0;
+  --lp-dark-faint: #9aa3b2;
+  --lp-dark-brand: #3b82f6;
+  --lp-dark-brand-hover: #4b8af7;
+  /* A lighter brand-blue text tone keeps small links readable on graphite. */
+  --lp-dark-link: #79aaff;
+  --lp-dark-ring: #3b82f633;
+  --lp-dark-green: #82c9ab;
+  --lp-dark-green-tint: #25332d;
+  --lp-dark-orange: #dbb083;
+  --lp-dark-orange-tint: #342e27;
+  --lp-dark-red: #e3a0aa;
+  --lp-dark-red-tint: #35292d;
+  --lp-dark-overlay: rgb(15 17 21 / .72);
+}

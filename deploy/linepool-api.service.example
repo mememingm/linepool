@@ -1,0 +1,22 @@
+[Unit]
+Description=LINEPOOL API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=linepool
+Group=linepool
+WorkingDirectory=/srv/linepool/current/linepool-ui/backend
+# Adjust the absolute Node.js path to the server installation.
+ExecStart=/usr/bin/node --env-file=.env dist/backend/src/main.js
+Environment=NODE_ENV=production
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

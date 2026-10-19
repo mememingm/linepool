@@ -1,0 +1,21 @@
+.lp-user-avatar {
+  --lp-user-avatar-size: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: var(--lp-user-avatar-size);
+  height: var(--lp-user-avatar-size);
+  overflow: hidden;
+  border: 1px solid #c7d8f6;
+  border-radius: 50%;
+  background: #e8f0ff;
+  color: #2156ad;
+  font-size: calc(var(--lp-user-avatar-size) * .43);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  user-select: none;
+}
+.lp-user-avatar--profile { --lp-user-avatar-size: 56px; }
+.lp-user-avatar--preview { --lp-user-avatar-size: 76px; }
+[data-theme="dark"] .lp-user-avatar { border-color: var(--lp-dark-line); background: var(--lp-dark-hover); color: var(--lp-dark-muted); }

@@ -1,0 +1,13 @@
+.lp-shell-access { width: 100%; }
+.lp-shell-access-content { width: min(420px, calc(100% - 40px)); margin: 72px auto; }
+.lp-shell-access-content h1 { margin-bottom: 24px; font-size: 24px; }
+.lp-shell-access-tabs { display: flex; gap: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
+.lp-shell-access-tabs button { padding: 12px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ink-2); font: inherit; }
+.lp-shell-access-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent-ink); }
+.lp-shell-access-content fieldset { display: grid; gap: 22px; margin: 0; padding: 0; border: 0; }
+.lp-shell-access-content label { display: grid; gap: 8px; color: var(--ink-2); font-size: 13px; }
+.lp-shell-access-content input { width: 100%; min-width: 0; height: 42px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.lp-shell-access-content .lp-shell-view-error { margin-top: 18px; }
+.lp-shell-access-content > button { margin-top: 18px; }
+.lp-shell-access-status { color: var(--ink-2); font-size: 13px; }
+@media (max-width: 540px) { .lp-shell-access-content { margin-block: 40px; } }

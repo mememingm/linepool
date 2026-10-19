@@ -1,0 +1,15 @@
+/* Upstream styles are imported byte-for-byte. This file only supplies missing
+   Magic UI theme tokens and styles owned by LinePool composition wrappers. */
+@import "./vendor/beautiful/src/globals.css";
+@import "./vendor/magic/src/official.css";
+@theme inline {
+  --color-background: var(--page);
+  --color-foreground: var(--ink);
+  --color-border: var(--line);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+}
+.lp-metric{padding:24px}.lp-metric h3{font-size:13px;color:var(--ink-2);margin:0 0 16px}.lp-metric-value{display:flex;align-items:baseline;gap:8px;font-size:32px;font-weight:600;font-variant-numeric:tabular-nums}.lp-metric-value small{font-size:13px;font-weight:400;color:var(--ink-2)}.lp-metric p{margin:12px 0 0;font-size:12px;color:var(--ink-2)}
+/* Business content layout only; no upstream component selector overrides. */
+.lp-business-content{padding:24px;min-width:0}.lp-business-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.lp-business-title{font-size:18px;font-weight:600;margin:16px 0 10px}.lp-business-muted{font-size:12px;line-height:1.8;color:var(--ink-2);margin:10px 0}.lp-business-error{font-size:12px;color:var(--red);line-height:1.7}.lp-business-facts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}.lp-business-facts dt{font-size:12px;color:var(--ink-2)}.lp-business-facts dd{margin:8px 0 0;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}.lp-business-stack{display:grid;gap:16px}.lp-plan-row{padding:18px;border:1px solid var(--line);border-radius:12px;justify-content:space-between;gap:20px}.lp-plan-row strong{font-size:14px}.lp-quantity-input{width:72px;margin-left:12px;border:1px solid var(--line-strong);border-radius:8px;padding:8px;background:var(--field);color:var(--ink);font-size:14px}.lp-quantity-input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.lp-business-number{font-family:var(--font-mono-face),monospace;font-size:24px;font-weight:500;overflow-wrap:anywhere;margin:22px 0}.lp-copy-control{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.lp-copy-control>[role=status]:empty{display:none}.lp-sms-body{font-size:14px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:20px 0}.lp-ledger-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 0;border-bottom:1px solid var(--line)}.lp-ledger-row strong{font-size:13px}.lp-ledger-amount{text-align:right;flex-shrink:0}.lp-pagination{justify-content:space-between;padding:16px 0}.lp-business-state{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:40px 20px;border:1px dashed var(--line);border-radius:12px;text-align:center}@media(max-width:560px){.lp-business-content{padding:18px}.lp-plan-row{align-items:flex-start}.lp-ledger-row{align-items:flex-start;flex-direction:column;gap:8px}.lp-ledger-amount{text-align:left}.lp-business-number{font-size:20px}}
+

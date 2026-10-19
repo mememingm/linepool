@@ -1,0 +1,7 @@
+node_modules/
+dist/
+catalog-dist/
+web-dist/
+packages/contracts/dist/
+backend/dist-test/
+*.log

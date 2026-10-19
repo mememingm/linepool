@@ -1,0 +1,31 @@
+.lp-account-profile { grid-column: 1 / -1; }
+.lp-account-profile-rows { padding-top: 2px; }
+.lp-account-profile-item + .lp-account-profile-item { border-top: 1px solid var(--line); }
+.lp-account-profile-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding-block: 16px; }
+.lp-account-profile-row > svg { color: var(--ink-2); }
+.lp-account-profile-row > div:not(.lp-account-profile-trigger) { display: grid; grid-template-columns: minmax(100px, 0.3fr) minmax(0, 1fr); align-items: baseline; gap: 16px; min-width: 0; font-size: 13px; }
+.lp-account-profile-row strong { color: var(--ink-2); }
+.lp-account-profile-row span { min-width: 0; overflow-wrap: anywhere; }
+.lp-account-profile-row .is-empty { color: var(--ink-3); }
+.lp-account-profile-editor { display: grid; gap: 14px; margin: 0 0 18px 34px; padding: 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.lp-account-profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 720px; }
+.lp-account-profile-fields > label { display: flex; flex-direction: column; gap: 8px; min-width: 0; color: var(--ink-2); font-size: 12px; }
+.lp-account-profile-fields > label:only-child { grid-column: 1 / -1; max-width: 352px; }
+.lp-account-profile-fields input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--field); color: var(--ink); font-size: 13px; }
+.lp-account-profile-fields input[aria-invalid="true"] { border-color: var(--red); }
+.lp-account-profile-fields input:disabled { opacity: 0.65; }
+.lp-account-profile-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.lp-account-profile-status { display: flex; align-items: baseline; gap: 8px; color: var(--green); font-size: 12px; line-height: 1.7; }
+.lp-account-profile-status:not(:empty) { padding-bottom: 14px; }
+.lp-account-profile-status > svg { flex: 0 0 15px; align-self: center; }
+@media (max-width: 900px) {
+  .lp-account-profile-row > div:not(.lp-account-profile-trigger) { grid-template-columns: 1fr; gap: 5px; }
+}
+@media (max-width: 540px) {
+  .lp-account-profile-row { grid-template-columns: 18px minmax(0, 1fr); gap: 10px 12px; }
+  .lp-account-profile-row > svg { align-self: start; margin-top: 2px; }
+  .lp-account-profile-row > .lp-account-profile-trigger { grid-column: 2; justify-self: start; }
+  .lp-account-profile-editor { margin-left: 0; padding: 16px; }
+  .lp-account-profile-fields { grid-template-columns: 1fr; gap: 14px; }
+  .lp-account-profile-fields > label:only-child { max-width: none; }
+}

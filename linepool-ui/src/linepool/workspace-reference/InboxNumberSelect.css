@@ -1,0 +1,36 @@
+.lp-inbox-number-trigger { flex: 0 1 196px; width: 196px; min-width: 0; }
+.lp-inbox-number-trigger > span:not(.lp-select-chevron) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lp-inbox-number-trigger > svg { flex-shrink: 0; color: var(--select-muted); }
+.lp-select-menu.lp-inbox-number-menu {
+  --lp-select-available-height: var(--radix-popover-content-available-height);
+  display: flex; flex-direction: column; width: 320px;
+}
+.lp-inbox-number-search {
+  display: flex; align-items: center; gap: 8px; flex: 0 0 44px; min-width: 0;
+  padding: 0 12px; border-bottom: 1px solid var(--select-line); color: var(--select-muted);
+}
+.lp-inbox-number-search > svg { flex-shrink: 0; }
+.lp-inbox-number-search input {
+  flex: 1; width: 100%; min-width: 0; height: 100%; padding: 0; border: 0;
+  background: transparent; color: var(--select-ink); font: inherit; font-size: 12px; outline: none;
+}
+.lp-inbox-number-search input::placeholder { color: var(--select-muted); opacity: 1; }
+.lp-inbox-number-search button {
+  display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px;
+  padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--select-muted); cursor: pointer;
+}
+.lp-inbox-number-search button:hover { background: var(--select-hover); color: var(--select-ink); }
+.lp-inbox-number-list { flex: 1 1 auto; min-height: 0; max-height: 266px; padding: 5px; }
+.lp-select-option.lp-inbox-number-option { gap: 10px; min-height: 54px; padding: 7px 10px; }
+.lp-inbox-number-icon { display: grid; place-items: center; flex: 0 0 22px; width: 22px; color: var(--select-muted); }
+.lp-inbox-number-icon img { display: block; width: 22px; height: 16px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgb(0 0 0 / .06); }
+.lp-inbox-number-copy { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.lp-inbox-number-copy > :is(strong, small) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-inbox-number-copy strong { color: var(--select-ink); font-size: 13px; font-weight: 550; font-variant-numeric: tabular-nums; }
+.lp-inbox-number-copy small { color: var(--select-muted); font-size: 11px; }
+.lp-inbox-number-option[aria-selected="true"] strong { color: var(--select-accent); }
+.lp-inbox-number-option .lp-inbox-number-check { position: static; flex-shrink: 0; }
+.lp-inbox-number-empty { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 24px 14px; text-align: center; }
+.lp-inbox-number-empty strong { font-size: 13px; font-weight: 500; }
+.lp-inbox-number-empty span { color: var(--select-muted); font-size: 12px; }
+@media (max-width: 540px) { .lp-inbox-number-trigger { flex-grow: 1; } }

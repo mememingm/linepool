@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "name": "animata",
+      "repository": "codse/animata",
+      "commit": "36674e4e9cfdc0f237693d8b736a2bf41065ca1d"
+    },
+    {
+      "name": "cult",
+      "repository": "nolly-studio/cult-ui",
+      "commit": "67a66c6ac1cd240914ba688a907611b3437a7a2b"
+    }
+  ],
+  "files": [
+    {
+      "path": "catalog/vendor/animata/upstream/animata/card/flip-card.tsx",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/card/flip-card.tsx",
+      "sha256": "e67e42ef5d4edd153305e5023f6f85837911af96c86272eb6d0ad44b83d90b37"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/button/ripple-button.tsx",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/button/ripple-button.tsx",
+      "sha256": "73122d473eac51e5e203ff3fbb8ea01aee31dddc65f53baab7dce26dd9a91fe7"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/button/ripple-button.css",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/button/ripple-button.css",
+      "sha256": "c6f3fa942c7b2fe477e4e8a560a353021cab909b731cf26f6629b374918f0863"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/text/counter.tsx",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/text/counter.tsx",
+      "sha256": "d18706bfed2fdea7b56a87cf6a3f112127cdf8317855ef93ec8ea33511689eb0"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/tabs/shift-tabs.tsx",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/tabs/shift-tabs.tsx",
+      "sha256": "96f4d2474b9b3cbfff4dc8f68e147ce0270414b17084d640da2017072fef7823"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/tabs/shared.ts",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/tabs/shared.ts",
+      "sha256": "559c00eceda65e0c79bc3b3f0ded1f04cd21352eaa60f932ca3a81186e3f9ef7"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/animata/skeleton/list.tsx",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/animata/skeleton/list.tsx",
+      "sha256": "3458892c74990cc503c875c66694455c4211b0efe49b704969bd5b17b5243504"
+    },
+    {
+      "path": "catalog/vendor/animata/upstream/LICENSE.md",
+      "url": "https://raw.githubusercontent.com/codse/animata/36674e4e9cfdc0f237693d8b736a2bf41065ca1d/LICENSE.md",
+      "sha256": "ff78804659cbc28380d087cae79c494f243f8ef22b1e2ac5ec119b5de9314f05"
+    },
+    {
+      "path": "catalog/vendor/cult/upstream/apps/www/registry/default/ui/texture-card.tsx",
+      "url": "https://raw.githubusercontent.com/nolly-studio/cult-ui/67a66c6ac1cd240914ba688a907611b3437a7a2b/apps/www/registry/default/ui/texture-card.tsx",
+      "sha256": "5a1084d98795fdd84b9802d545835604920f7550cbbb06afa809f3c246f8a33a"
+    },
+    {
+      "path": "catalog/vendor/cult/upstream/apps/www/registry/default/ui/texture-button.tsx",
+      "url": "https://raw.githubusercontent.com/nolly-studio/cult-ui/67a66c6ac1cd240914ba688a907611b3437a7a2b/apps/www/registry/default/ui/texture-button.tsx",
+      "sha256": "85d839703231b7bf026cb334ade50abb969153b545ccb39af22fccf5de1ec978"
+    },
+    {
+      "path": "catalog/vendor/cult/upstream/apps/www/registry/default/ui/rolling-number.tsx",
+      "url": "https://raw.githubusercontent.com/nolly-studio/cult-ui/67a66c6ac1cd240914ba688a907611b3437a7a2b/apps/www/registry/default/ui/rolling-number.tsx",
+      "sha256": "baca6e6acf2a71334bd865218a44fe941cf7a786dd9fe95706253f9d7ebab39e"
+    },
+    {
+      "path": "catalog/vendor/cult/upstream/apps/www/registry/default/ui/direction-aware-tabs.tsx",
+      "url": "https://raw.githubusercontent.com/nolly-studio/cult-ui/67a66c6ac1cd240914ba688a907611b3437a7a2b/apps/www/registry/default/ui/direction-aware-tabs.tsx",
+      "sha256": "e0fd337557453325a9cfcd25c803aa5aa57d137ebccbe12658415c7162c6a260"
+    },
+    {
+      "path": "catalog/vendor/cult/upstream/LICENSE.md",
+      "url": "https://raw.githubusercontent.com/nolly-studio/cult-ui/67a66c6ac1cd240914ba688a907611b3437a7a2b/LICENSE.md",
+      "sha256": "78045e58dfd5f039ad350ad293da2ad9a2c0362b82dadb069b1c10be382ddac7"
+    }
+  ]
+}

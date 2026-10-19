@@ -1,0 +1,4 @@
+:root { --font-inter: Inter; --font-mono-face: 'JetBrains Mono'; }
+.lp-site-not-found { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; font-family: Inter, 'Microsoft YaHei', sans-serif; }
+.lp-site-not-found h1, .lp-site-not-found p { margin: 0; }
+.lp-site-not-found a { color: inherit; text-underline-offset: 4px; }

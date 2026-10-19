@@ -1,9 +1,22 @@
+# Dependencies and generated build output
 node_modules/
 dist/
+web-dist/
+catalog-dist/
+dist-test/
+
+# Local configuration and database files
 .env
-.env.local
+.env.*
+!.env.example
+!.env.*.example
+.local/
 *.log
 .DS_Store
-/platform/output/
-/platform/.archify/
-/platform/.playwright-cli/
+
+# Local tooling, screenshots, and reports
+.pi/
+.playwright-cli/
+.archify/
+output/
+/session-efficiency-audit-*.md

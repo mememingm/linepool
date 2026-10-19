@@ -1,0 +1,68 @@
+.field input { width: 100%; min-width: 0; height: var(--control-height); padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13px; }
+.admin-login { max-width: 420px; margin: 56px auto 96px; display: grid; gap: 16px; }
+.admin-login > svg { color: var(--primary); }
+.admin-login h2 { font-size: 20px; }
+.admin-login code { overflow-wrap: anywhere; font-size: 11px; }
+.admin-heading-actions { display: flex; align-items: center; gap: 10px; }
+.admin-tabs { border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; max-width: 100%; height: 48px; white-space: nowrap; flex-shrink: 0; }
+.admin-tabs button { flex-shrink: 0; }
+.admin-metrics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 24px; padding-bottom: 28px; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
+.admin-metrics span { display: block; font-size: 12px; color: var(--secondary); }
+.admin-metrics strong { display: block; font-size: 24px; font-weight: 600; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.admin-section { margin: 0 0 28px; min-width: 0; }
+.admin-section > h2 { font-size: 16px; margin: 0 0 16px; }
+.admin-section .empty-state { min-height: 150px; }
+.admin-section .table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.admin-section table { min-width: 680px; }
+.ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+.ranking-row { display: grid; grid-template-columns: 20px minmax(0,1fr) auto auto; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--border); }
+.ranking-row strong { font-weight: 500; }
+.ranking-row small { color: var(--secondary); }
+.admin-table { min-width: 820px; }
+.admin-table td { font-size: 12px; }
+.admin-table th { font-size: 11px; }
+.admin-table .text-button { font-size: 11px; }
+.admin-service { display: flex; align-items: center; gap: 8px; }
+.admin-service .service-icon { width: 26px; height: 26px; }
+.capability-summary { display: block; max-width: 210px; line-height: 1.5; }
+.neutral-tag { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 7px; font-size: 11px; border: 1px solid var(--border); border-radius: 5px; color: var(--secondary); background: var(--elevated); white-space: nowrap; }
+.exception-row { display: flex; align-items: center; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+.exception-row > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.exception-row strong { font-size: 13px; font-weight: 500; }
+.exception-row small { display: block; font-size: 11px; color: var(--secondary); margin-top: 3px; }
+.audit-detail { font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--elevated); padding: 14px; border-radius: var(--radius); margin-top: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.config-checkboxes { display: grid; gap: 12px; margin: 20px 0; }
+.config-checkboxes label { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; }
+.config-checkboxes input { margin-top: 3px; accent-color: var(--primary); }
+.resource-online { margin: 20px 0; }
+.resource-platforms { margin: 20px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.resource-platforms > span { font-size: 11px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; }
+.resource-platforms small { margin-left: 8px; color: var(--secondary); }
+.ledger-table { min-width: 720px; }
+.cell-amount { font-size: 12px; white-space: nowrap; }
+.status-allocation_failed, .status-sms_failed { color: var(--danger); background: color-mix(in srgb,var(--danger) 8%,var(--surface)); }
+@media (max-width: 1100px) {
+  .admin-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+}
+@media (max-width: 680px) {
+  .task-table .cell-amount { grid-row: 4; grid-column: 1 / -1; color: var(--secondary); font-size: 12px; }
+  .task-table .cell-amount::before { content: '测试金额 '; }
+  .ledger-table,.ledger-table tbody { display: block; min-width: 0; }
+  .ledger-table thead { display: none; }
+  .ledger-table tbody { display: grid; gap: 12px; }
+  .ledger-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; padding: 16px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); }
+  .ledger-table td { display: block; border: 0; height: auto; padding: 0; font-size: 12px; min-width: 0; }
+  .ledger-table td:first-child { grid-column: 1 / -1; margin-bottom: 6px; }
+  .ledger-table td[data-label]::before { content: attr(data-label); display: block; color: var(--secondary); font-size: 10px; }
+  .ledger-table td:last-child { text-align: right; }
+  .admin-login { margin: 24px auto 64px; }
+  .admin-tabs { gap: 22px; }
+  .admin-metrics { grid-template-columns: 1fr 1fr; gap: 20px 12px; }
+  .admin-metrics strong { font-size: 20px; }
+  .admin-metrics span { font-size: 10px; }
+  .ranking-grid { grid-template-columns: 1fr; gap: 0; }
+  .exception-row { flex-wrap: wrap; gap: 8px; }
+  .exception-row > div { flex-basis: 100%; }
+  .form-grid { grid-template-columns: 1fr; gap: 0; }
+}

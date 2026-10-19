@@ -1,0 +1,5 @@
+.lp-purchase-region-select { width: 100%; min-width: 0; }
+.lp-region-select-label { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lp-region-select-label .lp-region-select-flag { display: block; flex: 0 0 22px; width: 22px; height: 16px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgb(0 0 0 / .06); }
+.lp-region-select-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-region-select-prefix { flex: 0 0 auto; color: var(--select-muted); font-variant-numeric: tabular-nums; }

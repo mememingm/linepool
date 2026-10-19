@@ -1,0 +1,72 @@
+@font-face { font-family: aeonikPro; src: url('/authkit-reference/_next/static/media/medium-s.p.0jj36.zl5f6h~.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: dotDigital; src: url('/authkit-reference/_next/static/media/enhanced_dot_digital_7-s.p.0xen6m6eh~h6b.ttf') format('truetype'); font-display: swap; }
+.lp-welcome-page { position: relative; min-height: 100dvh; isolation: isolate; }
+.lp-welcome-scene { position: fixed; inset: 0; z-index: -1; background: #111; overflow: hidden; pointer-events: none; }
+.lp-welcome-scene iframe, .lp-welcome-scene img { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
+.authkit-home { display: block; position: relative; background: #05060fb8; }
+.authkit-home[data-theme='light'] { background: #f3f5f9dd; }
+/* The same graphite tokens extend to authentication; light mode is untouched. */
+.authkit-home[data-theme='dark'], .lp-welcome-auth[data-theme='dark'] { background: var(--lp-dark-page); }
+.lp-welcome-auth[data-theme='dark'] {
+  --auth-text: var(--lp-dark-ink); --auth-muted: var(--lp-dark-muted); --auth-accent: var(--lp-dark-link);
+  color-scheme: dark;
+}
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-auth-panel { background: var(--lp-dark-surface); border-color: var(--lp-dark-line); box-shadow: none; }
+.lp-welcome-auth[data-theme='dark'] :is(label, input) { color: var(--lp-dark-ink); }
+.lp-welcome-auth[data-theme='dark'] input { background: var(--lp-dark-field); border-color: var(--lp-dark-line); }
+.lp-welcome-auth[data-theme='dark'] input::placeholder { color: var(--lp-dark-faint); }
+.lp-welcome-auth[data-theme='dark'] :is(.lp-welcome-header-actions > a, .lp-welcome-introduction > p, .lp-welcome-account-note, .lp-welcome-password button) { color: var(--lp-dark-muted); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-account-note { border-color: var(--lp-dark-line); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-submit { background: var(--lp-dark-brand); border-color: var(--lp-dark-brand); color: var(--lp-dark-page); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-submit:hover { background: var(--lp-dark-brand-hover); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-auth-switch button { color: var(--lp-dark-link); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-error { background: var(--lp-dark-red-tint); border-color: var(--lp-dark-line); color: var(--lp-dark-red); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-preferences button { background: var(--lp-dark-field); border-color: var(--lp-dark-line); color: var(--lp-dark-muted); }
+.lp-welcome-preferences { display: flex; align-items: center; gap: 8px; color: inherit; }
+.lp-welcome-preferences button { min-width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 1px solid #68738a; border-radius: 6px; background: #151b29; color: #e6eaf2; cursor: pointer; font: 12px system-ui, sans-serif; }
+.lp-welcome-preferences svg { width: 16px; height: 16px; }
+.lp-welcome-auth { --auth-text: #f4f6fa; --auth-muted: #b2b8c3; --auth-accent: #b9d3fb; position: relative; min-height: 100dvh; padding: 96px 64px 48px; color: var(--auth-text); font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; -webkit-font-smoothing: antialiased; }
+.lp-welcome-auth *, .lp-welcome-auth *::before, .lp-welcome-auth *::after { box-sizing: border-box; letter-spacing: 0; }
+.lp-welcome-auth a { color: inherit; text-decoration: none; }
+.lp-welcome-masthead { position: absolute; top: 36px; left: 40px; right: 40px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.lp-welcome-brand { font-size: 18px; font-weight: 650; }
+.lp-welcome-header-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.lp-welcome-header-actions > a { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #d9dfe8; white-space: nowrap; }
+.lp-welcome-auth-layout { width: min(100%, 1152px); min-height: calc(100dvh - 144px); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 440px; align-items: center; gap: 64px; }
+.lp-welcome-introduction { padding-block: 32px; }
+.lp-welcome-introduction > p:first-child { margin: 0 0 10px; color: #c3cad5; font-size: 12px; font-weight: 650; }
+.lp-welcome-introduction h1 { margin: 0; font-size: 50px; font-weight: 600; line-height: 1.15; text-wrap: balance; }
+.lp-welcome-introduction > p:last-child { max-width: 490px; margin: 14px 0 0; color: #d0d4dc; font-size: 15px; line-height: 1.8; }
+.lp-welcome-auth-panel { min-width: 0; padding: 30px 28px 28px; border: 1px solid #e8eeff38; border-radius: 8px; background: #0e1117ed; box-shadow: inset 0 1px 0 #ffffff0d, 0 20px 64px #0000003d; backdrop-filter: blur(18px); }
+.lp-welcome-auth-heading { margin-bottom: 28px; }
+.lp-welcome-auth-heading h2 { margin: 0; font-size: 30px; font-weight: 550; line-height: 1.25; overflow-wrap: anywhere; text-wrap: balance; }
+.lp-welcome-auth-heading p { margin: 8px 0 0; color: var(--auth-muted); font-size: 14px; line-height: 1.6; }
+.lp-welcome-auth fieldset { display: grid; gap: 18px; padding: 0; border: 0; margin: 0; min-width: 0; }
+.lp-welcome-auth label { display: grid; gap: 8px; min-width: 0; font-size: 13px; font-weight: 550; color: #e6e9ef; }
+.lp-welcome-auth input { width: 100%; height: 44px; padding: 0 14px; color: #f4f6fa; background: #ffffff0d; border: 1px solid #ffffff40; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 400; }
+.lp-welcome-auth input::placeholder { color: #aeb6c3; }
+.lp-welcome-auth input:focus-visible { outline: 2px solid var(--auth-accent); outline-offset: 2px; }
+.lp-welcome-field { display: grid; gap: 8px; min-width: 0; }
+.lp-welcome-password { display: block; position: relative; }
+.lp-welcome-password input { padding-right: 44px; }
+.lp-welcome-password button { position: absolute; right: 6px; top: 4px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: transparent; color: #c9d0dc; cursor: pointer; }
+.lp-welcome-submit { width: 100%; min-height: 44px; margin-top: 6px; border: 1px solid #bed4fb; border-radius: 8px; background: #ccdefb; color: #14223a; font-size: 14px; font-weight: 550; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; white-space: nowrap; }
+.lp-welcome-submit:hover { background: #e1ebfd; }
+.lp-welcome-auth button:disabled, .lp-welcome-auth fieldset:disabled { opacity: .65; cursor: wait; }
+.lp-welcome-error { padding: 10px 12px; color: #ffc0c7; background: #90263c33; border: 1px solid #9c5366; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.lp-welcome-auth-switch { display: flex; justify-content: flex-end; gap: 8px; margin: 18px 0 0; color: var(--auth-muted); font-size: 13px; }
+.lp-welcome-auth-switch button { color: #d2e2fc; background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.lp-welcome-account-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid #ffffff30; font-size: 12px; line-height: 1.7; color: #b8c1d0; }
+.lp-welcome-account-note p { margin: 0 0 6px; }
+.lp-welcome-auth :focus-visible { outline: 2px solid var(--auth-accent); outline-offset: 4px; }
+.lp-welcome-auth[data-theme='light'] .lp-welcome-auth-panel { --auth-text: #20242a; --auth-muted: #535d6b; --auth-accent: #246bfd; color: var(--auth-text); background: #fafbfc; border-color: #d2d8e0; color-scheme: light; }
+.lp-welcome-auth[data-theme='light'] :is(label, .lp-welcome-account-note) { color: #535d6b; }
+.lp-welcome-auth[data-theme='light'] input { color: #20242a; background: #fff; border-color: #aeb7c4; }
+.lp-welcome-auth[data-theme='light'] input::placeholder { color: #5e6670; }
+.lp-welcome-auth[data-theme='light'] :is(.lp-welcome-auth-switch button, .lp-welcome-password button) { color: #245bb0; }
+.lp-welcome-auth[data-theme='light'] .lp-welcome-account-note { border-color: #d2d8e0; }
+.lp-welcome-auth[data-theme='light'] .lp-welcome-error { color: #a01935; background: #fff1f2; border-color: #e8bfc6; }
+@media (max-width: 960px) { .lp-welcome-auth { padding: 100px 32px 40px; } .lp-welcome-auth-layout { grid-template-columns: minmax(0, 1fr) 400px; gap: 32px; } .lp-welcome-introduction h1 { font-size: 34px; } }
+@media (max-width: 760px) { .lp-welcome-auth { padding: 92px 20px 32px; } .lp-welcome-masthead { top: 24px; left: 20px; right: 20px; gap: 12px; } .lp-welcome-header-actions { gap: 8px; } .lp-welcome-brand { font-size: 16px; } .lp-welcome-header-actions > a { font-size: 12px; gap: 4px; } .lp-welcome-auth-layout { min-height: auto; grid-template-columns: minmax(0, 1fr); gap: 28px; width: min(100%, 440px); } .lp-welcome-introduction { padding: 10px 4px 0; } .lp-welcome-introduction h1 { font-size: 30px; } .lp-welcome-introduction > p:first-child { display: none; } .lp-welcome-introduction > p:last-child { font-size: 13px; } .lp-welcome-auth-panel { padding: 26px 24px; } .lp-welcome-auth-heading h2 { font-size: 28px; } .lp-welcome-auth-switch { justify-content: center; } }
+@media (max-width: 360px) { .lp-welcome-header-actions > a { font-size: 0; } }
+@media (prefers-reduced-transparency: reduce) { .lp-welcome-auth-panel { background: #141922; backdrop-filter: none; } }

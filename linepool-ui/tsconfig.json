@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext", "moduleResolution": "Bundler", "jsx": "react-jsx",
+    "strict": true, "skipLibCheck": true, "esModuleInterop": true,
+    "baseUrl": ".", "paths": { "@/*": ["src/vendor/beautiful/src/*"], "@linepool/ui-react": ["dist/types/index.d.ts"] }
+  },
+  "include": ["src"],
+  "exclude": ["src/vendor/magic/upstream-registry"]
+}

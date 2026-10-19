@@ -1,0 +1,113 @@
+{
+  "name": "@linepool/ui-react",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/contracts",
+    "backend"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/linepool-ui.js"
+    },
+    "./styles.css": "./dist/linepool-ui.css"
+  },
+  "files": [
+    "dist",
+    "upstream-lock.json",
+    "src/vendor/*/LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "predev": "npm run build",
+    "dev": "vite --host 127.0.0.1 --port 5178 --strictPort",
+    "dev:all": "npm run build && concurrently -k --names web,api,contracts \"vite --host 127.0.0.1 --port 5178 --strictPort\" \"npm run api:dev\" \"npm run contracts:watch\"",
+    "verify:upstream": "node scripts/verify-upstream.mjs",
+    "verify:catalog-upstream": "node scripts/verify-catalog-upstream.mjs",
+    "pretypecheck": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "typecheck:all": "npm run contracts:typecheck && npm run typecheck && npm run api:typecheck && npm run test:typecheck",
+    "prebuild": "npm run contracts:build",
+    "build": "npm run verify:upstream && vite build && tsc -p tsconfig.build.json && node scripts/finalize-package.mjs",
+    "build:web": "npm run build && vite build --mode web",
+    "preview": "vite preview --mode web --outDir web-dist",
+    "build:all": "npm run build:web && npm run api:build",
+    "contracts:build": "npm run build --workspace @linepool/contracts",
+    "contracts:watch": "npm run build --workspace @linepool/contracts -- --watch",
+    "contracts:typecheck": "npm run typecheck --workspace @linepool/contracts",
+    "contracts:test": "npm run test --workspace @linepool/contracts",
+    "client:typecheck": "tsc -p tests/api/tsconfig.json --noEmit",
+    "client:test": "vitest run --config tests/api/vitest.config.ts",
+    "api:test:typecheck": "npm run test:typecheck --workspace @linepool/react-backend",
+    "api:test": "npm run test --workspace @linepool/react-backend",
+    "details:typecheck": "tsc -p tests/workspace-details/tsconfig.json --noEmit",
+    "details:test": "vitest run --config tests/workspace-details/vitest.config.ts",
+    "preferences:typecheck": "tsc -p tests/preferences/tsconfig.json --noEmit",
+    "preferences:test": "vitest run --config tests/preferences/vitest.config.ts",
+    "test:typecheck": "npm run contracts:build && npm run client:typecheck && npm run details:typecheck && npm run preferences:typecheck && npm run api:test:typecheck",
+    "test": "npm run contracts:build && npm run contracts:test && npm run client:test && npm run details:test && npm run preferences:test && npm run api:test",
+    "api:install": "npm install",
+    "preapi:build": "npm run contracts:build",
+    "api:build": "npm run build --workspace @linepool/react-backend",
+    "preapi:typecheck": "npm run contracts:build",
+    "api:typecheck": "npm run typecheck --workspace @linepool/react-backend",
+    "preapi:dev": "npm run contracts:build",
+    "api:dev": "npm run dev --workspace @linepool/react-backend",
+    "api:start": "npm run start --workspace @linepool/react-backend",
+    "db:local:setup": "npm run db:local:setup --prefix backend",
+    "db:start": "npm run db:start --prefix backend",
+    "db:stop": "npm run db:stop --prefix backend",
+    "db:status": "npm run db:status --prefix backend",
+    "db:create": "npm run db:create --prefix backend",
+    "db:migrate": "npm run db:migrate --prefix backend",
+    "db:test:setup": "npm run api:build && npm run db:test:setup --workspace @linepool/react-backend",
+    "db:seed": "npm run db:seed --prefix backend",
+    "admin:grant": "npm run admin:grant --prefix backend --"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@linepool/contracts": "0.1.0",
+    "@radix-ui/react-popover": "^1.3.1",
+    "@radix-ui/react-select": "^2.4.0",
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "glimm": "^0.3.0",
+    "gsap": "^3.15.0",
+    "iconoir-react": "^7.11.1",
+    "liveline": "^0.0.7",
+    "lucide-react": "^0.511.0",
+    "motion": "^13.1.0",
+    "next-themes": "^0.4.6",
+    "react-use-measure": "^2.1.7",
+    "shadow-plugin": "^2.1.0",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "^5.2.0",
+    "@fontsource/jetbrains-mono": "^5.2.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.5.0",
+    "concurrently": "^10.0.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.0"
+  }
+}

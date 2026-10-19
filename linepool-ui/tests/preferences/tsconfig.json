@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "types": ["vite/client"] },
+  "include": ["./**/*.ts", "../../src/linepool/preferences/store.ts", "../../src/linepool/i18n/**/*.ts"],
+  "exclude": ["../../node_modules"]
+}

@@ -1,0 +1,10 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../data/', import.meta.url));
+mkdirSync(`${root}/backups`, { recursive: true });
+const db = new DatabaseSync(`${root}/once.sqlite`);
+const backup = `${root}/backups/pre-v2-${Date.now()}.sqlite`;
+db.prepare('VACUUM INTO ?').run(backup);
+console.log(JSON.stringify({ backup, tasks: db.prepare('SELECT count(*) AS n FROM tasks').get().n, viewers: db.prepare('SELECT count(*) AS n FROM viewers').get().n }));
+db.close();

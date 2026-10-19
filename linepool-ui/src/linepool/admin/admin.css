@@ -1,0 +1,226 @@
+@import '../preferences/dark-theme.css';
+
+.lp-admin, .lp-admin-dialog, .lp-admin-access {
+  --admin-page: #f5f6f8; --admin-sidebar: #fafbfc; --admin-surface: #fff;
+  --admin-ink: #24282f; --admin-muted: #626b78; --admin-line: #e0e4ea;
+  --admin-hover: #f0f2f5; --admin-brand: #2563eb; --admin-field: #fff;
+  --admin-selected: #edf3ff; --admin-danger: #b43b49;
+  --admin-warning-bg: #fff7e8; --admin-warning-ink: #87551b;
+  --surface: var(--admin-surface); --canvas: var(--admin-page); --ink: var(--admin-ink);
+  --ink-2: var(--admin-muted); --ink-3: var(--admin-muted); --inset: var(--admin-hover);
+  --hover: var(--admin-hover); --hover-2: var(--admin-hover); --line: var(--admin-line);
+  --line-strong: #c5cbd4; --accent: var(--admin-brand); --accent-ink: #1d4ed8;
+  --green: #23815b; --green-tint: #edf7f1; --red: #b43b49; --red-tint: #fbeef0;
+  --orange: #94651d; --orange-tint: #fff7e8;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  color: var(--admin-ink); background: var(--admin-page);
+  font-size: 14px; font-weight: 400; line-height: 1.5; letter-spacing: 0; color-scheme: light;
+}
+.lp-admin[data-theme="dark"], .lp-admin-dialog[data-theme="dark"], .lp-admin-access[data-theme="dark"] {
+  --admin-page: var(--lp-dark-page); --admin-sidebar: var(--lp-dark-sidebar); --admin-surface: var(--lp-dark-surface);
+  --admin-ink: var(--lp-dark-ink); --admin-muted: var(--lp-dark-muted); --admin-line: var(--lp-dark-line);
+  --admin-hover: var(--lp-dark-hover); --admin-brand: var(--lp-dark-link); --admin-field: var(--lp-dark-field);
+  --admin-selected: var(--lp-dark-selected); --admin-danger: var(--lp-dark-red);
+  --admin-warning-bg: var(--lp-dark-orange-tint); --admin-warning-ink: var(--lp-dark-orange);
+  --line-strong: var(--lp-dark-line-strong); --accent: var(--lp-dark-brand); --accent-ink: var(--lp-dark-brand-hover);
+  --green: var(--lp-dark-green); --green-tint: var(--lp-dark-green-tint);
+  --orange: var(--lp-dark-orange); --orange-tint: var(--lp-dark-orange-tint);
+  --red: var(--lp-dark-red); --red-tint: var(--lp-dark-red-tint); color-scheme: dark;
+}
+.lp-admin *, .lp-admin-dialog *, .lp-admin-access * { box-sizing: border-box; }
+.lp-admin a, .lp-admin-dialog a, .lp-admin-access a { color: var(--admin-brand); text-decoration: none; }
+.lp-admin a:focus-visible, .lp-admin-dialog a:focus-visible, .lp-admin button:focus-visible, .lp-admin-dialog button:focus-visible, .lp-admin-table-scroll:focus-visible {
+  outline: 2px solid var(--admin-brand); outline-offset: 3px;
+}
+
+/* The records pane owns page scrolling; fixed-height chrome never scrolls over rows. */
+.lp-admin { display: grid; grid-template-columns: 224px minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: clip; }
+.lp-admin-sidebar { display: flex; flex-direction: column; min-height: 0; padding: 26px 16px 20px; overflow-y: auto; border-right: 1px solid var(--admin-line); background: var(--admin-sidebar); }
+.lp-admin .lp-admin-brand { display: flex; align-items: center; gap: 9px; padding: 0 9px; color: var(--admin-ink); font-size: 19px; font-weight: 600; }
+.lp-admin-brand span { padding: 2px 4px; border: 1px solid var(--admin-line); border-radius: 3px; color: var(--admin-muted); font-size: 12px; font-weight: 500; }
+.lp-admin-sidebar-label { margin: 36px 12px 12px; color: var(--admin-muted); font-size: 12px; }
+.lp-admin-sidebar nav { display: grid; gap: 5px; }
+.lp-admin-sidebar nav a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border-radius: 6px; color: var(--admin-muted); }
+.lp-admin-sidebar nav a:hover { background: var(--admin-hover); color: var(--admin-ink); }
+.lp-admin-sidebar nav a[aria-current="page"] { background: var(--admin-selected); color: var(--admin-brand); font-weight: 500; }
+.lp-admin-local { display: flex; align-items: center; gap: 7px; margin: auto 12px 0; padding-top: 14px; border-top: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 12px; }
+.lp-admin-local span { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.lp-admin-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.lp-admin-header { z-index: 10; display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; min-height: 72px; gap: 12px; padding: 14px 32px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
+.lp-admin-breadcrumb { display: flex; align-items: center; gap: 14px; color: var(--admin-muted); font-size: 14px; }
+.lp-admin-breadcrumb span { color: var(--admin-line); }
+.lp-admin-header-actions, .lp-admin-actions { display: flex; align-items: center; gap: 8px; }
+.lp-admin-actions { flex-wrap: wrap; }
+.lp-admin-header-actions > *, .lp-admin-actions > * { flex-shrink: 0; }
+.lp-admin-admin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border-right: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 12px; }
+.lp-admin-admin-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-admin-content { flex: 1; width: 100%; max-width: 1800px; min-width: 0; min-height: 0; margin: 0 auto; padding: 32px 32px 44px; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.lp-admin-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+.lp-admin-page-heading p { margin: 0 0 6px; color: var(--admin-muted); font-size: 12px; }
+.lp-admin-page-heading h1 { margin: 0; font-size: 24px; line-height: 1.5; font-weight: 600; }
+.lp-admin-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 4px 0 28px; border-bottom: 1px solid var(--admin-line); }
+.lp-admin-metrics a { min-width: 0; padding: 10px 20px; color: var(--admin-ink); border-left: 1px solid var(--admin-line); }
+.lp-admin-metrics a:first-child { padding-left: 0; border: 0; }
+.lp-admin-metrics a:last-child { padding-right: 0; }
+.lp-admin-metrics a:hover { background: var(--admin-hover); }
+.lp-admin-metrics span { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--admin-muted); font-size: 12px; }
+.lp-admin-metrics strong { display: block; margin-top: 10px; font-size: 28px; line-height: 1.5; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-admin-section { margin-top: 32px; min-width: 0; }
+.lp-admin-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.lp-admin-section-heading h2 { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 600; }
+.lp-admin-section-heading > span { color: var(--admin-muted); font-size: 12px; }
+.lp-admin-section-heading a, .lp-admin-dialog a { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; }
+.lp-admin-two-column { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; }
+.lp-admin-task { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 16px 0; border-bottom: 1px solid var(--admin-line); }
+.lp-admin .lp-admin-task { color: var(--admin-ink); }
+.lp-admin-task > svg:first-child { color: var(--admin-muted); }
+.lp-admin-task span { flex: 1; }
+.lp-admin-task:hover { background: var(--admin-hover); }
+
+/* Fixed table tracks and wrapping prevent one long ID or audit reason from widening the page. */
+.lp-admin-table-scroll { width: 100%; min-width: 0; overflow-x: auto; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface); scrollbar-width: thin; }
+.lp-admin-table-scroll table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-size: 14px; line-height: 1.5; }
+.lp-admin-table-scroll th { height: 48px; padding: 12px; color: var(--admin-muted); background: var(--admin-sidebar); font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.lp-admin-table-scroll td { height: 64px; padding: 11px 12px; border-top: 1px solid var(--admin-line); vertical-align: middle; overflow-wrap: anywhere; background: var(--admin-surface); }
+.lp-admin-table-scroll tbody tr:hover td { background: var(--admin-hover); }
+.lp-admin-table-scroll strong { font-weight: 500; }
+.lp-admin small, .lp-admin-dialog small { display: block; margin-top: 2px; color: var(--admin-muted); font-size: 12px; line-height: 1.5; }
+.lp-admin small.lp-admin-inline-note { display: inline-block; margin: 0 0 0 8px; }
+.lp-admin-mono { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; font-variant-numeric: tabular-nums; }
+.lp-admin-table-scroll strong.lp-admin-mono { font-size: 14px; }
+.lp-admin-identifier { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.lp-admin-table-scroll[aria-label="号码管理"] th:first-child { width: 166px; }
+.lp-admin-table-scroll[aria-label="号码管理"] th:nth-last-child(2) { width: 150px; }
+.lp-admin-table-scroll[aria-label="号码管理"] th:last-child { width: 182px; }
+.lp-admin-table-scroll[aria-label="用户管理"] th:first-child { width: 232px; }
+.lp-admin-table-scroll[aria-label="用户管理"] th:last-child { width: 132px; }
+.lp-admin-table-scroll[aria-label="用户管理"] th:nth-last-child(2) { width: 150px; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:first-child { width: 21%; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(2) { width: 20%; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(3) { width: 8%; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:last-child:nth-child(7) { width: 66px; }
+.lp-admin-table-scroll[aria-label="商品管理"] th:first-child { width: 18%; }
+.lp-admin-table-scroll[aria-label="商品管理"] th:last-child { width: 66px; }
+.lp-admin-table-scroll[aria-label="管理审计"] th:first-child { width: 160px; }
+.lp-admin-table-scroll[aria-label="管理审计"] th:nth-child(2) { width: 110px; }
+.lp-admin-table-scroll[aria-label="管理审计"] th:last-child { width: 32%; }
+.lp-admin-table-scroll[aria-label="归属历史"] th:first-child { width: 22%; }
+.lp-admin-table-scroll[aria-label="归属历史"] th:nth-child(2) { width: 14%; }
+.lp-admin-reason { overflow-wrap: anywhere; white-space: normal; }
+.lp-admin .lp-shell-record-pagination { padding-top: 16px; color: var(--admin-muted); font-size: 12px; }
+.lp-admin .lp-shell-record-page-actions > button { flex-basis: 36px; width: 36px; height: 36px; border-radius: 6px; }
+
+.lp-admin-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 24px; }
+.lp-admin-search { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 40px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-field); color: var(--admin-muted); }
+.lp-admin-toolbar > .lp-admin-search { flex: 1; max-width: 520px; min-width: 260px; }
+.lp-admin-search > svg { flex-shrink: 0; }
+.lp-admin input, .lp-admin-dialog input, .lp-admin-dialog textarea { min-width: 0; max-width: 100%; padding: 9px 11px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-field); color: var(--admin-ink); font: inherit; font-size: 14px; line-height: 1.5; }
+.lp-admin-search > input { flex: 1; width: 100%; border: 0; padding-inline: 0; background: transparent; outline: 0; }
+.lp-admin-search .lp-admin-button { height: 32px; padding-block: 0; }
+.lp-admin-search:focus-within, .lp-admin-dialog input:focus-visible, .lp-admin-dialog textarea:focus-visible { outline: 2px solid var(--admin-brand); outline-offset: 2px; }
+.lp-admin input::placeholder, .lp-admin-dialog input::placeholder, .lp-admin-dialog textarea::placeholder { color: var(--admin-muted); }
+.lp-admin-button { flex-shrink: 0; font-family: inherit; line-height: 1.5; }
+.lp-admin-icon-button { width: 36px; height: 36px; padding: 0; }
+.lp-admin-table-scroll .lp-admin-button { height: 36px; padding: 0 10px; }
+.lp-admin-table-scroll .lp-admin-icon-button { padding: 0; }
+.lp-admin-context { margin: 16px 0; color: var(--admin-muted); font-size: 12px; }
+.lp-admin-notice, .lp-admin-feedback { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 16px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-surface); }
+.lp-admin-notice > svg { flex-shrink: 0; color: var(--admin-muted); }
+.lp-admin-notice strong { font-size: 14px; font-weight: 500; }
+.lp-admin-notice p { margin: 4px 0 0; color: var(--admin-muted); font-size: 12px; }
+.lp-admin-feedback { justify-content: space-between; }
+.lp-admin-state { display: grid; justify-items: center; align-content: center; gap: 12px; min-height: 200px; padding: 24px; color: var(--admin-muted); text-align: center; }
+.lp-admin-state p { margin: 0; }
+.lp-admin-skeleton { display: block; width: min(100%, 320px); height: 14px; border-radius: 4px; background: var(--admin-hover); }
+
+/* Explicit margins/insets are required because the upstream reset removes UA dialog centering. */
+.lp-admin-dialog { position: fixed; inset: 0; width: min(720px, calc(100vw - 48px)); max-width: none; max-height: calc(100dvh - 48px); margin: auto; padding: 0; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-surface); color: var(--admin-ink); overflow: visible; box-shadow: 0 24px 64px rgb(0 0 0 / .16); }
+.lp-admin-dialog[open] { display: flex; flex-direction: column; }
+.lp-admin-dialog::backdrop { background: rgb(15 17 21 / .45); }
+.lp-admin-dialog > header { position: relative; z-index: 2; display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; padding: 18px 24px; border-bottom: 1px solid var(--admin-line); border-radius: 8px 8px 0 0; background: var(--admin-surface); }
+.lp-admin-dialog h2 { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 600; }
+.lp-admin-dialog h3 { margin: 28px 0 16px; font-size: 18px; line-height: 1.5; font-weight: 600; }
+.lp-admin-dialog > form { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.lp-admin-dialog-body { flex: 1; min-width: 0; min-height: 0; padding: 24px; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.lp-admin-dialog form fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.lp-admin-dialog label { display: grid; gap: 8px; margin-block: 16px; color: var(--admin-muted); font-size: 14px; }
+.lp-admin-dialog label > input, .lp-admin-dialog textarea { width: 100%; }
+.lp-admin-dialog textarea { min-height: 96px; resize: vertical; }
+.lp-admin-dialog footer { z-index: 1; display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--admin-line); border-radius: 0 0 8px 8px; background: var(--admin-surface); }
+.lp-admin-drawer { inset: 0 0 0 auto; width: min(720px, 100vw); height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-left: 1px solid var(--admin-line); border-radius: 0; }
+.lp-admin-drawer > header { border-radius: 0; }
+.lp-admin-drawer .lp-admin-table-scroll table { font-size: 14px; }
+.lp-admin-drawer .lp-admin-table-scroll th, .lp-admin-drawer .lp-admin-table-scroll td { padding-inline: 10px; }
+.lp-admin-drawer .lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(2) { width: 22%; }
+.lp-admin-drawer .lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(3) { width: 8%; }
+.lp-admin-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 28px; margin: 0 0 28px; }
+.lp-admin-facts dt { color: var(--admin-muted); font-size: 12px; }
+.lp-admin-facts dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.lp-admin-dialog .lp-admin-confirm-target { margin: 0 0 20px; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.lp-admin-warning { padding: 14px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-warning-bg); color: var(--admin-warning-ink); }
+.lp-admin-error { color: var(--admin-danger); }
+.lp-admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
+.lp-admin-form-grid label { min-width: 0; margin: 0; }
+.lp-admin-span { grid-column: 1 / -1; }
+.lp-admin-dialog .lp-admin-checkbox { display: flex; align-items: center; gap: 8px; margin-block: 4px; }
+.lp-admin-dialog .lp-admin-checkbox input { flex: 0 0 16px; width: 16px; min-width: 16px; max-width: 16px; height: 16px; padding: 0; margin: 0; accent-color: var(--admin-brand); }
+.lp-admin-json { margin: 0; padding: 16px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-field); color: var(--admin-muted); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; }
+.lp-admin-text-button { padding: 0; border: 0; background: none; color: var(--admin-brand); font: inherit; text-align: left; cursor: pointer; }
+
+/* Portaled Radix menus need an admin-only scope as well as the in-page triggers. */
+.lp-admin .lp-select-trigger, .lp-admin-dialog .lp-select-trigger, body:has(.lp-admin) .lp-select-menu {
+  --select-surface: #fff; --select-ink: #24282f; --select-muted: #626b78;
+  --select-line: #e0e4ea; --select-hover: #f0f2f5; --select-selected: #edf3ff;
+  --select-accent: #2563eb; --select-focus: #c5cbd4; --select-ring: #edf3ff;
+  --select-scrollbar: #c5cbd4;
+  border-radius: 6px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px; line-height: 1.5;
+}
+.lp-admin .lp-select-trigger[data-theme="dark"], .lp-admin-dialog .lp-select-trigger[data-theme="dark"], body:has(.lp-admin) .lp-select-menu[data-theme="dark"] {
+  --select-surface: var(--lp-dark-surface); --select-ink: var(--lp-dark-ink); --select-muted: var(--lp-dark-muted);
+  --select-line: var(--lp-dark-line); --select-hover: var(--lp-dark-hover); --select-selected: var(--lp-dark-selected);
+  --select-accent: var(--lp-dark-link); --select-focus: var(--lp-dark-line-strong); --select-ring: var(--lp-dark-ring);
+  --select-scrollbar: var(--lp-dark-line-strong);
+}
+.lp-admin .lp-select-trigger, .lp-admin-dialog .lp-select-trigger { height: 40px; }
+body:has(.lp-admin) .lp-select-menu { z-index: 60; box-shadow: 0 8px 28px rgb(0 0 0 / .1); }
+body:has(.lp-admin) .lp-select-option { min-height: 40px; border-radius: 4px; }
+.lp-admin-mobile-nav, .lp-admin-mobile-links { display: none; }
+.lp-admin-access { display: grid; align-content: center; justify-items: center; min-height: 100dvh; padding: 24px; }
+.lp-admin-access h1 { margin-top: 16px; font-size: 24px; font-weight: 600; }
+@media (max-width: 1279px) {
+  .lp-admin-content { padding: 24px; }
+  .lp-admin-header { padding-inline: 24px; }
+  .lp-admin-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 16px; }
+  .lp-admin-metrics a:nth-child(4) { padding-left: 0; border: 0; }
+  .lp-admin-table-scroll th, .lp-admin-table-scroll td { padding-inline: 10px; }
+}
+@media (max-width: 1100px) {
+  .lp-admin-two-column { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .lp-admin-admin-name { display: none; }
+  .lp-admin-content > #lp-admin-records > .lp-admin-table-scroll table { min-width: 900px; }
+}
+@media (max-width: 767px) {
+  .lp-admin { display: flex; flex-direction: column; }
+  .lp-admin-main { flex: 1; }
+  .lp-admin-sidebar, .lp-admin-breadcrumb, .lp-admin-admin-name { display: none; }
+  .lp-admin-header { justify-content: flex-end; min-height: 60px; padding: 10px 16px; }
+  .lp-admin-mobile-nav { display: flex; flex: 0 0 auto; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface); }
+  .lp-admin-mobile-nav > a { margin-left: auto; }
+  .lp-admin-mobile-links { display: grid; flex: 0 0 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--admin-line); }
+  .lp-admin-mobile-links a { padding: 8px; border-radius: 4px; color: var(--admin-muted); text-align: center; }
+  .lp-admin-mobile-links [aria-current="page"] { background: var(--admin-selected); color: var(--admin-brand); }
+  .lp-admin-content { padding: 24px 16px 32px; }
+  .lp-admin-metrics a { padding: 8px 10px; }
+  .lp-admin-metrics span svg { display: none; }
+  .lp-admin-metrics strong { font-size: 24px; }
+  .lp-admin-toolbar > .lp-admin-search { min-width: 100%; max-width: none; }
+  .lp-admin-toolbar > .lp-select-trigger { flex: 1; }
+  .lp-admin .lp-admin-table-scroll table { min-width: 640px; }
+  .lp-admin-dialog:not(.lp-admin-drawer) { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+  .lp-admin-dialog-body { padding: 20px 16px; }
+  .lp-admin-dialog > header, .lp-admin-dialog footer { padding-inline: 16px; }
+  .lp-admin-dialog footer { flex-wrap: wrap; }
+  .lp-admin-facts, .lp-admin-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .lp-admin-drawer .lp-admin-table-scroll table { min-width: 600px; }
+}

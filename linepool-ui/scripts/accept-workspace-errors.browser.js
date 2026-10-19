@@ -1,0 +1,147 @@
+async (page) => {
+  const result = { checks: [] };
+  const check = (condition, label) => { if (!condition) throw new Error(label); result.checks.push(label); };
+  const read = () => page.evaluate(async () => {
+    const paths = ['account', 'dashboard', 'orders?pageSize=100', 'numbers?pageSize=100'];
+    return Object.fromEntries(await Promise.all(paths.map(async path => {
+      const response = await fetch('http://127.0.0.1:3010/api/' + path, { credentials: 'include', cache: 'no-store' });
+      if (!response.ok) throw new Error(path + ': HTTP ' + response.status);
+      return [path.split('?')[0], await response.json()];
+    })));
+  });
+  const headerRefresh = () => page.locator('.lp-shell-view-header').getByRole('button', { name: '刷新数据', exact: true });
+  const completedRefresh = async () => {
+    const response = page.waitForResponse(r => r.url().includes('/api/points?') && r.request().method() === 'GET');
+    await headerRefresh().click();
+    await response;
+    await page.waitForFunction(() => !document.querySelector('.lp-shell-view-header button[aria-label="刷新数据"]:disabled'));
+  };
+  const navigate = async (hash, heading) => {
+    await page.evaluate(value => { window.location.hash = value; }, hash);
+    await page.getByRole('heading', { name: heading, exact: true }).waitFor();
+  };
+  const catalogUrl = 'http://127.0.0.1:3010/api/catalog';
+  const orderUrl = 'http://127.0.0.1:3010/api/orders';
+  const simulated = async (name, handler, message) => {
+    await page.route(catalogUrl, handler);
+    try {
+      await headerRefresh().click();
+      await page.locator('.lp-shell-api-banner').getByText(message, { exact: true }).waitFor();
+      check(await page.getByRole('heading', { name: '购买号码', exact: true }).isVisible(), name + ' preserves last confirmed API records');
+      await page.screenshot({ path: 'linepool-ui/output/playwright/error-' + name + '.png', fullPage: true });
+    } finally { await page.unroute(catalogUrl, handler); }
+    await page.locator('.lp-shell-api-banner').getByRole('button', { name: '重试', exact: true }).click();
+    await page.locator('.lp-shell-api-banner').waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => !document.querySelector('.lp-shell-view-header button[aria-label="刷新数据"]:disabled'));
+    result.checks.push(name + ' recovers after retry');
+  };
+  try {
+    await navigate('#workspace-reference-shell/settings', '账户设置');
+    const originalPreference = (await read()).account.data.preferences.expiryNotice;
+    const changed = page.waitForResponse(r => r.url().endsWith('/api/account/preferences') && r.request().method() === 'PATCH');
+    await page.getByRole('checkbox').click();
+    check((await changed).ok(), 'Account preference saved through API');
+    await page.getByText('偏好已保存', { exact: true }).waitFor();
+    await page.reload();
+    await page.getByRole('heading', { name: '账户设置', exact: true }).waitFor();
+    check(await page.getByRole('checkbox').isChecked() === !originalPreference, 'Account preference survives reload');
+    const saved = page.waitForResponse(r => r.url().endsWith('/api/account/preferences') && r.request().method() === 'PATCH');
+    await page.getByRole('checkbox').click();
+    check((await saved).ok(), 'Original expiry preference restored through API');
+    await page.getByText('偏好已保存', { exact: true }).waitFor();
+    await navigate('#workspace-reference-shell/purchase', '购买号码');
+    await simulated('http-500', route => route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: 'test unavailable' } }) }), '服务暂时不可用，请稍后重试');
+    await simulated('invalid-contract', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: {} }) }), 'API 返回的数据格式不正确，请稍后重试');
+    await simulated('network', route => route.abort('connectionrefused'), '无法连接 API，请检查服务后重试');
+    await page.route(orderUrl, route => route.request().method() === 'POST' ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: { code: 'INSUFFICIENT_STOCK', message: 'test stock conflict' } }) }) : route.continue());
+    const beforeRejected = await read();
+    await page.getByRole('button', { name: '创建订单', exact: true }).click();
+    await page.getByRole('alert').getByText('所选服务库存不足，请重新选择', { exact: true }).waitFor();
+    check(await page.getByLabel('购买数量').isEnabled(), '409 stock conflict unlocks form');
+    await page.unroute(orderUrl);
+    const rejected = await read();
+    check(rejected.account.data.pointsBalance === beforeRejected.account.data.pointsBalance && rejected.orders.pagination.totalItems === beforeRejected.orders.pagination.totalItems, 'Rejected order changes neither points nor orders');
+    await page.getByLabel('购买数量').fill('11');
+    check(await page.getByRole('button', { name: '创建订单', exact: true }).isDisabled(), 'Out of contract quantity blocked locally');
+    await page.getByLabel('购买数量').fill('1');
+    let committed;
+    let firstInput;
+    let postCount = 0;
+    await page.route(orderUrl, async route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      postCount++;
+      firstInput = route.request().postDataJSON();
+      const response = await route.fetch();
+      check(response.ok(), 'Lost-response request really committed in backend');
+      committed = (await response.json()).data;
+      await route.abort('failed');
+    });
+    const beforeLost = await read();
+    await page.getByRole('button', { name: '创建订单', exact: true }).click();
+    await page.getByRole('alert').getByText('无法连接 API，请检查服务后重试', { exact: true }).waitFor();
+    check(await page.getByLabel('购买数量').isDisabled(), 'Unconfirmed order freezes selection');
+    await page.screenshot({ path: 'linepool-ui/output/playwright/error-lost-order-response.png', fullPage: true });
+    await page.unroute(orderUrl);
+    await page.reload();
+    await page.getByRole('button', { name: '重试并确认订单', exact: true }).waitFor();
+    check(await page.getByLabel('购买数量').isDisabled(), 'Pending order survives full reload without changing intent');
+    const replayRequest = page.waitForRequest(r => r.url() === orderUrl && r.method() === 'POST');
+    await page.getByRole('button', { name: '重试并确认订单', exact: true }).click();
+    const retried = (await replayRequest).postDataJSON();
+    await page.getByRole('heading', { name: '订单已创建', exact: true }).waitFor();
+    const afterLost = await read();
+    check(JSON.stringify(retried) === JSON.stringify(firstInput), 'Reload retry uses exactly the same intent and idempotency key');
+    check((await page.getByRole('complementary', { name: '订单摘要' }).innerText()).includes(committed.orderNumber), 'Retry returns the already committed order');
+    result.lostResponse = { orderNumber: committed.orderNumber, pointsBefore: beforeLost.account.data.pointsBalance, pointsAfter: afterLost.account.data.pointsBalance, debit: committed.totalPoints, totalOrdersBefore: beforeLost.orders.pagination.totalItems, totalOrders: afterLost.orders.pagination.totalItems, totalNumbersBefore: beforeLost.numbers.pagination.totalItems, totalNumbers: afterLost.numbers.pagination.totalItems, postCount };
+    check(postCount === 1 && afterLost.orders.pagination.totalItems === beforeLost.orders.pagination.totalItems + 1 && afterLost.account.data.pointsBalance === beforeLost.account.data.pointsBalance - committed.totalPoints && afterLost.numbers.pagination.totalItems === beforeLost.numbers.pagination.totalItems + committed.quantity, 'Lost response and UI retry create one order and debit once');
+    await page.screenshot({ path: 'linepool-ui/output/playwright/08-idempotent-retry-desktop.png', fullPage: true });
+    await navigate('#workspace-reference-shell/numbers', '我的号码');
+    await completedRefresh();
+    await page.getByRole('searchbox', { name: '搜索号码、地区或服务' }).fill('nonexistent-api-record');
+    await page.getByText('暂无符合条件的号码', { exact: true }).waitFor();
+    check(!(await page.getByRole('table').count()), 'Empty filtered result renders no fallback numbers');
+    await page.getByRole('button', { name: '清除筛选', exact: true }).click();
+    await page.getByRole('table').waitFor();
+    await navigate('#workspace-reference-shell/points', '积分明细');
+    await completedRefresh();
+    check((await page.getByRole('region', { name: '积分流水' }).innerText()).includes(afterLost.account.data.pointsBalance.toLocaleString('zh-CN')), 'Points page refreshed after idempotent recovery');
+    await navigate('#workspace-reference-shell', '欢迎回来，' + afterLost.account.data.displayName);
+    await page.screenshot({ path: 'linepool-ui/output/playwright/09-dashboard-desktop.png', fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: '展开账户导航', exact: true }).click();
+    await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '购买号码', exact: true }).click();
+    await page.getByRole('heading', { name: '购买号码', exact: true }).waitFor();
+    check(!(await page.getByRole('button', { name: '展开账户导航', exact: true }).getAttribute('aria-expanded') === 'true'), 'Mobile navigation closes after route change');
+    await page.screenshot({ path: 'linepool-ui/output/playwright/10-purchase-mobile.png', fullPage: true });
+    result.mobilePurchase = await page.evaluate(() => ({ viewport: innerWidth, documentWidth: document.documentElement.scrollWidth }));
+    check(result.mobilePurchase.documentWidth <= result.mobilePurchase.viewport, 'Mobile purchase has no horizontal page overflow');
+    await navigate('#workspace-reference-shell', '欢迎回来，' + afterLost.account.data.displayName);
+    await page.screenshot({ path: 'linepool-ui/output/playwright/11-dashboard-mobile.png', fullPage: true });
+    result.mobileDashboard = await page.evaluate(() => ({ viewport: innerWidth, documentWidth: document.documentElement.scrollWidth }));
+    check(result.mobileDashboard.documentWidth <= result.mobileDashboard.viewport, 'Mobile dashboard has no horizontal page overflow');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await navigate('#workspace-reference-shell/account', '我的账户');
+    await page.route('http://127.0.0.1:3010/api/account', route => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'expired' } }) }));
+    await headerRefresh().click();
+    await page.getByRole('heading', { name: '登录账户', exact: true }).waitFor();
+    await page.getByRole('alert').getByText('登录已过期，请重新登录', { exact: true }).waitFor();
+    check(!(await page.getByRole('navigation', { name: '主导航' }).count()), '401 clears protected account view');
+    await page.unroute('http://127.0.0.1:3010/api/account');
+    await page.reload();
+    await page.getByRole('heading', { name: '我的账户', exact: true }).waitFor();
+    const logout = page.waitForResponse(r => r.url().endsWith('/api/auth/logout'));
+    await page.getByRole('button', { name: '退出登录', exact: true }).click();
+    check((await logout).ok(), 'Logout invalidates server session');
+    await page.getByRole('heading', { name: '登录账户', exact: true }).waitFor();
+    await page.reload();
+    await page.getByRole('heading', { name: '登录账户', exact: true }).waitFor();
+    check(!(await page.getByRole('navigation', { name: '主导航' }).count()), 'Logged-out reload cannot access private records');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: 'linepool-ui/output/playwright/12-login-mobile.png', fullPage: true });
+    check(!(await page.locator('vite-error-overlay').count()), 'No Vite error overlay');
+    return result;
+  } catch (failure) {
+    await page.screenshot({ path: 'linepool-ui/output/playwright/acceptance-failure.png', fullPage: true });
+    throw new Error(String(failure) + '\nAcceptance state: ' + JSON.stringify(result));
+  } finally { await page.unroute(catalogUrl); await page.unroute(orderUrl); await page.unroute('http://127.0.0.1:3010/api/account'); }
+}

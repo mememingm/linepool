@@ -1,0 +1,243 @@
+@import '../preferences/dark-theme.css';
+
+/* C-end visual layer. Scoped to the live shell; upstream atoms and the reference demo stay untouched. */
+.lp-shell-page[data-theme] {
+  --shell-page: #f5f7fb; --shell-surface: #fff; --shell-ink: #17243b;
+  --shell-muted: #596a82; --shell-faint: #607086; --shell-line: #e3e9f2;
+  --lp-blue: #2463eb; --lp-blue-ink: #1e55cf; --lp-link: #2158c9;
+  --lp-tint: #edf4ff; --lp-soft: #f8faff; --lp-hover: #f1f5fb; --shell-hover: var(--lp-hover);
+  --lp-shadow: 0 2px 4px rgb(24 50 91 / .02), 0 6px 20px rgb(24 50 91 / .035);
+  --lp-radius: 16px;
+}
+.lp-shell-page[data-theme="dark"] {
+  --shell-page: var(--lp-dark-page); --shell-sidebar: var(--lp-dark-sidebar);
+  --shell-surface: var(--lp-dark-surface); --shell-ink: var(--lp-dark-ink);
+  --shell-muted: var(--lp-dark-muted); --shell-faint: var(--lp-dark-faint); --shell-line: var(--lp-dark-line);
+  --lp-blue: var(--lp-dark-brand); --lp-blue-ink: var(--lp-dark-link); --lp-link: var(--lp-dark-link);
+  --lp-tint: var(--lp-dark-selected); --lp-soft: var(--lp-dark-field); --lp-hover: var(--lp-dark-hover);
+  --lp-shadow: 0 2px 8px rgb(0 0 0 / .12);
+  color-scheme: dark;
+}
+.lp-shell-page[data-theme] :is(.lp-shell-view, .lp-reference) {
+  --page: var(--shell-page); --canvas: var(--shell-page); --surface: var(--shell-surface);
+  --field: var(--shell-surface); --ink: var(--shell-ink); --ink-2: var(--shell-muted);
+  --ink-3: var(--shell-faint); --line: var(--shell-line); --line-strong: var(--shell-line);
+  --hover: var(--lp-hover); --hover-2: var(--lp-hover); --inset: var(--shell-line);
+  --accent: var(--lp-blue); --accent-ink: var(--lp-blue-ink); --accent-tint: var(--lp-tint);
+}
+
+/* Navigation and cards use distinct neutral surfaces; blue marks actions and selection. */
+.lp-shell-page[data-theme] .lp-shell-sidebar { background: var(--shell-sidebar, var(--shell-surface)); border-color: var(--shell-line); }
+.lp-shell-page .lp-shell-sidebar-content { padding-top: 16px; }
+.lp-shell-page[data-theme] .lp-shell-account { border-color: var(--shell-line); background: var(--lp-soft); box-shadow: none; }
+.lp-shell-page .lp-shell-account strong { font-weight: 600; }
+.lp-shell-page[data-theme] .lp-shell-nav-item { min-height: 40px; margin-block: 3px; color: var(--shell-muted); }
+.lp-shell-page[data-theme] .lp-shell-nav-item:hover { background: var(--lp-hover); }
+.lp-shell-page[data-theme] .lp-shell-nav-item.is-active {
+  border-color: transparent; background: var(--lp-tint); color: var(--lp-link); font-weight: 600; box-shadow: none;
+}
+.lp-shell-page[data-theme] .lp-shell-nav-item.is-active .lp-shell-nav-icon { color: var(--lp-link); }
+.lp-shell-page .lp-shell-nav-item.is-active::before { background: var(--lp-blue); top: 12px; bottom: 12px; }
+.lp-shell-page[data-theme] .lp-shell-nav-badge { background: var(--lp-tint); color: var(--lp-link); font-weight: 600; }
+.lp-shell-page[data-theme] .lp-shell-nav-group > p { color: var(--shell-muted); font-weight: 500; }
+.lp-shell-page[data-theme] .lp-shell-region-heading { color: var(--shell-ink); }
+.lp-shell-page[data-theme] .lp-shell-expiry-alert { border-color: var(--shell-line); background: var(--lp-soft); box-shadow: none; }
+.lp-shell-page[data-theme] .lp-shell-display-bar { background: var(--shell-surface); }
+.lp-shell-page .lp-display-toolbar button { border-radius: 8px; }
+.lp-shell-page :is(.lp-display-toolbar, .lp-display-settings) :is(button, select):focus-visible { outline-color: var(--lp-blue); }
+.lp-shell-page[data-theme] .lp-shell-view-header { background: var(--surface); border-color: var(--line); }
+.lp-shell-page .lp-shell-view-brand { font-weight: 700; color: var(--lp-link); }
+.lp-shell-page .lp-shell-view-title h1 { font-size: 26px; font-weight: 600; letter-spacing: -.5px; }
+.lp-shell-page .lp-shell-view-title p { line-height: 1.7; }
+.lp-shell-page .lp-shell-view :is(h2, h3) { font-weight: 600; }
+.lp-shell-page .lp-shell-view strong { font-weight: 600; }
+.lp-shell-page .lp-shell-view-account-balance { padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); }
+.lp-shell-page .lp-shell-view .lp-shell-view-link { color: var(--lp-link); }
+.lp-shell-page .lp-shell-view :is(.lp-shell-view-search, .lp-shell-view-toolbar select, .lp-region-select-trigger, .lp-shell-view-stepper) { border-radius: 9px; }
+
+/* Purchase: one clear form card and a compact, visually anchored checkout card. */
+.lp-shell-page .lp-shell-view-purchase { gap: 24px; }
+.lp-shell-page .lp-shell-view-form {
+  padding: 24px; border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow);
+}
+.lp-shell-page .lp-shell-view-form-fields { gap: 22px; }
+.lp-shell-page .lp-shell-view-form-section h2 { font-size: 14px; }
+.lp-shell-page .lp-shell-view-form-section + .lp-shell-view-form-section { padding-top: 18px; border-top: 1px solid var(--line); }
+.lp-shell-page .lp-shell-view-country-preview { padding: 10px 12px; border-radius: 9px; background: var(--lp-soft); }
+.lp-shell-page .lp-shell-view-option { min-height: 46px; border-radius: 10px; }
+.lp-shell-page .lp-shell-view-plan { min-height: 108px; border-radius: 12px; }
+.lp-shell-page :is(.lp-shell-view-option, .lp-shell-view-plan):hover { border-color: var(--lp-blue); }
+.lp-shell-page :is(.lp-shell-view-option, .lp-shell-view-plan).is-selected { box-shadow: inset 0 0 0 1px var(--lp-blue); }
+.lp-shell-page .lp-shell-view-plan b { font-size: 22px; font-weight: 650; }
+.lp-shell-page .lp-shell-view-plan.is-selected b { color: var(--lp-link); }
+.lp-shell-page .lp-shell-view-stepper input { font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-shell-page .lp-shell-view-order-summary {
+  padding: 24px; border-radius: var(--lp-radius); background: linear-gradient(180deg, var(--lp-tint), var(--surface) 140px); box-shadow: var(--lp-shadow);
+}
+.lp-shell-page .lp-shell-view-order-summary > h2 { font-size: 17px; }
+.lp-shell-page .lp-shell-view-order-summary > .lp-shell-view-facts { gap: 14px; padding-block: 22px; }
+.lp-shell-page .lp-shell-view-order-summary .lp-shell-view-total {
+  padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--lp-soft);
+}
+.lp-shell-page .lp-shell-view-total strong { color: var(--lp-link); font-weight: 650; }
+.lp-shell-page .lp-shell-view-total small { color: var(--ink-2); }
+.lp-shell-page .lp-shell-view-order-summary .lp-shell-view-submit > button { min-height: 46px; border-radius: 10px; box-shadow: 0 3px 8px rgb(36 99 235 / .14); }
+.lp-shell-page .lp-shell-view-confirm-dialog { border-radius: var(--lp-radius); }
+
+/* Existing success content becomes a receipt; no additional actions or business state. */
+.lp-shell-page .lp-shell-view-order-summary.is-complete { background: linear-gradient(180deg, var(--green-tint), var(--surface) 155px); }
+.lp-shell-page .lp-shell-view-success-icon { width: 52px; height: 52px; padding: 11px; border-radius: 15px; background: var(--green-tint); }
+.lp-shell-page .is-complete > h2 { margin-top: 12px; margin-bottom: 6px; font-size: 22px; }
+.lp-shell-page .lp-shell-view-success-numbers dl > div { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--lp-soft); }
+.lp-shell-page .lp-shell-view-success-numbers dt { color: var(--lp-link); font-size: 18px; font-weight: 600; }
+.lp-shell-page .lp-shell-view-success-primary { border-radius: 10px; color: #fff; }
+
+/* Inbox: two independent white panes, with the code as the focal point. */
+.lp-shell-page .lp-shell-view-inbox { gap: 20px; }
+.lp-shell-page :is(.lp-shell-view-message-list, .lp-shell-view-message-detail) {
+  border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow);
+}
+.lp-shell-page .lp-shell-view-message-list > .lp-shell-view-section-heading { padding: 18px; background: var(--surface); }
+.lp-shell-page .lp-shell-view-message { padding: 18px; }
+.lp-shell-page .lp-shell-view-message.is-selected { background: var(--lp-tint); }
+.lp-shell-page .lp-shell-view-message-code { font-weight: 600; letter-spacing: .6px; }
+.lp-shell-page .lp-shell-view-message-detail { padding: 22px; }
+.lp-shell-page .lp-shell-view-code { margin: 4px 0 18px; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--lp-tint); }
+.lp-shell-page .lp-shell-view-code > strong { color: var(--lp-link); font-size: 38px; font-weight: 650; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.lp-shell-page .lp-shell-view-message-body { padding: 16px; border-radius: 10px; background: var(--lp-soft); }
+
+/* Apply the card language to existing records and account content, without loosening dense rows. */
+.lp-shell-page :is(.lp-shell-view-table-scroll, .lp-shell-account-overview, .lp-shell-account-metric, .lp-shell-account-information, .lp-shell-view-region) {
+  border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow);
+}
+.lp-shell-page .lp-shell-view-table th { background: var(--lp-soft); font-weight: 500; }
+.lp-shell-page .lp-shell-view-table tbody tr:hover { background: var(--lp-soft); }
+.lp-shell-page .lp-shell-view-table tbody tr:last-child td { border-bottom: 0; }
+.lp-shell-page .lp-shell-view-order { margin-bottom: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-shell-page .lp-shell-view-metrics { gap: 16px; border-bottom: 0; margin-bottom: 0; padding-bottom: 24px; }
+.lp-shell-page .lp-shell-view-metrics > div { padding: 20px; border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-shell-page .lp-shell-view-metrics strong, .lp-shell-page .lp-shell-account-metric strong { font-size: 30px; font-weight: 650; }
+.lp-shell-page .lp-shell-account-metric:first-child { background: linear-gradient(135deg, var(--lp-tint), var(--surface)); }
+.lp-shell-page .lp-shell-account-metric-label > svg { color: var(--lp-link); }
+.lp-shell-page .lp-shell-settings-overview { padding: 20px; border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-shell-page .lp-shell-settings-panel > :is(.lp-shell-view-settings-group, .lp-account-profile) { padding: 20px; border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-shell-page .lp-shell-settings-balance strong { color: var(--lp-link); font-weight: 650; }
+.lp-shell-page .lp-shell-settings-tabs > button[aria-selected="true"] { color: var(--lp-link); font-weight: 600; }
+
+/* Dashboard composition only: do not change the standalone reference screenshot. */
+.lp-shell-page .lp-reference { position: relative; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; padding: 24px 32px 32px; }
+.lp-shell-page .lp-ref-main { padding: 0; }
+.lp-shell-page .lp-ref-header { height: 64px; padding-top: 0; }
+.lp-shell-page .lp-ref-welcome h1 { font-size: 22px; font-weight: 600; }
+.lp-shell-page .lp-ref-brand { background: var(--lp-blue); border-radius: 12px; }
+.lp-shell-page .lp-ref-summary { grid-template-rows: 190px 64px; }
+.lp-shell-page .lp-reference :is(.lp-ref-profile, .lp-ref-metric, .lp-ref-services, .lp-ref-analytics, .lp-ref-inbox, .lp-ref-expiries) {
+  border: 1px solid var(--line); border-radius: var(--lp-radius); box-shadow: var(--lp-shadow);
+}
+.lp-shell-page .lp-ref-profile { background: var(--surface); }
+.lp-shell-page .lp-ref-profile h3 { font-weight: 600; }
+.lp-shell-page .lp-ref-card-heading h2, .lp-shell-page .lp-ref-services h2 { font-weight: 600; font-size: 14px; }
+.lp-shell-page .lp-ref-metric-warm { background: linear-gradient(135deg, var(--surface), var(--lp-tint)); }
+.lp-shell-page .lp-ref-metric-cool { background: linear-gradient(135deg, var(--lp-tint), var(--surface)); }
+.lp-shell-page[data-theme="dark"] :is(.lp-shell-view, .lp-reference) {
+  --field: var(--lp-dark-field); --line-strong: var(--lp-dark-line-strong);
+  --green: var(--lp-dark-green); --green-tint: var(--lp-dark-green-tint);
+  --orange: var(--lp-dark-orange); --orange-tint: var(--lp-dark-orange-tint);
+  --red: var(--lp-dark-red); --red-tint: var(--lp-dark-red-tint);
+}
+/* No tinted gradients or blue numeric blocks in the dark theme. */
+.lp-shell-page[data-theme="dark"] :is(.lp-ref-metric, .lp-shell-view-order-summary, .lp-shell-account-metric:first-child),
+.lp-shell-page[data-theme="dark"] .lp-shell-view-order-summary.is-complete { background: var(--surface); }
+.lp-shell-page[data-theme="dark"] :is(.lp-ref-metric-icon, .lp-ref-account-stat-icon, .lp-shell-account-metric-label > svg) { color: var(--ink-2); }
+.lp-shell-page[data-theme="dark"] :is(.lp-ref-metric-value strong, .lp-shell-view-total strong, .lp-shell-settings-balance strong, .lp-shell-view-code > strong, .lp-shell-order-points) { color: var(--ink); }
+.lp-shell-page[data-theme="dark"] .lp-shell-view-confirm-dialog::backdrop { background: var(--lp-dark-overlay); }
+.lp-shell-page[data-theme="dark"] :is(.lp-shell-view-submit, .lp-shell-view-confirm-actions, .lp-shell-view-success-primary) { --accent-ink: var(--lp-dark-brand-hover); }
+.lp-shell-page[data-theme="dark"] :is(.lp-shell-view-submit > button, .lp-shell-view-confirm-actions > button:last-child, .lp-shell-view-success-primary) { color: var(--lp-dark-page); }
+.lp-shell-page[data-theme="dark"] .lp-shell-view-order-summary .lp-shell-view-submit > button { box-shadow: none; }
+.lp-shell-page[data-theme="dark"] .lp-shell-mobile-toggle { background: var(--shell-surface); color: var(--shell-ink); }
+.lp-shell-page[data-theme="dark"] .lp-ref-brand { background: var(--lp-hover); }
+.lp-shell-page[data-theme="dark"] .lp-ref-expiry-track i,
+.lp-shell-page[data-theme="dark"] .lp-ref-expiry-direction { background: var(--shell-muted); }
+.lp-shell-page[data-theme="dark"] .lp-ref-expiry-direction.is-soon { background: var(--orange); }
+.lp-shell-page[data-theme="dark"] .lp-ref-curve-blue { stroke: var(--shell-muted); }
+.lp-shell-page[data-theme="dark"] .lp-ref-chart-legend button:nth-child(2) i { background: var(--shell-muted); }
+.lp-shell-page .lp-ref-metric h2 { font-weight: 500; }
+.lp-shell-page .lp-ref-metric-icon { background: var(--surface); color: var(--lp-link); border: 1px solid var(--line); border-radius: 10px; }
+.lp-shell-page .lp-ref-metric-value strong { color: var(--lp-link); font-weight: 650; }
+.lp-shell-page .lp-ref-metric-value strong span { font-size: 20px; font-weight: 500; }
+.lp-shell-page .lp-ref-metric-value p { color: var(--ink-2); line-height: 1.6; }
+.lp-shell-page .lp-ref-services { background: var(--surface); border-radius: 12px; }
+.lp-shell-page .lp-ref-profile-stats a { border: 1px solid var(--line); border-radius: 10px; background: var(--lp-soft); box-shadow: none; }
+.lp-shell-page .lp-ref-profile-stats svg { color: var(--lp-link); }
+.lp-shell-page .lp-ref-analytics { padding: 20px; margin-top: 20px; background: var(--surface); }
+.lp-shell-page .lp-ref-analytics h2, .lp-shell-page .lp-ref-sidebar h2 { font-size: 17px; font-weight: 600; }
+.lp-shell-page .lp-ref-sidebar { padding: 0; border-left: 0; }
+.lp-shell-page .lp-ref-inbox, .lp-shell-page .lp-ref-expiries { padding: 20px; background: var(--surface); }
+.lp-shell-page .lp-ref-expiries { margin-top: 20px; }
+.lp-shell-page .lp-ref-message-row { grid-template-columns: 70px minmax(0, 1fr) 16px; gap: 10px; padding-block: 14px; }
+.lp-shell-page .lp-ref-message-info :is(.lp-copy-value-text, strong) { font-weight: 600; }
+.lp-shell-page .lp-ref-see-all { color: var(--lp-link) !important; margin-left: 0; }
+.lp-shell-page[data-theme="dark"] .lp-reference .lp-ref-see-all { color: var(--lp-link) !important; }
+.lp-shell-page .lp-ref-expiry-track i, .lp-shell-page .lp-ref-expiry-direction { background: var(--lp-blue); }
+.lp-shell-page .lp-ref-expiry-direction.is-soon { background: #d97735; }
+.lp-shell-page .lp-ref-months > button.is-current { background: var(--lp-blue); }
+.lp-shell-page[data-theme="dark"] .lp-ref-months > button.is-current { color: var(--lp-dark-page); }
+.lp-shell-page .lp-ref-curve-blue { stroke: var(--lp-blue); }
+.lp-shell-page .lp-ref-chart-legend button:nth-child(2) i { background: var(--lp-blue); }
+.lp-shell-page .lp-ref-chart-tooltip { border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--lp-shadow); }
+.lp-shell-page .lp-ref-chart-total strong { font-weight: 600; }
+
+@media (min-width: 901px) and (max-height: 850px) {
+  .lp-shell-page :is(.lp-shell-view-form, .lp-shell-view-order-summary) { padding: 20px; }
+  .lp-shell-page .lp-shell-view-form-fields { gap: 18px; }
+  .lp-shell-page .lp-shell-view-form-section + .lp-shell-view-form-section { padding-top: 12px; }
+  .lp-shell-page .lp-shell-view-plan { min-height: 100px; }
+}
+@media (max-width: 1200px) {
+  .lp-shell-page .lp-reference { grid-template-columns: minmax(0, 1fr); padding-inline: 24px; }
+  .lp-shell-page .lp-ref-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .lp-shell-page .lp-ref-expiries { margin-top: 0; }
+}
+@media (max-width: 900px) {
+  .lp-shell-page .lp-shell-view-purchase { grid-template-columns: 1fr; }
+  .lp-shell-page .lp-shell-view-order-summary { position: static; }
+}
+@media (max-width: 800px) {
+  .lp-shell-page .lp-shell-view-message-detail { padding: 20px; }
+  .lp-shell-page .lp-ref-header { height: 74px; }
+  .lp-shell-page .lp-ref-brand { visibility: hidden; }
+  .lp-shell-page.is-dashboard .lp-shell-mobile-toggle { border-radius: 12px; background: var(--lp-blue); }
+}
+@media (max-width: 540px) {
+  .lp-shell-page { --lp-radius: 12px; }
+  .lp-shell-page .lp-shell-view-title h1 { font-size: 23px; }
+  .lp-shell-page :is(.lp-shell-view-form, .lp-shell-view-order-summary) { padding: 18px; }
+  .lp-shell-page .lp-shell-view-option { justify-content: flex-start; }
+  .lp-shell-page .lp-shell-view-plan b { font-size: 20px; }
+  .lp-shell-page .lp-shell-view-country-preview { flex-wrap: wrap; }
+  .lp-shell-page .lp-shell-view-code { padding: 18px; }
+  .lp-shell-page .lp-shell-view-code > strong { font-size: 32px; }
+  .lp-shell-page .lp-shell-settings-panel > :is(.lp-shell-view-settings-group, .lp-account-profile), .lp-shell-page .lp-shell-settings-overview { padding: 16px; }
+  .lp-shell-page .lp-reference { padding: 20px 18px 28px; gap: 20px; }
+  .lp-shell-page .lp-ref-header { height: 68px; gap: 8px; }
+  .lp-shell-page .lp-ref-welcome h1 { font-size: 18px; }
+  .lp-shell-page .lp-ref-summary { grid-template-rows: 244px 193px 77px; }
+  .lp-shell-page .lp-ref-sidebar { grid-template-columns: 1fr; }
+  .lp-shell-page .lp-ref-analytics, .lp-shell-page .lp-ref-inbox, .lp-shell-page .lp-ref-expiries { padding: 16px; }
+  .lp-shell-page .lp-ref-expiry-row { grid-template-columns: 94px minmax(30px, 1fr) 30px 16px; }
+}
+@media (max-width: 360px) {
+  .lp-shell-page .lp-ref-metric { padding: 16px; }
+  .lp-shell-page .lp-ref-metric h2 { font-size: 13px; }
+  .lp-shell-page .lp-ref-metric-icon { display: none; }
+  .lp-shell-page .lp-ref-metric-value strong { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; font-size: 34px; }
+  .lp-shell-page .lp-ref-metric-value strong > span { margin-left: 0; }
+  .lp-shell-page[lang="en-US"] .lp-ref-metric-value strong > span { font-size: 12px; }
+  .lp-shell-page .lp-ref-summary { grid-template-rows: 244px 202px auto; }
+  .lp-shell-page .lp-ref-services { flex-wrap: wrap; padding: 14px; gap: 8px; }
+  .lp-shell-page .lp-ref-services > div:first-child { flex-basis: 100%; }
+  .lp-shell-page .lp-ref-service-stack { margin-left: 0; }
+  .lp-shell-page .lp-ref-services > .lp-ref-round { margin-left: auto; }
+  .lp-shell-page .lp-ref-analytics > header { flex-direction: column; align-items: stretch; gap: 12px; }
+  .lp-shell-page .lp-reference .lp-ref-range { width: 100%; gap: 12px; }
+}

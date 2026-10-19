@@ -1,0 +1,83 @@
+# Replace hostname, certificate paths, and release path before enabling.
+server {
+    listen 80;
+    server_name linepool.example.com;
+    return 301 https://linepool.example.com$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name linepool.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/linepool.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/linepool.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    root /srv/linepool/current/linepool-ui/web-dist;
+    index index.html;
+
+    # No trailing slash in proxy_pass: preserve the /api prefix.
+    location = /api {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+
+    # Page checks reuse the API's existing database-backed session/admin guards.
+    # Requires ngx_http_auth_request_module. Never expose these subrequests publicly.
+    location = /_linepool_session {
+        internal;
+        proxy_pass http://127.0.0.1:3010/api/auth/me;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Host $host;
+    }
+    location = /_linepool_admin {
+        internal;
+        proxy_pass http://127.0.0.1:3010/api/admin/session;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Host $host;
+    }
+    location ~ ^/admin(?:/|$) {
+        auth_request /_linepool_admin;
+        error_page 401 = @linepool_login;
+        try_files /index.html =404;
+        add_header Cache-Control "no-store" always;
+    }
+    location ~ ^/app(?:/|$) {
+        auth_request /_linepool_session;
+        error_page 401 = @linepool_login;
+        try_files /index.html =404;
+        add_header Cache-Control "no-store" always;
+    }
+    location @linepool_login {
+        add_header Cache-Control "no-store" always;
+        return 302 /login;
+    }
+
+    # Vite-generated assets have content hashes.
+    location /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Public routes use the SPA; authenticated routes are checked above.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}

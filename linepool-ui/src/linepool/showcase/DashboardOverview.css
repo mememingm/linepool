@@ -1,0 +1,106 @@
+/* Live dashboard only; the reference demo and other account pages keep their styles. */
+.lp-shell-page .lp-reference.is-overview { grid-template-columns: minmax(0, 1fr) 300px; align-content: start; gap: 24px; padding: 20px 32px 24px; }
+.lp-shell-page .is-overview .lp-ref-header { height: 64px; }
+.lp-shell-page .is-overview .lp-ref-summary { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 16px; }
+.lp-shell-page .is-overview .lp-ref-profile { grid-column: 1; grid-row: 1; padding: 18px 20px; text-align: left; }
+.lp-shell-page .is-overview .lp-ref-card-heading h2, .lp-shell-page .is-overview .lp-ref-quick-actions h2 { font-size: 14px; line-height: 22px; font-weight: 600; }
+.lp-shell-page .is-overview .lp-ref-card-heading .lp-ref-round { width: 24px; height: 24px; }
+.lp-ref-account-identity { margin-top: 12px; }
+.lp-shell-page .is-overview .lp-ref-account-identity h3 { font-size: 24px; line-height: 30px; font-weight: 650; }
+.lp-ref-account-identity dl { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 6px 0 0; color: var(--ink-2); font-size: 11px; line-height: 18px; }
+.lp-ref-account-identity dl > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lp-ref-account-identity dd { margin: 0; color: var(--ink); }
+.lp-ref-account-identity .lp-ref-account-status { display: inline-flex; align-items: center; gap: 3px; color: #218265; }
+.lp-ref-account-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+.lp-ref-account-stats > a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 6px; min-width: 0; min-height: 68px; padding: 10px 12px; border-radius: 8px; background: var(--lp-soft); }
+.lp-ref-account-stat-icon { display: inline-flex; color: var(--lp-link); }
+.lp-ref-account-stats strong { font-size: 22px; line-height: 26px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lp-ref-account-stat-label { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 4px; color: var(--ink-2); font-size: 11px; line-height: 16px; }
+.lp-ref-account-stats > a:hover { background: var(--lp-tint); }
+.lp-ref-account-stat-label svg { color: var(--ink-3); flex-shrink: 0; }
+.lp-ref-quick-actions { min-width: 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-ref-quick-links { display: grid; gap: 8px; margin-top: 12px; }
+.lp-ref-quick-links > a { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid #e0e9fc; border-radius: 8px; background: linear-gradient(110deg, #edf4ff, #f2f1fd); color: #285fd5; font-size: 13px; line-height: 20px; font-weight: 500; }
+.lp-ref-quick-links > .lp-ref-quick-inbox { border-color: #e8e4f7; background: linear-gradient(110deg, #f2effc, #eff4fd); color: #735da8; }
+.lp-ref-quick-links > a > svg { flex: 0 0 auto; }
+.lp-ref-quick-links > a > svg:last-child { margin-left: auto; opacity: .7; }
+.lp-ref-quick-links > a:hover { border-color: #a9bfe9; }
+.lp-ref-quick-links > .lp-ref-quick-inbox:hover { border-color: #c2b4e3; }
+.lp-ref-quick-services { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.lp-ref-quick-services > a { display: inline-flex; align-items: center; gap: 2px; color: var(--ink-2); font-size: 11px; line-height: 18px; }
+.lp-shell-page .is-overview .lp-ref-quick-services .lp-ref-service-stack { margin-left: 0; }
+.lp-shell-page .is-overview .lp-ref-quick-services .lp-ref-service-stack a { width: 25px; height: 25px; margin-left: -3px; }
+.lp-ref-quick-services .lp-ref-service-logo { width: 15px; height: 15px; }
+.lp-ref-quick-services > a:hover { color: var(--lp-link); }
+.lp-shell-page .is-overview .lp-ref-metric { grid-row: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 104px; padding: 18px 20px; background: var(--surface); border-radius: 16px; }
+.lp-shell-page .is-overview .lp-ref-metric-warm { grid-column: 1; }
+.lp-shell-page .is-overview .lp-ref-metric-cool { grid-column: 2; }
+.lp-shell-page .is-overview .lp-ref-metric > div:first-child { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.lp-shell-page .is-overview .lp-ref-metric h2 { color: var(--ink-2); font-size: 12px; line-height: 18px; font-weight: 500; }
+.lp-shell-page .is-overview .lp-ref-metric-icon { width: 28px; height: 28px; flex-basis: 28px; border: 0; border-radius: 7px; background: var(--lp-tint); }
+.lp-shell-page .is-overview .lp-ref-metric-icon svg { width: 17px; height: 17px; }
+.lp-shell-page .is-overview .lp-ref-metric-value { min-width: 0; text-align: right; }
+.lp-shell-page .is-overview .lp-ref-metric-value strong { display: block; font-size: 30px; line-height: 36px; color: var(--ink); }
+.lp-shell-page .is-overview .lp-ref-metric-value strong span { display: inline-block; margin-left: 4px; font-size: 12px; font-weight: 400; color: var(--ink-2); }
+.lp-shell-page .is-overview .lp-ref-metric-value p { font-size: 11px; line-height: 17px; margin-top: 5px; }
+.lp-shell-page .is-overview .lp-ref-analytics { margin-top: 18px; padding: 18px 20px; }
+.lp-shell-page .is-overview .lp-ref-chart-body { height: 218px; margin-top: 24px; gap: 12px; }
+.lp-shell-page .is-overview .lp-ref-plot::before { display: none; }
+.lp-shell-page .is-overview .lp-ref-chart-area { stroke: none; }
+.lp-shell-page .is-overview .lp-ref-chart-grid { stroke-dasharray: 3 4; opacity: .8; }
+.lp-shell-page .is-overview .lp-ref-chart-legend { margin-left: 59px; }
+.lp-shell-page .is-overview .lp-ref-chart-total strong { font-size: 20px; }
+.lp-shell-page .is-overview .lp-ref-inbox, .lp-shell-page .is-overview .lp-ref-expiries { padding: 18px 20px; }
+.lp-shell-page .is-overview .lp-ref-sidebar { display: block; padding: 0; border: 0; }
+.lp-shell-page .is-overview .lp-ref-expiries { margin-top: 18px; }
+.lp-shell-page .lp-reference.is-overview .lp-ref-expiry-row { grid-template-columns: max-content minmax(24px, 1fr) auto 16px; }
+.lp-shell-page .lp-reference.is-overview .lp-ref-expiry-row > span:first-child { white-space: nowrap; }
+.lp-shell-page[data-theme="dark"] .is-overview .lp-ref-account-status { color: var(--lp-dark-green); }
+.lp-shell-page[data-theme="dark"] .is-overview :is(.lp-ref-quick-buy, .lp-ref-quick-inbox) { background: var(--lp-dark-field); color: var(--lp-dark-link); border-color: var(--lp-dark-line); }
+.lp-shell-page[data-theme="dark"] .is-overview .lp-ref-quick-links > a:hover { background: var(--lp-dark-hover); border-color: var(--lp-dark-line-strong); }
+
+@media (min-width: 1201px) and (max-height: 800px) {
+  .lp-shell-page .lp-reference.is-overview { gap: 20px; padding: 16px 24px 14px; }
+  .lp-shell-page .is-overview .lp-ref-header { height: 54px; }
+  .lp-shell-page .is-overview .lp-ref-summary { gap: 14px; }
+  .lp-shell-page .is-overview .lp-ref-profile, .lp-shell-page .is-overview .lp-ref-quick-actions { padding: 14px 18px; }
+  .lp-shell-page .is-overview .lp-ref-account-identity { margin-top: 8px; }
+  .lp-shell-page .is-overview .lp-ref-account-stats { margin-top: 12px; }
+  .lp-shell-page .is-overview .lp-ref-metric { min-height: 90px; padding: 14px 18px; }
+  .lp-shell-page .is-overview .lp-ref-analytics { margin-top: 14px; padding: 16px 18px; }
+  .lp-shell-page .is-overview .lp-ref-chart-body { height: 184px; margin-top: 22px; }
+  .lp-shell-page .is-overview .lp-ref-inbox, .lp-shell-page .is-overview .lp-ref-expiries { padding: 16px 18px; }
+  .lp-shell-page .is-overview .lp-ref-message-row { min-height: 62px; padding-block: 10px; }
+}
+@media (min-width: 1201px) and (max-height: 740px) {
+  .lp-shell-page .is-overview .lp-ref-chart-body { height: 136px; }
+}
+@media (max-width: 1200px) {
+  .lp-shell-page .lp-reference.is-overview { grid-template-columns: minmax(0, 1fr); padding-inline: 24px; }
+  .lp-shell-page .is-overview .lp-ref-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .lp-shell-page .is-overview .lp-ref-expiries { margin-top: 0; }
+}
+@media (max-width: 800px) {
+  .lp-shell-page .lp-reference.is-overview { padding-top: 18px; }
+  .lp-shell-page .is-overview .lp-ref-header { min-height: 60px; height: auto; padding-bottom: 18px; }
+}
+@media (max-width: 600px) {
+  .lp-shell-page .lp-reference.is-overview { padding: 18px 16px 22px; gap: 16px; }
+  .lp-shell-page .is-overview .lp-ref-summary { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; gap: 12px; }
+  .lp-shell-page .is-overview .lp-ref-profile, .lp-shell-page .is-overview .lp-ref-quick-actions { grid-column: 1; grid-row: auto; padding: 16px; border-radius: 12px; }
+  .lp-shell-page .is-overview .lp-ref-metric { grid-column: 1; grid-row: auto; min-height: 90px; padding: 16px; border-radius: 12px; }
+  .lp-shell-page .is-overview .lp-ref-metric-icon { display: grid; }
+  .lp-shell-page .is-overview .lp-ref-account-stats > a { padding: 10px; }
+  .lp-shell-page .is-overview .lp-ref-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-ref-quick-links > a { gap: 7px; padding: 10px; font-size: 12px; }
+  .lp-shell-page .is-overview .lp-ref-sidebar { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .lp-shell-page .is-overview .lp-ref-analytics, .lp-shell-page .is-overview .lp-ref-inbox, .lp-shell-page .is-overview .lp-ref-expiries { padding: 16px; }
+  .lp-shell-page .is-overview .lp-ref-chart-body { grid-template-columns: 36px minmax(0, 1fr); gap: 6px; }
+  .lp-shell-page .is-overview .lp-ref-chart-legend { margin-left: 42px; gap: 8px 12px; }
+  .lp-shell-page .is-overview .lp-ref-account-identity h3 { font-size: 22px; }
+}
+@media (max-width: 360px) {
+  .lp-shell-page .is-overview .lp-ref-quick-links { grid-template-columns: minmax(0, 1fr); }
+  .lp-shell-page .is-overview .lp-ref-account-stat-label { font-size: 10px; }
+  .lp-shell-page .is-overview .lp-ref-account-stats strong { font-size: 20px; }
+}

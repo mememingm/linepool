@@ -1,0 +1,6 @@
+.lp-platform-sms-notice { display: flex; flex-shrink: 0; align-items: flex-start; gap: 10px; margin-bottom: 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--accent-tint); color: var(--ink); }
+.lp-platform-sms-notice > svg { flex: 0 0 18px; margin-top: 2px; color: var(--accent-ink); }
+.lp-platform-sms-notice > div { min-width: 0; }
+.lp-platform-sms-notice strong { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.lp-platform-sms-notice p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.lp-purchase-confirm .lp-platform-sms-notice { margin-top: 16px; margin-bottom: 0; }

@@ -1,0 +1,19 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "prettier.requireConfig": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.readonlyInclude": {
+    "src/vendor/**": true,
+    "public/**": true,
+    "upstream-lock.json": true
+  },
+  "search.exclude": {
+    "**/dist": true,
+    "**/web-dist": true,
+    "**/catalog-dist": true,
+    "**/dist-test": true,
+    "**/.local": true,
+    "**/*.log": true
+  }
+}
