@@ -5,6 +5,7 @@ import { type SessionRequest } from './authentication.js';
 import { Database } from './database.js';
 import { ApiFailure } from './http.js';
 import { pagination } from './workspace.js';
+import { availableStock, releaseExpired } from './platform-inventory.js';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -15,11 +16,15 @@ export class AdminGuard implements CanActivate {
     return true;
   }
 }
-const numberFrom = 'FROM phone_numbers n JOIN regions r ON r.id=n.region_id LEFT JOIN users u ON u.id=n.assigned_user_id';
-const numberFields = `n.id,n.phone_number,n.region_id,r.name AS country,r.prefix,n.service,n.capability,n.resource_status,
- (SELECT a.id FROM number_allocations a WHERE a.number_id=n.id AND a.released_at IS NULL) AS allocation_id,
- n.sale_enabled,n.assigned_user_id,u.display_name AS owner_name,n.order_id,n.expires_at,
- CASE WHEN n.assigned_user_id IS NOT NULL THEN 'ASSIGNED' WHEN NOT n.sale_enabled OR n.resource_status NOT IN ('LOCAL','ONLINE') THEN 'UNSELLABLE' ELSE 'AVAILABLE' END AS sale_status`;
+const numberFrom = `FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id JOIN regions r ON r.id=n.region_id
+ LEFT JOIN number_allocations a ON a.number_id=n.id AND a.platform_id=s.platform_id AND a.released_at IS NULL
+ LEFT JOIN users u ON u.id=a.user_id
+ LEFT JOIN provider_projects p ON p.provider=s.provider AND p.external_project_id=s.external_project_id
+ LEFT JOIN provider_resource_bindings b ON b.provider=s.provider AND b.number_id=n.id`;
+const numberFields = `s.id,n.id AS number_id,n.phone_number,n.region_id,r.name AS country,r.prefix,s.platform_id AS service,n.capability,n.resource_status,
+ s.provider,s.external_project_id,p.project_name,b.external_number_id,n.resource_expires_at,
+ a.id AS allocation_id,s.sale_enabled,a.user_id AS assigned_user_id,u.display_name AS owner_name,a.order_id,a.expires_at,
+ CASE WHEN a.id IS NOT NULL THEN 'ASSIGNED' WHEN ${availableStock('7')} THEN 'AVAILABLE' ELSE 'UNSELLABLE' END AS sale_status`;
 const orderFrom = 'FROM orders o JOIN users u ON u.id=o.user_id';
 const orderFields = `o.id,o.order_number,o.user_id,u.display_name AS owner_name,o.plan_name,o.quantity,o.total_points,o.created_at,
  CASE WHEN EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.reverses_ledger_id IS NOT NULL) THEN 'POINTS_REVERSED'
@@ -31,13 +36,38 @@ const allocationFrom = 'FROM number_allocations a JOIN phone_numbers n ON n.id=a
 const auditFields = 'a.*,u.display_name AS actor_name';
 const auditFrom = 'FROM admin_audit a JOIN users u ON u.id=a.actor_id';
 const userFields = `u.id,u.email,u.display_name,u.role,u.account_status,u.created_at,u.points_balance,u.is_demo,
- (SELECT count(*)::int FROM phone_numbers n WHERE n.assigned_user_id=u.id) AS number_count,
+ (SELECT count(*)::int FROM number_allocations a WHERE a.user_id=u.id AND a.released_at IS NULL) AS number_count,
  (SELECT count(*)::int FROM orders o WHERE o.user_id=u.id) AS order_count`;
 const productFrom = 'FROM offers o JOIN regions r ON r.id=o.region_id';
-const productFields = `o.*,r.name AS country,(SELECT count(*)::int FROM phone_numbers n WHERE n.region_id=o.region_id
- AND n.service=o.service AND n.assigned_user_id IS NULL AND n.sale_enabled AND n.resource_status IN ('LOCAL','ONLINE')
- AND n.capability=o.capability AND starts_with(n.phone_number,o.area_prefix)) AS available_count`;
-export type AdminSection = 'users' | 'numbers' | 'products' | 'orders' | 'audit';
+const productStock = (provider: 'pingcode' | 'pingcode-mock') => `(SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id
+ WHERE n.region_id=o.region_id AND s.platform_id=o.service AND s.provider='${provider}' AND ${availableStock('o.duration_days')}
+ AND n.capability=o.capability AND starts_with(n.phone_number,o.area_prefix))`;
+const productFields = `o.*,r.name AS country,${productStock('pingcode-mock')} AS available_count,
+ ${productStock('pingcode')} AS pc_available_count,
+ (SELECT p.external_project_id FROM provider_projects p WHERE p.provider='pingcode' AND p.platform_id=o.service AND p.is_active) AS pc_project_id,
+ (SELECT p.project_name FROM provider_projects p WHERE p.provider='pingcode' AND p.platform_id=o.service AND p.is_active) AS pc_project_name`;
+const projectFrom = 'FROM provider_projects p JOIN platforms f ON f.id=p.platform_id';
+const projectFields = `p.provider,p.external_project_id,p.project_name,p.platform_id,f.name AS platform_name,
+ (p.is_active AND f.is_active) AS is_active,p.synced_at,
+ (SELECT count(*)::int FROM number_platforms s WHERE s.provider=p.provider AND s.external_project_id=p.external_project_id) AS number_count`;
+const receiptFrom = `FROM provider_message_receipts c
+ LEFT JOIN sms_messages m ON m.id=c.message_id
+ LEFT JOIN number_allocations a ON a.id=c.allocation_id
+ LEFT JOIN users u ON u.id=COALESCE(a.user_id,m.user_id)
+ LEFT JOIN provider_projects p ON p.provider=c.provider AND p.external_project_id=c.external_project_id
+ LEFT JOIN provider_resource_bindings b ON b.provider=c.provider AND b.external_number_id=c.external_number_id
+ LEFT JOIN phone_numbers n ON n.id=COALESCE(m.number_id,b.number_id)`;
+const receiptFields = `c.provider,c.external_message_id,c.external_project_id,c.external_number_id,
+ COALESCE(p.platform_id,m.platform_id) AS platform,COALESCE(n.phone_number,c.raw_payload->>'phoneNumber') AS phone_number,
+ u.display_name AS owner_name,COALESCE(m.sender,c.raw_payload->>'sender') AS sender,
+ left(COALESCE(m.body,c.raw_payload->>'content'),1000) AS body,
+ COALESCE(m.received_at::text,c.raw_payload->>'occurredAt') AS sms_received_at,
+ c.received_at AS recorded_at,c.processed_at,c.processing_status,c.failure_reason,
+ (SELECT e.event_id FROM provider_event_receipts e WHERE e.provider=c.provider AND e.external_message_id=c.external_message_id
+ ORDER BY e.received_at DESC,e.event_id DESC LIMIT 1) AS event_id,
+ (SELECT COALESCE(sum(e.delivery_count),0)::int FROM provider_event_receipts e
+ WHERE e.provider=c.provider AND e.external_message_id=c.external_message_id) AS delivery_count`;
+export type AdminSection = 'users' | 'numbers' | 'products' | 'orders' | 'audit' | 'projects' | 'receipts';
 
 @Injectable()
 export class Administration {
@@ -55,15 +85,16 @@ export class Administration {
         if (input.status) add('u.account_status=?', input.status);
         break;
       case 'numbers':
-        fields = numberFields; from = numberFrom; sort = 'n.created_at DESC,n.id';
-        if (input.search) add('(n.phone_number ILIKE ? OR n.id::text ILIKE ? OR u.display_name ILIKE ?)', search);
+        fields = numberFields; from = numberFrom; sort = 'n.created_at DESC,s.id';
+        if (input.search) add('(n.phone_number ILIKE ? OR n.id::text ILIKE ? OR u.display_name ILIKE ? OR s.platform_id ILIKE ? OR s.external_project_id ILIKE ? OR b.external_number_id ILIKE ?)', search);
+        if (input.provider) add('s.provider=?', input.provider);
         if (input.region) add('n.region_id=?', input.region);
-        if (input.userId) add('n.assigned_user_id=?', input.userId);
-        if (input.status === 'AVAILABLE') clauses.push("n.assigned_user_id IS NULL AND n.sale_enabled AND n.resource_status IN ('LOCAL','ONLINE')");
-        else if (input.status === 'ASSIGNED') clauses.push('n.assigned_user_id IS NOT NULL');
-        else if (input.status === 'UNSELLABLE') clauses.push("n.assigned_user_id IS NULL AND (NOT n.sale_enabled OR n.resource_status NOT IN ('LOCAL','ONLINE'))");
-        else if (input.status === 'expiring') clauses.push("n.expires_at>now() AND n.expires_at<=now()+interval '3 days'");
-        else if (input.status === 'ACTIVE') clauses.push("n.expires_at>now() AND n.assigned_user_id IS NOT NULL");
+        if (input.userId) add('a.user_id=?', input.userId);
+        if (input.status === 'AVAILABLE') clauses.push(availableStock('7'));
+        else if (input.status === 'ASSIGNED') clauses.push('a.id IS NOT NULL');
+        else if (input.status === 'UNSELLABLE') clauses.push(`a.id IS NULL AND NOT COALESCE((${availableStock('7')}),false)`);
+        else if (input.status === 'expiring') clauses.push("a.expires_at>now() AND a.expires_at<=now()+interval '3 days'");
+        else if (input.status === 'ACTIVE') clauses.push("a.expires_at>now() AND a.released_at IS NULL");
         else if (input.status) add('n.resource_status=?', input.status);
         break;
       case 'products':
@@ -80,6 +111,18 @@ export class Administration {
         else if (input.status === 'UNVERIFIED') clauses.push("NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT')");
         else if (input.status === 'EXCEPTION') clauses.push("(o.fulfillment_status='FAILED' OR NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT'))");
         else if (input.status) add('o.fulfillment_status=?', input.status);
+        break;
+      case 'projects':
+        fields = projectFields; from = projectFrom; sort = 'p.provider,p.platform_id,p.external_project_id';
+        if (input.search) add('(p.project_name ILIKE ? OR p.external_project_id ILIKE ? OR f.name ILIKE ?)', search);
+        if (input.provider) add('p.provider=?', input.provider);
+        if (input.status) add('(p.is_active AND f.is_active)=?', input.status === 'ACTIVE');
+        break;
+      case 'receipts':
+        fields = receiptFields; from = receiptFrom; sort = 'c.received_at DESC,c.provider,c.external_message_id';
+        if (input.search) add('(c.external_message_id ILIKE ? OR c.external_project_id ILIKE ? OR COALESCE(n.phone_number,c.raw_payload->>\'phoneNumber\') ILIKE ? OR u.display_name ILIKE ? OR m.platform_id ILIKE ? OR p.project_name ILIKE ?)', search);
+        if (input.provider) add('c.provider=?', input.provider);
+        if (input.status) add('c.processing_status=?', input.status);
         break;
       case 'audit':
         fields = auditFields; from = auditFrom; sort = 'a.created_at DESC,a.id';
@@ -98,9 +141,11 @@ export class Administration {
   async summary() {
     const { rows: [stats] } = await this.db.query(`SELECT
       (SELECT count(*)::int FROM users) AS users,
-      (SELECT count(*)::int FROM phone_numbers WHERE assigned_user_id IS NOT NULL AND expires_at>now()) AS "activeNumbers",
-      (SELECT count(*)::int FROM phone_numbers WHERE assigned_user_id IS NULL AND sale_enabled AND resource_status IN ('LOCAL','ONLINE')) AS "saleNumbers",
-      (SELECT count(*)::int FROM phone_numbers WHERE expires_at>now() AND expires_at<=now()+interval '3 days') AS "expiringNumbers",
+      (SELECT count(*)::int FROM number_allocations WHERE released_at IS NULL AND expires_at>now()) AS "activeNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE ${availableStock('7')}) AS "saleNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE s.provider='pingcode' AND ${availableStock('7')}) AS "pcSaleNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE s.provider='pingcode-mock' AND ${availableStock('7')}) AS "demoSaleNumbers",
+      (SELECT count(*)::int FROM number_allocations WHERE released_at IS NULL AND expires_at>now() AND expires_at<=now()+interval '3 days') AS "expiringNumbers",
       (SELECT count(*)::int FROM orders WHERE created_at>=date_trunc('day',now())) AS "todayOrders",
       (SELECT count(*)::int FROM orders o WHERE o.fulfillment_status='FAILED' OR NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT')) AS "exceptionOrders"`);
     const page = { page: 1, pageSize: 5, search: '', status: '' };
@@ -117,15 +162,15 @@ export class Administration {
         const { rows: [user] } = await query(`SELECT ${userFields} FROM users u WHERE u.id=$1`);
         if (!user) throw new ApiFailure(404, 'NOT_FOUND', 'User not found');
         const [numbers, orders] = await Promise.all([
-          query(`SELECT ${numberFields} ${numberFrom} WHERE n.assigned_user_id=$1 ORDER BY n.assigned_at DESC LIMIT 50`),
+          query(`SELECT ${numberFields} ${numberFrom} WHERE a.user_id=$1 ORDER BY a.assigned_at DESC LIMIT 50`),
           query(`SELECT ${orderFields} ${orderFrom} WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 50`),
         ]);
         return { user, numbers: numbers.rows, orders: orders.rows };
       }
       if (section === 'numbers') {
-        const { rows: [number] } = await query(`SELECT ${numberFields} ${numberFrom} WHERE n.id=$1`);
+        const { rows: [number] } = await query(`SELECT ${numberFields} ${numberFrom} WHERE s.id=$1`);
         if (!number) throw new ApiFailure(404, 'NOT_FOUND', 'Number not found');
-        const allocations = await query(`SELECT ${allocationFields} ${allocationFrom} WHERE a.number_id=$1 ORDER BY a.assigned_at DESC LIMIT 50`);
+        const allocations = await query(`SELECT ${allocationFields} ${allocationFrom} WHERE (a.number_id,a.platform_id)=(SELECT number_id,platform_id FROM number_platforms WHERE id=$1) ORDER BY a.assigned_at DESC LIMIT 50`);
         return { number, allocations: allocations.rows };
       }
       if (section === 'orders') {
@@ -166,25 +211,37 @@ export class Administration {
         const { rowCount } = await client.query("SELECT id FROM users WHERE id=$1 AND account_status='ACTIVE' FOR SHARE", [input.userId]);
         if (!rowCount) throw new ApiFailure(409, 'USER_UNAVAILABLE', 'Target user is missing or disabled');
       }
-      const { rows: [before] } = await client.query('SELECT * FROM phone_numbers WHERE id=$1 FOR UPDATE', [id]);
-      if (!before) throw new ApiFailure(404, 'NOT_FOUND', 'Number not found');
-      if (before.reserved_order_id) throw new ApiFailure(409, 'NUMBER_RESERVED', 'Number is reserved by an unresolved Mock order');
+      const snapshot = `SELECT s.*,n.resource_status,n.resource_expires_at,n.sale_enabled AS resource_sale_enabled,a.id AS allocation_id,a.user_id AS assigned_user_id
+        FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id
+        LEFT JOIN number_allocations a ON a.number_id=s.number_id AND a.platform_id=s.platform_id AND a.released_at IS NULL
+        WHERE s.id=$1`;
+      const { rows: [before] } = await client.query(snapshot + ' FOR UPDATE OF s', [id]);
+      if (!before) throw new ApiFailure(404, 'NOT_FOUND', 'Number platform not found');
+      if (before.reserved_order_id) throw new ApiFailure(409, 'NUMBER_RESERVED', 'Platform service is reserved by an unresolved Mock order');
       if (input.action === 'assign') {
-        if (before.assigned_user_id) throw new ApiFailure(409, 'NUMBER_ASSIGNED', 'Number is already assigned');
-        if (!['LOCAL', 'ONLINE'].includes(before.resource_status)) throw new ApiFailure(409, 'RESOURCE_UNAVAILABLE', 'Resource is unavailable');
-        await client.query("UPDATE phone_numbers SET assigned_user_id=$2,assigned_at=now(),expires_at=now()+($3*interval '1 day'),sale_enabled=false WHERE id=$1", [id, input.userId, input.durationDays]);
+        await releaseExpired(client, before.platform_id);
+        const current = await client.query('SELECT id FROM number_allocations WHERE number_id=$1 AND platform_id=$2 AND released_at IS NULL', [before.number_id, before.platform_id]);
+        if (current.rowCount) throw new ApiFailure(409, 'NUMBER_ASSIGNED', 'This number platform is already assigned');
+        if (![7,30].includes(input.durationDays)) throw new ApiFailure(400, 'INVALID_DURATION', 'Choose 7 or 30 days');
+        if (!before.is_available || !before.sale_enabled || !before.resource_sale_enabled || !['LOCAL','ONLINE'].includes(before.resource_status)) throw new ApiFailure(409, 'RESOURCE_UNAVAILABLE', 'Resource is unavailable');
+        if (before.provider === 'pingcode' && (before.resource_status !== 'ONLINE' || !before.resource_expires_at
+          || new Date(before.resource_expires_at).getTime() < Date.now()+input.durationDays*86400000)) {
+          throw new ApiFailure(409, 'RESOURCE_EXPIRES_TOO_SOON', 'PC resource must cover the full service period');
+        }
+        await client.query(`INSERT INTO number_allocations(number_id,platform_id,user_id,assigned_at,expires_at)
+          VALUES($1,$2,$3,now(),now()+($4*interval '1 day'))`, [before.number_id,before.platform_id,input.userId,input.durationDays]);
       } else if (input.action === 'reclaim') {
-        const { rows: [allocation] } = await client.query<{ user_id: string; released_at: Date | null }>(
-          'SELECT user_id,released_at FROM number_allocations WHERE id=$1 AND number_id=$2 FOR UPDATE', [input.expectedAllocationId, id]);
+        const { rows: [allocation] } = await client.query('SELECT * FROM number_allocations WHERE id=$1 AND number_id=$2 AND platform_id=$3 FOR UPDATE', [input.expectedAllocationId,before.number_id,before.platform_id]);
         if (!before.assigned_user_id && allocation?.user_id === input.expectedUserId && allocation.released_at) return { changed: false };
-        if (!allocation || allocation.released_at || allocation.user_id !== input.expectedUserId || before.assigned_user_id !== input.expectedUserId) throw new ApiFailure(409, 'OWNERSHIP_CHANGED', 'Ownership changed; refresh before reclaiming');
-        await client.query('UPDATE phone_numbers SET assigned_user_id=NULL,order_id=NULL,assigned_at=NULL,expires_at=NULL,sale_enabled=false WHERE id=$1', [id]);
+        if (!allocation || allocation.released_at || allocation.user_id !== input.expectedUserId || before.allocation_id !== input.expectedAllocationId) throw new ApiFailure(409, 'OWNERSHIP_CHANGED', 'Ownership changed; refresh before reclaiming');
+        await client.query(`UPDATE number_allocations SET released_at=GREATEST(assigned_at,LEAST(now(),expires_at)),release_reason='MANUAL' WHERE id=$1`, [allocation.id]);
+        await client.query('UPDATE number_platforms SET sale_enabled=false WHERE id=$1', [id]);
       } else {
-        if (input.saleEnabled && before.assigned_user_id) throw new ApiFailure(409, 'NUMBER_ASSIGNED', 'Assigned numbers cannot be listed for sale');
-        if (input.saleEnabled && !['LOCAL', 'ONLINE'].includes(before.resource_status)) throw new ApiFailure(409, 'RESOURCE_UNAVAILABLE', 'Resource is unavailable');
-        await client.query('UPDATE phone_numbers SET sale_enabled=$2 WHERE id=$1', [id, input.saleEnabled]);
+        if (input.saleEnabled && before.assigned_user_id) throw new ApiFailure(409, 'NUMBER_ASSIGNED', 'Assigned platform service cannot be listed for sale');
+        if (input.saleEnabled && (!before.is_available || !['LOCAL','ONLINE'].includes(before.resource_status))) throw new ApiFailure(409, 'RESOURCE_UNAVAILABLE', 'Resource is unavailable');
+        await client.query('UPDATE number_platforms SET sale_enabled=$2 WHERE id=$1', [id,input.saleEnabled]);
       }
-      const { rows: [after] } = await client.query('SELECT * FROM phone_numbers WHERE id=$1', [id]);
+      const { rows: [after] } = await client.query(snapshot, [id]);
       await this.audit(client, actorId, `NUMBER_${input.action.toUpperCase()}`, id, input.reason, before, after);
       return { changed: true };
     });

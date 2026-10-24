@@ -1,7 +1,20 @@
 import { purchaseMessages } from './purchase-messages';
+import { rechargeMessages } from '../wallet/messages';
 
 export const workspaceMessages: Readonly<Record<string, string>> = {
   ...purchaseMessages,
+  ...rechargeMessages,
+  '查看服务订单、履约状态与关联号码。': 'View service orders, fulfillment status and assigned numbers.',
+  '选择地区、平台与服务期限，购买短信接收服务。': 'Choose a region, platform and service term to receive SMS.',
+  '查看验证码与短信，按号码或服务筛选。': 'View verification codes and messages. Filter by number or service.',
+  '查看积分余额与收支记录。': 'View your points balance and transaction history.',
+  '浏览各地区的服务与可用号码。': 'Browse regional services and available numbers.',
+  '查看账户资料与使用概览。': 'View your account details and usage overview.',
+  '管理账户资料、语言、主题与提醒偏好。': 'Manage your profile, language, theme and notification preferences.',
+  '查看订单详情与关联号码。': 'View order details and assigned numbers.',
+  '返回工作台继续查看号码与短信。': 'Return to your workspace to view numbers and messages.',
+  '查看服务详情与关联信息。': 'View service details and related information.',
+  '积分充值': 'Top up points', '浅色': 'Light', '深色': 'Dark',
   '地区详情':'Region details', '服务详情':'Service details', '页面不存在':'Page not found', '订单不存在或不属于当前账户':'Order not found for this account',
   '正在加载订单…':'Loading order...', '此订单暂无关联号码':'No numbers have been allocated to this order', '详情导航':'Details navigation', '独立详情':'Open details', '复制订单号':'Copy order number',
   '所属区域':'Area', '国际区号':'Calling code', '可用库存':'Available stock', '库存':'Stock', '订单号':'Order number', '订单编号':'Order ID',
@@ -54,6 +67,7 @@ export const workspaceMessages: Readonly<Record<string, string>> = {
   '搜索号码、地区或服务': 'Search number, region or service', '全部状态': 'All statuses', '即将到期 · 3 天内': 'Expiring within 3 days', '{count} 个号码': '{count} numbers', '暂无符合条件的号码': 'No matching numbers', '清除筛选': 'Clear filters', '地区 / 服务': 'Region / Service', '有效期': 'Validity', '状态': 'Status', '操作': 'Action', '复制号码': 'Copy number', '{days} 天后到期': 'Expires in {days} days', '有效期已结束': 'Validity ended', '{count} 条短信': '{count} messages', '{count} 条未读': '{count} unread', '全部已读': 'All read', '即将到期': 'Expiring soon', '收件箱': 'Inbox',
   '搜索服务、验证码或号码': 'Search service, code or number', '短信号码': 'Message number', '短信状态': 'Message status', '全部短信': 'All messages', '未读短信': 'Unread messages', '正在保存…': 'Saving...', '标为已读': 'Mark read', '{count} 条 · {unread} 条未读': '{count} messages, {unread} unread', '暂无符合条件的短信': 'No matching messages', '无验证码': 'No verification code', '短信详情': 'Message details', '复制全文': 'Copy full text', '暂无选中短信': 'No message selected',
   '购买的号码': 'Service numbers',
+  '订单概览': 'Order overview', '服务名称': 'Service name', '套餐名称': 'Plan name', '订单状态': 'Order status', '下单时间': 'Ordered at', '服务信息': 'Service information', '平台': 'Platform', '{days} 天': '{days} days', '自动分配': 'Automatic allocation', '指定区号 {code}': 'Area code {code}', '费用信息': 'Payment details',
   '订单详情': 'Order details', '正在加载号码…': 'Loading numbers...', '搜索订单号、地区或服务期限': 'Search order, region or service term', '订单地区': 'Order region', '{count} 笔订单': '{count} orders', '暂无符合条件的订单': 'No matching orders', '可用积分': 'Available points', '累计入账': 'Total credited', '累计扣除': 'Total debited', '积分流水类型': 'Transaction type', '全部记录': 'All transactions', '积分入账': 'Points credited', '订单扣除': 'Order debit', '{count} 条记录': '{count} transactions', '暂无积分记录': 'No points transactions', '事项': 'Description', '时间': 'Time', '积分变动': 'Points change', '变动后余额': 'Balance after transaction',
   '7 天短期服务': '7-day short-term service', '30 天短期服务': '30-day short-term service', '美国': 'United States', '英国': 'United Kingdom', '新加坡': 'Singapore', '加拿大': 'Canada', '香港': 'Hong Kong', '澳大利亚': 'Australia', '北美': 'North America', '欧洲': 'Europe', '亚洲': 'Asia', '大洋洲': 'Oceania', '周套餐': 'Weekly plan', '月套餐': 'Monthly plan', '季度套餐': 'Quarterly plan', '7 天套餐': '7-day plan', '30 天套餐': '30-day plan', '90 天套餐': '90-day plan',
   '{name}的头像': 'Avatar for {name}', '账户正常': 'Account active', '使用中号码': 'Active numbers', '账户信息': 'Account information', '账户名称': 'Display name', '账户编号': 'Account ID', '账户类型': 'Account type', '注册时间': 'Joined', '退出登录': 'Sign out', '提醒偏好': 'Notification preferences', '号码到期提醒': 'Number expiry reminders', '显示 3 天内到期的使用中号码': 'Show active numbers expiring within 3 days', '账户语言': 'Language', '简体中文': 'Simplified Chinese', '偏好已保存': 'Preferences saved', '到期提醒已开启': 'Expiry reminders enabled', '到期提醒已关闭': 'Expiry reminders disabled', '正在同步…': 'Syncing...', '刷新数据': 'Refresh data', '返回工作台': 'Back to workspace', '浅色模式': 'Light mode', '系统': 'System', '本机显示偏好': 'Local display preferences',

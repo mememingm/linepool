@@ -29,14 +29,16 @@ function toRenewal(row: RenewalRow): RenewalRecord {
 export class NumberServices {
   constructor(private readonly db: Database, private readonly provider: NumberServiceProvider) {}
   private async ownedNumber(userId: string, id: string, client?: PoolClient): Promise<NumberResource> {
-    const query = `SELECT n.id,n.phone_number,n.expires_at,a.id AS allocation_id
-      FROM phone_numbers n JOIN number_allocations a ON a.number_id=n.id AND a.released_at IS NULL AND a.user_id=n.assigned_user_id
-      WHERE n.id=$1 AND n.assigned_user_id=$2 AND n.expires_at>now()
-      AND (n.order_id IS NULL OR EXISTS(SELECT 1 FROM orders o WHERE o.id=n.order_id AND o.fulfillment_status='COMPLETED'))${client ? ' FOR UPDATE OF n' : ''}`;
+    const query = `SELECT n.id,n.phone_number,a.expires_at,a.id AS allocation_id
+      FROM phone_numbers n JOIN number_allocations a ON a.number_id=n.id
+      WHERE (n.id=$1 OR a.id=$1) AND a.user_id=$2 AND a.released_at IS NULL AND a.expires_at>now()
+      AND (a.order_id IS NULL OR EXISTS(SELECT 1 FROM orders o WHERE o.id=a.order_id AND o.fulfillment_status='COMPLETED'))${client ? ' FOR UPDATE OF a' : ''}`;
     type OwnedNumberRow = { id: string; phone_number: string; expires_at: Date; allocation_id: string };
-    const { rows: [row] } = client
+    const { rows } = client
       ? await client.query<OwnedNumberRow>(query, [id, userId])
       : await this.db.query<OwnedNumberRow>(query, [id, userId]);
+    if (rows.length > 1) throw new ApiFailure(409, 'PLATFORM_REQUIRED', 'Use the platform service allocation ID');
+    const row = rows[0];
     if (!row) throw new ApiFailure(404, 'NUMBER_NOT_FOUND', 'Number is unavailable or no longer assigned to this account');
     return { id: row.id, phoneNumber: row.phone_number, expiresAt: row.expires_at.toISOString(), allocationId: row.allocation_id };
   }
@@ -50,9 +52,9 @@ export class NumberServices {
   async list(userId: string, numberId: string, input: PaginationQuery) {
     return this.db.transaction(async client => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-      const { rows: [count] } = await client.query<{ total: number }>(`SELECT count(*)::int AS total ${renewalFrom} WHERE a.user_id=$1 AND a.number_id=$2`, [userId, numberId]);
+      const { rows: [count] } = await client.query<{ total: number }>(`SELECT count(*)::int AS total ${renewalFrom} WHERE a.user_id=$1 AND (a.number_id=$2 OR a.id=$2)`, [userId, numberId]);
       const { rows } = await client.query<RenewalRow>(`SELECT ${renewalFields} ${renewalFrom}
-        WHERE a.user_id=$1 AND a.number_id=$2 ORDER BY x.created_at DESC,x.id DESC LIMIT $3 OFFSET $4`,
+        WHERE a.user_id=$1 AND (a.number_id=$2 OR a.id=$2) ORDER BY x.created_at DESC,x.id DESC LIMIT $3 OFFSET $4`,
       [userId, numberId, input.pageSize, (input.page - 1) * input.pageSize]);
       return { data: rows.map(toRenewal), pagination: { ...input, totalItems: count!.total, totalPages: Math.ceil(count!.total / input.pageSize) } };
     });

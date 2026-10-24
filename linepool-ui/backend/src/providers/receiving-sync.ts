@@ -48,8 +48,11 @@ export class ReceivingSync {
       if (!number || normalizePhone(number.phone_number) !== normalizePhone(resource.phoneNumber!)) {
         throw new ApiFailure(409, 'PROVIDER_NUMBER_MISMATCH', 'Explicit number mapping is required');
       }
-      await client.query(`INSERT INTO provider_resource_bindings(provider,external_number_id,number_id)
-        VALUES($1,$2,$3) ON CONFLICT(provider,external_number_id) DO NOTHING`, [provider, resource.externalNumberId, numberId]);
+      const { rows: [slot] } = await client.query<{ platform_id: string }>(
+        'SELECT platform_id FROM number_platforms WHERE number_id=$1 AND provider=$2 FOR UPDATE', [numberId, provider]);
+      if (!slot) throw new ApiFailure(409, 'PROVIDER_ROUTE_UNCONFIRMED', 'Number has no mock platform mapping to bind');
+      await client.query(`INSERT INTO provider_resource_bindings(provider,external_project_id,external_number_id,number_id)
+        VALUES($1,$2,$3,$4) ON CONFLICT(provider,external_number_id) DO NOTHING`, [provider, slot.platform_id, resource.externalNumberId, numberId]);
       const { rows: [binding] } = await client.query<{ number_id: string }>(
         'SELECT number_id FROM provider_resource_bindings WHERE provider=$1 AND external_number_id=$2', [provider, resource.externalNumberId]);
       if (binding?.number_id !== numberId) throw new ApiFailure(409, 'PROVIDER_NUMBER_MISMATCH', 'External number was already bound');
@@ -72,7 +75,7 @@ export class ReceivingSync {
         if (seen && seen.external_message_id !== message.externalMessageId) throw new ApiFailure(409, 'PROVIDER_EVENT_CONFLICT', 'Event ID was reused');
       }
       const { rows: [existing] } = await client.query<{ message_id: string; fingerprint: string; allocation_id: string; number_id: string; service: string }>(
-        `SELECT m.message_id,m.fingerprint,m.allocation_id,a.number_id,n.service FROM provider_message_receipts m
+        `SELECT m.message_id,m.fingerprint,m.allocation_id,a.number_id,a.platform_id AS service FROM provider_message_receipts m
          JOIN number_allocations a ON a.id=m.allocation_id JOIN phone_numbers n ON n.id=a.number_id
          WHERE m.provider=$1 AND m.external_message_id=$2`,
         [provider, message.externalMessageId]);
@@ -85,9 +88,10 @@ export class ReceivingSync {
         await client.query('SELECT id FROM phone_numbers WHERE id=$1 FOR UPDATE', [route.numberId]);
         const { rows: [number] } = await client.query<{
           assigned_user_id: string; service: string; phone_number: string; assigned_at: Date; expires_at: Date;
-        }>(`SELECT n.assigned_user_id,n.service,n.phone_number,a.assigned_at,a.expires_at
+        }>(`SELECT a.user_id AS assigned_user_id,a.platform_id AS service,n.phone_number,a.assigned_at,
+          LEAST(a.expires_at,COALESCE(a.released_at,a.expires_at)) AS expires_at
           FROM provider_resource_bindings b JOIN phone_numbers n ON n.id=b.number_id
-          JOIN number_allocations a ON a.number_id=n.id AND a.user_id=n.assigned_user_id AND a.released_at IS NULL
+          JOIN number_allocations a ON a.number_id=n.id
           WHERE b.provider=$1 AND b.external_number_id=$2 AND n.id=$3 AND a.id=$4 FOR UPDATE OF n,a`,
         [provider, message.externalNumberId, route.numberId, route.allocationId]);
         if (!number || !route.service || number.service !== route.service

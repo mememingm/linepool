@@ -1,0 +1,207 @@
+@font-face {
+  font-family: 'Ocean Sans';
+  src: url('/authkit-reference/fonts/untitled-sans-regular-v2.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* A dark exhibition surface: the canvas is the artwork, the UI is its frame. */
+.ascii-demo {
+  --ocean-text: #dce7e3;
+  --ocean-muted: #9eafaf;
+  --ocean-accent: #88dbc6;
+  position: relative;
+  isolation: isolate;
+  height: 100dvh;
+  min-height: 420px;
+  overflow: hidden;
+  background: #080e12;
+  color: var(--ocean-text);
+  font-family: 'Ocean Sans', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ascii-demo__canvas,
+.ascii-demo__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ascii-demo__canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+.ascii-demo__shade {
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(8, 14, 18, .65), transparent 22%, transparent 80%, rgba(8, 14, 18, .88));
+}
+
+.ascii-demo__header,
+.ascii-demo__footer {
+  position: absolute;
+  left: clamp(24px, 3.6vw, 64px);
+  right: clamp(24px, 3.6vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  pointer-events: none;
+}
+
+.ascii-demo__header { top: 28px; }
+.ascii-demo__footer { bottom: 28px; }
+
+.ascii-demo__header a,
+.ascii-demo__controls button { pointer-events: auto; }
+
+.ascii-demo__header a {
+  text-decoration: none;
+  font-size: 11px;
+  color: var(--ocean-muted);
+  transition: color .2s ease;
+}
+
+.ascii-demo__header .ascii-demo__back {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .07em;
+  color: var(--ocean-text);
+}
+
+.ascii-demo__header a:hover { color: var(--ocean-accent); }
+.ascii-demo__source span { margin-left: 8px; }
+
+.ascii-demo__intro {
+  position: absolute;
+  top: clamp(88px, 12vh, 118px);
+  left: clamp(24px, 3.6vw, 64px);
+  pointer-events: none;
+}
+
+.ascii-demo__eyebrow {
+  margin: 0 0 12px;
+  color: var(--ocean-muted);
+  font-size: 11px;
+  letter-spacing: .18em;
+}
+
+.ascii-demo h1 {
+  margin: 0;
+  color: var(--ocean-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(25px, 3.1vw, 44px);
+  font-weight: 500;
+  letter-spacing: -.07em;
+  line-height: 1.15;
+}
+
+.ascii-demo h1 span { margin-left: .2em; }
+.ascii-demo h1 .ascii-demo__period { margin-left: 0; color: var(--ocean-accent); }
+
+.ascii-demo__copy {
+  margin: 18px 0 0;
+  color: var(--ocean-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.ascii-demo__species {
+  display: flex;
+  gap: 28px;
+  color: #7d9398;
+  font: 10px 'JetBrains Mono', 'Microsoft YaHei', monospace;
+}
+
+.ascii-demo__species b {
+  margin-left: 8px;
+  color: var(--ocean-muted);
+  font-weight: 400;
+}
+
+.ascii-demo__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ascii-demo__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 14px;
+  color: var(--ocean-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ascii-demo__status i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ocean-accent);
+}
+
+.ascii-demo[data-paused='true'] .ascii-demo__status i { background: #7d9398; }
+
+.ascii-demo__controls button {
+  min-height: 44px;
+  border: 1px solid #34484b;
+  border-radius: 3px;
+  padding: 11px 16px;
+  background: #0c171c;
+  color: var(--ocean-text);
+  font: 400 12px 'Ocean Sans', 'Microsoft YaHei', sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.ascii-demo__controls .ascii-demo__disturb {
+  border-color: #88dbc6;
+  background: #88dbc6;
+  color: #0c1a1b;
+}
+
+.ascii-demo__disturb span { margin-left: 14px; }
+.ascii-demo__controls button:not(:disabled):hover { border-color: #b2eee0; background: #19312f; }
+.ascii-demo__controls .ascii-demo__disturb:not(:disabled):hover { background: #b2eee0; }
+.ascii-demo__controls button:not(:disabled):active { transform: translateY(1px); }
+.ascii-demo__controls button:disabled { cursor: default; opacity: .4; }
+.ascii-demo__controls button:focus-visible,
+.ascii-demo__header a:focus-visible { outline: 2px solid var(--ocean-accent); outline-offset: 5px; }
+
+.ascii-demo__error {
+  position: absolute;
+  top: 48%;
+  left: 24px;
+  right: 24px;
+  text-align: center;
+  color: var(--ocean-text);
+  font-size: 14px;
+}
+
+@media (max-width: 767px) {
+  .ascii-demo__header { top: 22px; }
+  .ascii-demo__intro { top: 90px; }
+  .ascii-demo__species { display: none; }
+  .ascii-demo__footer { bottom: max(20px, env(safe-area-inset-bottom)); }
+  .ascii-demo__controls { width: 100%; justify-content: flex-end; gap: 10px; }
+  .ascii-demo__status { margin-right: auto; font-size: 10px; }
+  .ascii-demo__controls button { padding: 10px 13px; }
+  .ascii-demo__source { max-width: 160px; }
+}
+
+@media (max-height: 540px) {
+  .ascii-demo { min-height: 320px; }
+  .ascii-demo__intro { top: 70px; }
+  .ascii-demo__copy { display: none; }
+  .ascii-demo__footer { bottom: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascii-demo__controls button,
+  .ascii-demo__header a { transition: none; }
+}

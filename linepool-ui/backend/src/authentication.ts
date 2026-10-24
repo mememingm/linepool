@@ -25,6 +25,7 @@ export function toUser(row: UserRow): User {
 @Injectable()
 export class Authentication {
   constructor(private readonly db: Database, private readonly environment: Environment) {}
+  get sandboxEnabled() { return this.environment.values.NODE_ENV !== 'production' && this.environment.values.LOCAL_SANDBOX; }
   private cookieOptions(): CookieOptions {
     return { httpOnly: true, secure: this.environment.values.NODE_ENV === 'production', sameSite: 'lax', path: '/' };
   }
@@ -81,13 +82,13 @@ export class Authentication {
           throw new ApiFailure(403, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
         }
         // Field names are selected locally, never interpolated from the request.
-        const column = input.field === 'displayName' ? 'display_name' : input.field === 'email' ? 'email' : 'phone_number';
-        const value = input.field === 'displayName' ? input.displayName : input.field === 'email' ? input.email : input.phoneNumber;
+        const column = input.field === 'displayName' ? 'display_name' : input.field === 'email' ? 'email' : input.field === 'password' ? 'password_hash' : 'phone_number';
+        const value = input.field === 'displayName' ? input.displayName : input.field === 'email' ? input.email : input.field === 'password' ? await hash(input.newPassword, 12) : input.phoneNumber;
         const { rows: [updated] } = await client.query<UserRow & { phone_number: string | null }>(
           `UPDATE users SET ${column}=$2 WHERE id=$1 RETURNING *`, [userId, value],
         );
         if (!updated) throw new ApiFailure(401, 'UNAUTHENTICATED', 'Login is required');
-        if (input.field === 'email' && input.email !== row.email) {
+        if (input.field === 'password' || (input.field === 'email' && input.email !== row.email)) {
           await client.query('DELETE FROM sessions WHERE user_id=$1 AND token_hash<>$2', [userId, tokenHash]);
         }
         return { ...toUser(updated), phoneNumber: updated.phone_number,

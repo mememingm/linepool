@@ -1,26 +1,25 @@
 import { z } from 'zod';
+import { uuidSchema, timestampSchema, regionIdSchema, serviceSchema, planIdSchema, paginationQuerySchema } from './primitives.js';
+export * from './primitives.js';
 export * from './number-services.js';
 export * from './platform-catalog.js';
+export * from './recharge.js';
+export * from './agent-inventory.js';
 
-export const uuidSchema = z.string().uuid();
-const timestamp = z.string().datetime({ offset: true });
-export const regionIdSchema = z.enum(['us', 'gb', 'ca', 'sg', 'de', 'nl']);
-export const serviceSchema = z.enum(['Telegram', 'WhatsApp', 'Google']);
-export const planIdSchema = z.string().regex(/^[a-z][a-z0-9_-]{0,31}$/);
-export const paginationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).max(100000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-});
+const timestamp = timestampSchema;
 export const listQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(200).default(''),
   region: regionIdSchema.optional(),
 });
 export const numbersQuerySchema = listQuerySchema.extend({
   status: z.enum(['ACTIVE', 'EXPIRED', 'expiring']).optional(),
+  numberId: uuidSchema.optional(),
+  allocationId: uuidSchema.optional(),
 });
 export const inboxQuerySchema = listQuerySchema.extend({
   numberId: uuidSchema.optional(),
   allocationId: uuidSchema.optional(),
+  messageId: uuidSchema.optional(),
   unread: z.enum(['true', 'false']).optional(),
 });
 export const pointsQuerySchema = paginationQuerySchema.extend({
@@ -62,8 +61,9 @@ export const accountProfileInputSchema = z.discriminatedUnion('field', [
   z.strictObject({ field: z.literal('displayName'), displayName: registerInputSchema.shape.displayName }),
   z.strictObject({ field: z.literal('email'), email: emailSchema, currentPassword: loginInputSchema.shape.password }),
   z.strictObject({ field: z.literal('phoneNumber'), phoneNumber: contactPhoneSchema, currentPassword: loginInputSchema.shape.password }),
+  z.strictObject({ field: z.literal('password'), newPassword: loginInputSchema.shape.password, currentPassword: loginInputSchema.shape.password }),
 ]);
-export const accountSchema = userSchema.extend({ preferences: preferencesSchema, phoneNumber: contactPhoneSchema.nullable().default(null) });
+export const accountSchema = userSchema.extend({ preferences: preferencesSchema, sandboxEnabled: z.boolean().optional(), phoneNumber: contactPhoneSchema.nullable().default(null) });
 export const offerSchema = z.object({
   region: regionIdSchema, service: serviceSchema, plan: planIdSchema,
   name: z.string(), durationDays: z.number().int().positive(),
@@ -103,7 +103,7 @@ export const orderSchema = z.object({
 export const orderDetailSchema = orderSchema.extend({ numbers: z.array(numberSchema) });
 export const smsSchema = z.object({
   id: uuidSchema, numberId: uuidSchema, phoneNumber: z.string(), sender: z.string(),
-  allocationId: uuidSchema.nullable().optional(),
+  allocationId: uuidSchema.nullable().optional(), platformId: serviceSchema.optional(),
   body: z.string(), verificationCode: z.string().nullable(), receivedAt: timestamp, isRead: z.boolean(),
 });
 export const markReadInputSchema = z.strictObject({ ids: z.array(uuidSchema).min(1).max(100) });
@@ -113,13 +113,19 @@ export const ledgerSchema = z.object({
   description: z.string(), referenceId: uuidSchema.nullable(), createdAt: timestamp,
 });
 export const pointsResponseSchema = z.object({
-  data: z.object({ balance: z.number().int().nonnegative(), entries: z.array(ledgerSchema) }),
+  data: z.object({ balance: z.number().int().nonnegative(), income: z.number().int().nonnegative().optional(), expense: z.number().int().nonnegative().optional(), entries: z.array(ledgerSchema) }),
   pagination: paginationSchema,
 });
 export const dashboardSchema = z.object({
   pointsBalance: z.number().int().nonnegative(), activeNumbers: z.number().int().nonnegative(),
   expiringNumbers: z.number().int().nonnegative(), unreadMessages: z.number().int().nonnegative(),
   recentOrders: z.array(orderSchema),
+  overview: z.object({
+    totalNumbers: z.number().int().nonnegative(), totalMessages: z.number().int().nonnegative(), totalOrders: z.number().int().nonnegative(),
+    receivedThisMonth: z.number().int().nonnegative(),
+    recentNumbers: z.array(numberSchema), recentMessages: z.array(smsSchema),
+    daily: z.array(z.object({ date: timestamp, messages: z.number().int().nonnegative(), numbers: z.number().int().nonnegative() })),
+  }).optional(),
 });
 export type LoginInput = z.infer<typeof loginInputSchema>;
 export type RegisterInput = z.infer<typeof registerInputSchema>;

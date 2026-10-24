@@ -311,14 +311,14 @@
 }
 .lp-ref-chart-frame { display: contents; }
 .has-chart-axes .lp-ref-chart-body { height: 250px; margin-top: 24px; }
-.has-chart-axes .lp-ref-chart-frame { display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 32px; gap: 0 8px; min-width: 0; min-height: 0; }
+.has-chart-axes .lp-ref-chart-frame { display: grid; grid-column: 1 / -1; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 32px; gap: 0 8px; min-width: 0; min-height: 0; }
 .has-chart-axes .lp-ref-curves { top: 0; height: 100%; }
 .lp-ref-chart-grid { stroke: var(--line); stroke-width: 1px; vector-effect: non-scaling-stroke; }
 .lp-ref-y-axis { position: relative; grid-column: 1; grid-row: 1; color: var(--ink-2); font-size: 10px; }
 .lp-ref-y-axis > span { position: absolute; right: 0; transform: translateY(-50%); }
 .lp-ref-y-axis > .lp-ref-y-axis-title { top: -12px; white-space: nowrap; }
 .lp-ref-x-axis { position: relative; grid-column: 2; grid-row: 2; color: var(--ink-2); font-size: 10px; line-height: 1.4; }
-.lp-ref-x-axis > span { position: absolute; top: 2px; padding-inline: 2px; text-align: center; transform: translateX(-50%); overflow-wrap: anywhere; }
+.lp-ref-x-axis > span { position: absolute; top: 2px; padding-inline: 2px; text-align: center; transform: translateX(-50%); white-space: nowrap; overflow-wrap: normal; }
 .lp-ref-x-axis > span:first-child { padding-left: 0; text-align: left; transform: none; }
 .lp-ref-x-axis > span:last-child { padding-right: 0; text-align: right; transform: translateX(-100%); }
 .has-chart-axes .lp-ref-chart-legend { flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px; }

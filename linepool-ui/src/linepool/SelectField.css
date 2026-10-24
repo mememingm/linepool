@@ -1,46 +1,49 @@
-/* Shared by ordinary Selects and the searchable inbox Combobox, including their portals. */
-.lp-select-trigger, .lp-select-menu {
-  --select-surface: #fff; --select-ink: #17243b; --select-muted: #596a82;
-  --select-line: #e3e9f2; --select-hover: #f3f7ff; --select-selected: #edf4ff;
+/* Shared tokens follow every control into its portal. */
+.lp-select-trigger, .lp-select-menu, .lp-search-input {
+  --select-surface: #fff; --select-ink: #17243b; --select-muted: #748094;
+  --select-line: #e3e7ed; --select-hover: #f5f7fa; --select-selected: #edf4ff;
   --select-accent: #2158c9; --select-focus: #adc8fa; --select-ring: #e7efff; --select-scrollbar: #c6d2e4;
+  --control-height: 40px; --control-radius: 10px; --control-font-size: 14px; --control-duration: 180ms;
   box-sizing: border-box; color-scheme: light;
 }
-.lp-select-trigger[data-theme="dark"], .lp-select-menu[data-theme="dark"] {
+.lp-select-trigger[data-theme="dark"], .lp-select-menu[data-theme="dark"], .lp-search-input[data-theme="dark"] {
   --select-surface: var(--lp-dark-surface); --select-ink: var(--lp-dark-ink); --select-muted: var(--lp-dark-muted);
   --select-line: var(--lp-dark-line); --select-hover: var(--lp-dark-hover); --select-selected: var(--lp-dark-selected);
   --select-accent: var(--lp-dark-link); --select-focus: var(--lp-dark-line-strong);
-  --select-ring: var(--lp-dark-ring); --select-scrollbar: var(--lp-dark-line-strong);
-  color-scheme: dark;
+  --select-ring: var(--lp-dark-ring); --select-scrollbar: var(--lp-dark-line-strong); color-scheme: dark;
 }
 .lp-select-trigger {
   display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
-  min-width: 128px; max-width: 100%; height: 40px; padding: 0 12px;
-  border: 1px solid var(--select-line); border-radius: 10px;
-  background: var(--select-surface); color: var(--select-ink); font: inherit; font-size: 12px;
-  line-height: 20px; text-align: left; cursor: pointer;
+  min-width: 128px; max-width: 100%; height: var(--control-height); padding: 0 12px;
+  border: 1px solid var(--select-line); border-radius: var(--control-radius);
+  background: var(--select-surface); color: var(--select-ink); font: inherit; font-size: var(--control-font-size);
+  line-height: 20px; text-align: left; cursor: pointer; box-shadow: 0 1px 2px rgb(24 50 91 / .025);
+  transition: border-color var(--control-duration), background-color var(--control-duration), box-shadow var(--control-duration);
 }
-.lp-select-trigger:hover:not(:disabled) { border-color: var(--select-focus); }
+.lp-select-trigger:hover:not(:disabled) { border-color: var(--select-focus); background: var(--select-hover); }
 .lp-select-trigger:focus-visible, .lp-select-trigger[data-state="open"] {
   outline: none; border-color: var(--select-accent); box-shadow: 0 0 0 3px var(--select-ring);
 }
 .lp-select-trigger:disabled { cursor: not-allowed; opacity: .55; }
 .lp-select-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lp-select-prefix, .lp-select-chevron { display: inline-flex; flex-shrink: 0; color: var(--select-muted); }
-.lp-select-chevron svg { transition: transform 120ms ease; }
-.lp-select-trigger[data-state="open"] .lp-select-chevron svg { transform: rotate(180deg); }
+.lp-select-trigger > svg:last-child { flex-shrink: 0; color: var(--select-muted); transition: transform var(--control-duration); }
+.lp-select-trigger[data-state="open"] > svg:last-child { transform: rotate(180deg); }
 .lp-select-menu {
   --lp-select-available-height: var(--radix-select-content-available-height);
   z-index: 60; width: var(--radix-select-trigger-width); min-width: 128px; max-width: calc(100vw - 24px);
   max-height: min(312px, var(--lp-select-available-height)); overflow: hidden;
   border: 1px solid var(--select-line); border-radius: 12px;
   background: var(--select-surface); color: var(--select-ink);
-  box-shadow: 0 8px 28px rgb(24 50 91 / .09), 0 2px 6px rgb(24 50 91 / .04);
+  box-shadow: 0 12px 32px rgb(24 50 91 / .09), 0 2px 6px rgb(24 50 91 / .04);
   font-family: Inter, 'Reference Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
-  font-size: 12px; line-height: 1.5; letter-spacing: 0;
+  font-size: var(--control-font-size); line-height: 1.5; letter-spacing: 0;
+  transform-origin: var(--radix-select-content-transform-origin, var(--radix-popover-content-transform-origin));
 }
-.lp-select-menu[data-theme="dark"] { box-shadow: 0 8px 28px rgb(0 0 0 / .18); }
+.lp-select-menu[data-theme="dark"] { box-shadow: 0 12px 32px rgb(0 0 0 / .2); }
+.lp-select-menu[data-state="open"] { animation: lp-control-enter var(--control-duration) ease-out; }
+.lp-select-menu[data-state="closed"] { animation: lp-control-exit 150ms ease-in; }
 .lp-select-viewport { padding: 5px; max-height: min(310px, calc(var(--lp-select-available-height) - 2px)); }
-/* Higher specificity than Radix's viewport scrollbar reset; no upstream selectors are overridden. */
 .lp-select-menu .lp-select-scroll {
   box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 5px;
   scrollbar-width: thin; scrollbar-color: var(--select-scrollbar) transparent;
@@ -51,16 +54,22 @@
 .lp-select-menu .lp-select-scroll::-webkit-scrollbar-thumb { border: 1px solid var(--select-surface); border-radius: 6px; background: var(--select-scrollbar); }
 .lp-select-option {
   box-sizing: border-box; position: relative; display: flex; align-items: center; gap: 10px;
-  min-height: 38px; padding: 8px 34px 8px 10px; border-radius: 7px;
+  min-height: 40px; padding: 8px 34px 8px 10px; border-radius: 7px;
   outline: none; cursor: pointer; user-select: none; overflow-wrap: anywhere;
+  transition: background-color 150ms, color 150ms;
 }
 .lp-select-option + .lp-select-option { margin-top: 2px; }
-.lp-select-item-text { flex: 1; min-width: 0; }
-.lp-select-option:hover:not([data-disabled]), .lp-select-option[data-highlighted] { background: var(--select-hover); }
-.lp-select-option[data-state="checked"], .lp-select-option[aria-selected="true"] { background: var(--select-selected); color: var(--select-accent); }
-.lp-select-option[data-highlighted] { box-shadow: inset 0 0 0 1px var(--select-focus); }
-.lp-select-option[data-disabled] { color: var(--select-muted); cursor: not-allowed; opacity: .55; }
+.lp-select-option > span:last-child { min-width: 0; }
+.lp-select-option:hover:not([data-disabled="true"]), .lp-select-option[data-highlighted], .lp-select-option[data-selected="true"] { background: var(--select-hover); }
+.lp-select-option[data-state="checked"], .lp-select-option[data-checked="true"] { background: var(--select-selected); color: var(--select-accent); }
+.lp-select-option[data-highlighted], .lp-select-option[data-selected="true"] { box-shadow: inset 0 0 0 1px var(--select-focus); }
+.lp-select-option[data-disabled="true"], .lp-select-option[data-disabled=""] { color: var(--select-muted); cursor: not-allowed; opacity: .55; }
 .lp-select-check { position: absolute; right: 10px; display: inline-flex; color: var(--select-accent); }
 .lp-shell-view-toolbar > .lp-select-trigger { min-width: 128px; }
-.lp-shell-view-toolbar .lp-shell-view-search { min-height: 40px; }
-@media (prefers-reduced-motion: reduce) { .lp-select-chevron svg { transition: none; } }
+@keyframes lp-control-enter { from { opacity: 0; transform: translateY(-3px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes lp-control-exit { from { opacity: 1; } to { opacity: 0; transform: translateY(-2px) scale(.99); } }
+@media (prefers-reduced-motion: reduce) {
+  .lp-select-trigger, .lp-select-trigger > svg:last-child, .lp-select-option { transition: none; }
+  /* Keep animation names stable so Radix can finish unmounting if this preference changes mid-exit. */
+  .lp-select-menu[data-state] { animation-duration: 0s !important; }
+}

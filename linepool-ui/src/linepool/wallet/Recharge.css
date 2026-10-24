@@ -1,0 +1,131 @@
+.lp-recharge-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; padding: 10px var(--shell-content-inline, 32px); }
+.lp-wallet-header, .lp-wallet-available { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lp-wallet-header { flex-wrap: wrap; justify-content: flex-end; }
+.lp-wallet-available { flex-wrap: wrap; color: var(--shell-muted); font-size: 11px; }
+.lp-wallet-available strong { color: var(--shell-ink); font-size: 13px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+button.lp-wallet-topup, button.lp-wallet-entry { gap: 6px; height: 34px; padding: 0 11px; border-radius: 8px; font-family: inherit; font-size: 12px; cursor: pointer; }
+button.lp-wallet-topup { color: #fff; background: var(--lp-blue, #2876fa); }
+button.lp-wallet-topup:hover { background: #1d65df; }
+button.lp-wallet-entry { border: 1px solid var(--shell-line); color: var(--shell-ink); background: var(--shell-surface); }
+button.lp-wallet-entry:hover { background: var(--shell-page); }
+.lp-recharge-dialog {
+  --recharge-surface: #fff; --recharge-ink: #0f172a; --recharge-muted: #64748b;
+  --recharge-line: #e3e7ed; --recharge-field: #f5f7fa; --recharge-selected: #edf4ff;
+  --recharge-blue: var(--lp-blue, #2876fa); --recharge-error: #c13248;
+  --recharge-radius: 10px; --recharge-control-height: 40px; --recharge-duration: 180ms;
+  --ink-2: var(--recharge-muted); --shell-ink: var(--recharge-ink); --shell-muted: var(--recharge-muted); --shell-line: var(--recharge-line);
+  display: flex; flex-direction: column; gap: 0; padding: 0;
+  width: min(520px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px);
+  border: 1px solid var(--recharge-line); border-radius: 20px;
+  color: var(--recharge-ink); background: var(--recharge-surface); color-scheme: light;
+  font-family: Inter, 'Reference Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 14px; line-height: 1.5; box-shadow: 0 24px 80px rgb(18 27 45 / .16); transition: none;
+}
+.lp-recharge-dialog[data-theme="dark"] { --recharge-surface: var(--lp-dark-surface, #20242c); --recharge-ink: var(--lp-dark-ink, #eef0f4); --recharge-muted: var(--lp-dark-muted, #a3adbb); --recharge-line: var(--lp-dark-line, #3a414d); --recharge-field: #282e38; --recharge-selected: #233552; --recharge-error: #ffa3b2; color-scheme: dark; }
+.lp-recharge-dialog *, .lp-recharge-dialog *::before, .lp-recharge-dialog *::after { box-sizing: border-box; }
+.lp-recharge-dialog button, .lp-recharge-dialog input { font-family: inherit; }
+.lp-recharge-dialog [data-slot="dialog-title"] { margin: 0; padding-right: 32px; font-size: 22px; line-height: 1.35; font-weight: 600; letter-spacing: -.025em; }
+.lp-recharge-heading { flex: 0 0 auto; gap: 8px; padding: 24px 24px 20px; text-align: left; }
+.lp-recharge-heading [data-slot="dialog-description"] { margin: 0; padding-right: 12px; color: var(--recharge-muted); font-size: 13px; line-height: 1.6; }
+button.lp-recharge-close { position: absolute; top: 20px; right: 20px; width: 32px; height: 32px; padding: 0; border-radius: 9px; background: transparent; color: var(--recharge-muted); transition: background-color var(--recharge-duration), color var(--recharge-duration); }
+button.lp-recharge-close:hover { color: var(--recharge-ink); background: var(--recharge-field); }
+.lp-recharge-panels { display: flex; flex: 0 0 auto; gap: 4px; margin: 0 24px 20px; padding: 4px; border-radius: 10px; background: var(--recharge-field); }
+.lp-recharge-panels > button { flex: 1; height: 34px; gap: 6px; border-radius: 7px; color: var(--recharge-muted); font-size: 13px; }
+.lp-recharge-panels > button[aria-pressed="true"] { color: var(--recharge-ink); background: var(--recharge-surface); box-shadow: 0 1px 4px rgb(18 27 45 / .06); }
+.lp-recharge-balance-icon { flex-shrink: 0; color: var(--recharge-blue); opacity: .7; }
+.lp-recharge-form { display: flex; flex-direction: column; min-height: 0; }
+.lp-recharge-body { display: flex; flex-direction: column; gap: 22px; min-height: 0; padding: 0 24px 24px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.lp-recharge-balance { flex: 0 0 auto; gap: 0; padding: 0; border: 1px solid var(--recharge-line); border-radius: 14px; color: inherit; background: var(--recharge-surface); box-shadow: 0 2px 6px rgb(18 27 45 / .025); }
+.lp-recharge-balance-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; padding: 20px; }
+.lp-recharge-points { min-width: 0; }
+.lp-recharge-balance-label { display: flex; align-items: center; gap: 7px; color: var(--recharge-muted); font-size: 12px; }
+.lp-recharge-balance-label svg { color: var(--recharge-blue); flex-shrink: 0; }
+.lp-recharge-balance strong { display: block; margin-top: 8px; font-size: 32px; line-height: 1.2; font-weight: 600; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lp-recharge-balance strong small { color: var(--recharge-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; white-space: nowrap; }
+.lp-recharge-fieldset { display: block; flex: 0 0 auto; min-width: 0; margin: 0; padding: 0; border: 0; }
+.lp-recharge-form [data-slot="field-legend"], .lp-recharge-custom > [data-slot="field-label"] { margin: 0 0 10px; padding: 0; color: var(--recharge-ink); font-size: 14px; line-height: 20px; font-weight: 500; }
+.lp-recharge-amounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+button.lp-recharge-amount { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 60px; height: auto; padding: 9px 20px; border: 1px solid var(--recharge-line); border-radius: var(--recharge-radius); background: var(--recharge-surface); color: var(--recharge-ink); font-size: 14px; font-weight: 500; transition: background-color var(--recharge-duration), border-color var(--recharge-duration), color var(--recharge-duration); }
+button.lp-recharge-amount small { color: var(--recharge-muted); font-size: 11px; font-weight: 400; }
+button.lp-recharge-amount[data-state="on"] small { color: var(--recharge-blue); }
+button.lp-recharge-amount:hover { border-color: color-mix(in srgb, var(--recharge-blue) 35%, var(--recharge-line)); background: var(--recharge-field); }
+button.lp-recharge-amount[data-state="on"] { border-color: var(--recharge-blue); color: var(--recharge-blue); background: var(--recharge-selected); }
+.lp-recharge-amount-check { position: absolute; top: 5px; right: 5px; }
+.lp-recharge-hint { margin: 8px 0 0; color: var(--recharge-muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.lp-recharge-pending { margin: 0; padding: 14px 16px; border: 1px dashed var(--recharge-line); border-radius: var(--recharge-radius); background: var(--recharge-field); text-align: center; }
+.lp-recharge-custom { flex: 0 0 auto; gap: 0; min-width: 0; }
+.lp-recharge-input { height: var(--recharge-control-height); border: 1px solid var(--recharge-line); border-radius: var(--recharge-radius); color: var(--recharge-ink); background: var(--recharge-surface); box-shadow: none; transition: border-color var(--recharge-duration), box-shadow var(--recharge-duration); }
+.lp-recharge-input:hover { border-color: color-mix(in srgb, var(--recharge-muted) 55%, var(--recharge-line)); }
+.lp-recharge-input:focus-within { border-color: var(--recharge-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--recharge-blue) 13%, transparent); }
+.lp-recharge-input[data-invalid] { border-color: var(--recharge-error); }
+.lp-recharge-input[data-invalid]:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--recharge-error) 13%, transparent); }
+.lp-recharge-input input { min-width: 0; height: 100%; font-size: 14px; color: inherit; outline: none; }
+.lp-recharge-input input::placeholder { color: var(--recharge-muted); }
+.lp-recharge-input [data-slot="input-group-addon"] { color: var(--recharge-muted); }
+.lp-recharge-error { margin: 6px 0 0; color: var(--recharge-error); font-size: 12px; line-height: 1.6; }
+.lp-recharge-methods { gap: 0; }
+.lp-recharge-method { gap: 12px; min-height: 52px; padding: 14px; border: 1px solid var(--recharge-line); border-radius: var(--recharge-radius); color: var(--recharge-muted); background: var(--recharge-field); cursor: not-allowed; }
+.lp-recharge-method > [data-slot="field-label"] { gap: 10px; min-width: 0; margin: 0; color: inherit; font-size: 13px; font-weight: 400; opacity: 1; cursor: not-allowed; }
+.lp-recharge-method svg { flex-shrink: 0; }
+.lp-recharge-methods [data-slot="radio-group-item"] { border-color: var(--recharge-muted); }
+.lp-recharge-footer { flex: 0 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; border-top: 1px solid var(--recharge-line); border-radius: 0 0 20px 20px; background: var(--recharge-surface); }
+.lp-recharge-summary { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; color: var(--recharge-muted); }
+.lp-recharge-summary strong { min-width: 0; color: var(--recharge-ink); font-size: 24px; line-height: 1.25; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+button.lp-recharge-confirm { width: 100%; height: var(--recharge-control-height); gap: 8px; border-radius: var(--recharge-radius); background: var(--recharge-blue); color: #fff; font-size: 14px; font-weight: 500; }
+button.lp-recharge-confirm:disabled { cursor: not-allowed; opacity: .5; }
+.lp-recharge-points-preview strong { color: var(--recharge-blue); font-size: 20px; }
+.lp-recharge-rate { font-variant-numeric: tabular-nums; }
+.lp-recharge-status, .lp-recharge-checkout-note { margin: 0; text-align: center; }
+.lp-recharge-status { font-size: 12px; }
+.lp-recharge-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 200px; padding: 24px; color: var(--recharge-muted); font-size: 13px; text-align: center; }
+.lp-recharge-state p { margin: 0; }
+.lp-recharge-state button { height: var(--recharge-control-height); border: 1px solid var(--recharge-line); border-radius: var(--recharge-radius); color: var(--recharge-ink); background: var(--recharge-surface); }
+.lp-recharge-dialog-records { width: min(800px, calc(100vw - 32px)); }
+.lp-recharge-transactions { min-height: 0; padding: 0 24px 24px; overflow-y: auto; }
+.lp-recharge-record-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.lp-recharge-record-toolbar > button { height: 34px; padding-inline: 10px; color: var(--recharge-ink); border-color: var(--recharge-line); font-size: 12px; }
+.lp-recharge-record-toolbar .lp-select-trigger { width: 136px; }
+.lp-recharge-transactions .lp-shell-record-pagination { color: var(--recharge-muted); }
+.lp-recharge-table-scroll { overflow-x: auto; }
+.lp-recharge-transactions table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+.lp-recharge-transactions th { padding: 10px 7px; border-bottom: 1px solid var(--recharge-line); color: var(--recharge-muted); font-weight: 400; white-space: nowrap; }
+.lp-recharge-transactions td { padding: 32px 10px; text-align: center; color: var(--recharge-muted); }
+.lp-recharge-transactions td svg { margin: 0 auto 12px; }
+.lp-recharge-transactions .lp-recharge-record td { padding: 14px 8px; border-bottom: 1px solid var(--recharge-line); text-align: left; color: var(--recharge-ink); font-variant-numeric: tabular-nums; }
+.lp-recharge-record td:nth-child(2), .lp-recharge-record td:nth-child(3) { white-space: nowrap; }
+.lp-recharge-record-number { max-width: 180px; overflow-wrap: anywhere; }
+.lp-recharge-record-status { display: inline-block; padding: 3px 7px; border-radius: 5px; background: var(--recharge-field); color: var(--recharge-muted); white-space: nowrap; }
+.lp-recharge-record-status[data-status="SUCCEEDED"] { color: var(--recharge-blue); background: var(--recharge-selected); }
+.lp-recharge-record-status[data-status="FAILED"] { color: var(--recharge-error); }
+.lp-recharge-dialog :focus-visible { outline: 2px solid var(--recharge-blue); outline-offset: 3px; }
+.lp-recharge-dialog .lp-recharge-input input:focus-visible { outline: none; }
+@keyframes lp-recharge-in { from { opacity: 0; scale: .97; } to { opacity: 1; scale: 1; } }
+@keyframes lp-recharge-out { from { opacity: 1; scale: 1; } to { opacity: 0; scale: .97; } }
+@keyframes lp-recharge-spin { to { rotate: 360deg; } }
+.lp-recharge-dialog[data-state="open"] { animation: lp-recharge-in var(--recharge-duration) ease-out; }
+.lp-recharge-dialog[data-state="closed"] { animation: lp-recharge-out 150ms ease-in; }
+.lp-recharge-spinner { animation: lp-recharge-spin 800ms linear infinite; }
+@media (max-width: 800px) { .lp-recharge-header { padding: 10px 14px 10px 54px; gap: 8px; } }
+@media (max-width: 640px) { .lp-wallet-balance-label { display: none; } .lp-wallet-available, .lp-wallet-header { gap: 6px; } }
+@media (max-width: 480px) {
+  .lp-recharge-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
+  .lp-recharge-heading { padding: 20px 20px 18px; }
+  .lp-recharge-dialog [data-slot="dialog-title"] { font-size: 20px; }
+  button.lp-recharge-close { top: 16px; right: 16px; }
+  .lp-recharge-body { gap: 20px; padding: 0 20px 20px; }
+  .lp-recharge-balance-content { gap: 12px; padding: 16px; }
+  .lp-recharge-balance strong { font-size: 28px; }
+  .lp-recharge-panels { margin-inline: 20px; }
+  .lp-recharge-transactions { padding-inline: 20px; }
+  .lp-recharge-record td:first-child { min-width: 100px; }
+  .lp-recharge-footer { padding: 16px 20px; border-radius: 0 0 16px 16px; }
+  .lp-recharge-amounts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-height: 600px) {
+  .lp-recharge-dialog { display: block; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .lp-recharge-body, .lp-recharge-transactions { overflow-y: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-recharge-dialog[data-state], .lp-recharge-spinner { animation: none; }
+  .lp-recharge-dialog button, .lp-recharge-input { transition: none; }
+}

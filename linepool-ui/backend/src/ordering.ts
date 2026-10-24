@@ -40,15 +40,16 @@ export class Ordering {
       const numberIds = await this.provider.reserve(client, input, offer);
       const orderId = randomUUID();
       await client.query(
-        `INSERT INTO orders(id,order_number,user_id,region_id,service,plan,plan_name,quantity,unit_points,total_points,duration_days,idempotency_key,product_snapshot,area_code,fulfillment_status)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'PROCESSING')`,
+        `INSERT INTO orders(id,order_number,user_id,region_id,service,plan,plan_name,quantity,unit_points,total_points,duration_days,idempotency_key,product_snapshot,area_code,source_channel,fulfillment_status)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'PROCESSING')`,
         [orderId, `LP-${orderId.toUpperCase()}`, userId, input.region, input.service, input.plan, offer.name, input.quantity, offer.unit_points, totalPoints, offer.duration_days, input.idempotencyKey,
-          JSON.stringify({ name: offer.name, unitPoints: offer.unit_points, durationDays: offer.duration_days, capability: offer.capability, smsQuota: offer.sms_quota, quotaSource: offer.quota_source, allowRenewal: false, areaPrefix: offer.area_prefix, areaCode: input.areaCode ?? null, allocationMode: input.areaCode ? 'AREA_CODE' : 'AUTO', source: this.provider.source }), input.areaCode ?? null],
+          JSON.stringify({ name: offer.name, unitPoints: offer.unit_points, durationDays: offer.duration_days, capability: offer.capability, smsQuota: offer.sms_quota, quotaSource: offer.quota_source, allowRenewal: false, areaPrefix: offer.area_prefix, areaCode: input.areaCode ?? null, allocationMode: input.areaCode ? 'AREA_CODE' : 'AUTO', source: this.provider.source }), input.areaCode ?? null,
+          delivery === 'deferred-mock' ? 'SANDBOX' : 'DIRECT'],
       );
       const balanceAfter = user.points_balance - totalPoints;
       await client.query('UPDATE users SET points_balance=$2 WHERE id=$1', [userId, balanceAfter]);
       if (delivery === 'deferred-mock') {
-        await client.query('UPDATE phone_numbers SET reserved_order_id=$1,sale_enabled=false WHERE id=ANY($2::uuid[])', [orderId, numberIds]);
+        await client.query('UPDATE number_platforms SET reserved_order_id=$1 WHERE number_id=ANY($2::uuid[]) AND platform_id=$3', [orderId, numberIds, input.service]);
         await client.query('INSERT INTO mock_fulfillment_operations(order_id) VALUES($1)', [orderId]);
       } else {
         await this.provider.allocate(client, { userId, orderId, durationDays: offer.duration_days, numberIds });

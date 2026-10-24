@@ -3,7 +3,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent
 import gsap from 'gsap';
 import UserAvatar from '../UserAvatar';
 import SelectField from '../SelectField';
-import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronRight, ChevronsDown, ChevronsUp, Ellipsis, Inbox, MessageSquare, RefreshCw, Search, ShieldCheck, ShoppingBag, Smartphone, Star, Timer, X } from 'lucide-react';
+import AppSearchInput from '../AppSearchInput';
+import { ArrowDown, ArrowUp, ArrowUpRight, Check, ChevronRight, ChevronsDown, ChevronsUp, Ellipsis, Inbox, MessageSquare, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Star, Timer, X } from 'lucide-react';
 import { Button } from '../../vendor/beautiful/src/components/atoms/Button';
 import { ProgressRing } from '../../vendor/beautiful/src/components/atoms/ProgressRing';
 import { CopyValue } from '../business';
@@ -64,9 +65,9 @@ function ServiceLogo({ service }: { service: string }) {
   return serviceAssets[service] ? <img className="lp-ref-service-logo" src={serviceAssets[service]} alt="" width="20" height="20" /> : <span className="lp-ref-service-placeholder" aria-hidden="true">{service.slice(0, 1)}</span>;
 }
 
-export default function ReferenceWorkspace({ links = {}, messageHref, numberHref, data, refreshing = false, onRefresh, onMarkRead, showSearch = true, enhancedMotion = false }: {
+export default function ReferenceWorkspace({ links = {}, messageHref, numberHref, data, refreshing = false, onRefresh, onMarkRead, showSearch = true, showHeader = true, enhancedMotion = false }: {
   links?: ReferenceLinks; messageHref?: (message: ReferenceMessage) => string; numberHref?: (numberId: string) => string;
-  data?: ReferenceData; refreshing?: boolean; showSearch?: boolean; enhancedMotion?: boolean;
+  data?: ReferenceData; refreshing?: boolean; showSearch?: boolean; showHeader?: boolean; enhancedMotion?: boolean;
   onRefresh?: () => Promise<boolean>; onMarkRead?: (ids: string[]) => Promise<unknown>;
 } = {}) {
   const p = useDisplayPreferences();
@@ -98,8 +99,9 @@ export default function ReferenceWorkspace({ links = {}, messageHref, numberHref
   const filteredInbox = showSearch ? inbox.filter(message => `${message.sender} ${message.code} ${numbers.find(number => number.id === message.numberId)?.phone}`.toLowerCase().includes(query.toLowerCase())) : inbox;
   const activeNumbers = numbers.filter(number => number.status === 'ACTIVE' && (!showSearch || `${number.country} ${p.t(number.country)} ${number.phone} ${number.service}`.toLowerCase().includes(query.toLowerCase())));
   const activeNumbersPreview = [...activeNumbers].sort((left, right) => left.remaining - right.remaining).slice(0, 3);
-  const activeCount = numbers.filter(number => number.status === 'ACTIVE').length;
-  const activeRate = numbers.length ? Math.round(activeCount / numbers.length * 100) : 0;
+  const activeCount = data?.activeNumbers ?? numbers.filter(number => number.status === 'ACTIVE').length;
+  const numberCount = data?.totalNumbers ?? numbers.length;
+  const activeRate = numberCount ? Math.round(activeCount / numberCount * 100) : null;
   const selectedNumber = numbers.find(number => number.id === selected?.numberId);
   const liveTrend = data?.trends[month] ?? (data ? data.trends[data.currentMonth] : undefined);
   const periods = liveTrend ? (range === '7' ? liveTrend.days : liveTrend.weeks) : (range === '7' ? monthTrends[month].days : monthTrends[month].weeks).map((value, index) => ({
@@ -107,7 +109,7 @@ export default function ReferenceWorkspace({ links = {}, messageHref, numberHref
     numbers: month === '11' ? 0 : (range === '7' ? [4, 4, 5, 5, 4, 5, 5] : [3, 4, 5, 5])[index],
   }));
   const chartTotal = periods.reduce((total, value) => total + value.messages, 0);
-  const chartInteractive = Boolean(data) || chartTotal > 0;
+  const chartInteractive = chartTotal > 0;
   const maximumValue = Math.max(1, ...periods.flatMap(period => [period.messages, period.numbers]));
   const tickCount = Math.min(4, maximumValue);
   const tickStep = Math.ceil(maximumValue / tickCount);
@@ -208,36 +210,36 @@ export default function ReferenceWorkspace({ links = {}, messageHref, numberHref
 
   return <main className={`lp-reference${data ? ' has-chart-axes is-overview' : ''}${enhancedMotion ? ' is-enhanced-motion' : ''}${showSearch ? '' : ' is-searchless'}`} lang={p.locale}>
     <section className="lp-ref-main">
-      <header className="lp-ref-header">
+      {showHeader ? <header className="lp-ref-header">
         <a href={destinations.dashboard} className="lp-ref-brand" title={p.t("LINEPOOL 工作台")} aria-label={p.t("LINEPOOL 工作台")}><span /><span /><span /></a>
-        <div className="lp-ref-welcome"><h1>{p.t("欢迎回来，{name}", { name })}</h1><p><strong>LINEPOOL</strong> · {p.t("个人工作台")} · {p.t(data ? "标准账户" : "演示账户")}</p></div>
-        {showSearch && <label className="lp-ref-search"><Search size={17} strokeWidth={1.5} /><input aria-label={p.t("搜索号码或验证码")} placeholder={p.t("搜索")} value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" title={p.t("清空搜索")} aria-label={p.t("清空搜索")} onClick={() => setQuery('')}><X size={14} /></button>}</label>}
+        <div className="lp-ref-welcome"><h1>{p.t("欢迎回来，{name}", { name })}</h1><p>{p.t(data ? "标准账户" : "演示账户")}</p></div>
+        {showSearch && <AppSearchInput className="lp-ref-search" type="text" aria-label={p.t("搜索号码或验证码")} placeholder={p.t("搜索")} value={query} onValueChange={setQuery} />}
         {!data && <RoundButton label={p.t("购买号码")} href={destinations.purchase}><ShoppingBag size={19} strokeWidth={1.5} /></RoundButton>}
-      </header>
+      </header> : <h1 className="lp-shell-page-title">{p.t("工作台")}</h1>}
 
       <div className="lp-ref-summary">
         {data ? <>
           <section className="lp-ref-profile lp-ref-account-overview" ref={profile} tabIndex={-1} aria-label={p.t("账户概览")}>
             <div className={`lp-ref-card-heading${refreshing ? ' is-refreshing' : ''}`}><h2>{p.t("账户概览")}</h2><RoundButton label={p.t("刷新数据")} onClick={() => void resetView()} disabled={refreshing}><RefreshCw size={17} strokeWidth={1.7} /></RoundButton></div>
-            <div className="lp-ref-account-identity"><h3>{name}</h3><dl><div><dt>{p.t("账户类型")}</dt><dd>{p.t("标准账户")}</dd></div><div><dt>{p.t("账户状态")}</dt><dd className="lp-ref-account-status"><Check size={12} aria-hidden="true" />{p.t("账户正常")}</dd></div></dl></div>
+            <div className="lp-ref-account-identity"><h3>{name}</h3></div>
             <div className="lp-ref-account-stats">
-              {[{ href: destinations.numbers, label: p.t("号码"), title: p.t("我的号码"), count: numbers.length, icon: <Smartphone size={16} /> }, { href: destinations.inbox, label: p.t("短信"), title: p.t("短信收件箱"), count: messages.length, icon: <MessageSquare size={16} /> }, { href: destinations.orders, label: p.t("订单"), title: p.t("订单记录"), count: data.orderCount, icon: <ShoppingBag size={16} /> }].map(stat => <a key={stat.href} href={stat.href} aria-label={stat.title} title={stat.title}><span className="lp-ref-account-stat-icon" aria-hidden="true">{stat.icon}</span><strong>{p.n(stat.count)}</strong><span className="lp-ref-account-stat-label">{stat.label}<ArrowUpRight size={13} aria-hidden="true" /></span></a>)}
+              {[{ href: destinations.numbers, label: p.t("号码"), title: p.t("我的号码"), count: data.totalNumbers ?? numbers.length, icon: <Smartphone size={16} /> }, { href: destinations.inbox, label: p.t("短信"), title: p.t("短信收件箱"), count: data.totalMessages ?? messages.length, icon: <MessageSquare size={16} /> }, { href: destinations.orders, label: p.t("订单"), title: p.t("订单记录"), count: data.orderCount, icon: <ShoppingBag size={16} /> }].map(stat => <a key={stat.href} href={stat.href} aria-label={stat.title} title={stat.title}><span className="lp-ref-account-stat-icon" aria-hidden="true">{stat.icon}</span><strong>{p.n(stat.count)}</strong><span className="lp-ref-account-stat-label">{stat.label}<ArrowUpRight size={13} aria-hidden="true" /></span></a>)}
             </div>
           </section>
           <section className="lp-ref-quick-actions" aria-labelledby="lp-ref-quick-title">
             <h2 id="lp-ref-quick-title">{p.t("快捷操作")}</h2>
-            <div className="lp-ref-quick-links"><a href={destinations.purchase} className="lp-ref-quick-buy"><ShoppingBag size={19} aria-hidden="true" /><span>{p.t("购买号码")}</span><ArrowUpRight size={16} aria-hidden="true" /></a><a href={destinations.inbox} className="lp-ref-quick-inbox"><MessageSquare size={19} aria-hidden="true" /><span>{p.t("查看短信")}</span><ArrowUpRight size={16} aria-hidden="true" /></a></div>
+            <div className="lp-ref-quick-links"><a href={destinations.purchase} className="lp-ref-quick-buy" aria-label={p.t("购买号码")}><ShoppingBag size={19} aria-hidden="true" /><span>{p.t("购买号码")}</span><ArrowUpRight size={16} aria-hidden="true" /></a><a href={destinations.inbox} className="lp-ref-quick-inbox" aria-label={p.t("查看短信")}><MessageSquare size={19} aria-hidden="true" /><span>{p.t("查看短信")}</span><ArrowUpRight size={16} aria-hidden="true" /></a></div>
             <div className="lp-ref-quick-services"><a href={destinations.services} title={p.t("查看全部接码服务")}>{p.t("常用接码服务")}<ChevronRight size={13} aria-hidden="true" /></a><div className="lp-ref-service-stack">{services.map(service => <a key={service} href={destinations.services} title={service}><ServiceLogo service={service} /></a>)}</div></div>
           </section>
         </> : <section className="lp-ref-profile" ref={profile} tabIndex={-1} aria-label={p.t("我的账户")}>
           <div className={`lp-ref-card-heading${refreshing ? ' is-refreshing' : ''}`}><h2>{p.t("我的账户")}</h2><RoundButton label={data ? p.t("刷新数据") : p.t("重置演示视图")} onClick={() => void resetView()} disabled={refreshing}><RefreshCw size={19} strokeWidth={1.7} /></RoundButton></div>
-          <div className="lp-ref-portrait"><ProgressRing size={data ? 80 : 100} progress={data ? activeRate / 100 : 0.25} tone="red"><UserAvatar name={name} size="preview" /></ProgressRing><span className="lp-ref-profile-star"><Star size={10} fill="currentColor" /></span></div>
+          <div className="lp-ref-portrait"><ProgressRing size={data ? 80 : 100} progress={data && activeRate !== null ? activeRate / 100 : data ? 0 : 0.25} tone="red"><UserAvatar name={name} size="preview" /></ProgressRing><span className="lp-ref-profile-star"><Star size={10} fill="currentColor" /></span></div>
           <h3>{name}</h3><p>{p.t("演示账户")}</p>
           <div className="lp-ref-profile-stats"><a href={destinations.numbers} title={p.t("我的号码")}><span><Smartphone size={14} aria-hidden="true" />{p.n(numbers.length)}</span><small>{p.t("号码")}</small></a><a href={destinations.inbox} title={p.t("短信收件箱")}><span><MessageSquare size={14} aria-hidden="true" />{p.n(messages.length)}</span><small>{p.t("短信")}</small></a><a href={destinations.orders} title={p.t("订单记录")}><span><ShoppingBag size={14} aria-hidden="true" />{p.n(demoOrders.length)}</span><small>{p.t("订单")}</small></a></div>
         </section>}
         <a className="lp-ref-metric lp-ref-metric-warm" href={destinations.numbers} aria-label={p.t("查看我的号码")}>
           <div><h2>{data ? p.t("号码可用率") : <>{p.t("号码")}<br />{p.t("可用率")}</>}</h2><span className="lp-ref-metric-icon"><Timer size={22} strokeWidth={1.7} /></span></div>
-          <div className="lp-ref-metric-value"><strong>{p.n(activeRate)}%</strong><p>{p.t("{count} 个号码使用中", { count: p.n(activeCount) })}</p></div>
+          <div className="lp-ref-metric-value"><strong>{activeRate === null ? '—' : `${p.n(activeRate)}%`}</strong><p>{p.t("{count} 个号码使用中", { count: p.n(activeCount) })}</p></div>
         </a>
         <a className="lp-ref-metric lp-ref-metric-cool" href={destinations.inbox} aria-label={p.t("查收验证码")}>
           <div><h2>{data ? p.t("本月收到短信") : <>{p.t("本月")}<br />{p.t("收到短信")}</>}</h2><span className="lp-ref-metric-icon"><ShieldCheck size={22} strokeWidth={1.5} /></span></div>
@@ -253,7 +255,9 @@ export default function ReferenceWorkspace({ links = {}, messageHref, numberHref
             value={range} onValueChange={selectRange} options={[{ value: '30', label: p.t("过去 30 天") }, { value: '7', label: p.t("过去 7 天") }]} />
         </header>
         <div className="lp-ref-chart-body">
+          {!data && <>
           <nav className="lp-ref-months" aria-label={p.t("统计月份")}><RoundButton label={p.t("上一个月")} disabled={month === months[0]} onClick={() => moveMonth(-1)}><ChevronsUp size={14} /></RoundButton>{months.map(value => <button type="button" key={value} className={month === value ? 'is-current' : ''} aria-pressed={month === value} onClick={() => selectMonth(value)}>{p.locale === "en-US" ? p.month(value, false) : `${data ? Number(value.split("-")[1]) : value} 月`}</button>)}<RoundButton label={p.t("下一个月")} disabled={month === months[months.length - 1]} onClick={() => moveMonth(1)}><ChevronsDown size={14} /></RoundButton></nav>
+          </>}
           <div className="lp-ref-chart-frame">
             {data && <div className="lp-ref-y-axis" aria-label={p.t("数量")}><span className="lp-ref-y-axis-title">{p.t("数量")}</span>{quantityTicks.map(value => <span key={value} style={{ top: `${pointY(value) / 240 * 100}%` }}>{p.n(value)}</span>)}</div>}
           <div className={`lp-ref-plot${chartTotal === 0 ? ' is-empty' : ''}`} role="slider" tabIndex={chartInteractive ? 0 : -1} aria-label={`${p.t("{month}收码趋势，共 {count} 条短信", { month: monthText, count: p.n(chartTotal) })}${data ? "" : p.t("，演示数据")}`} aria-orientation="horizontal" aria-valuemin={1} aria-valuemax={periods.length} aria-valuenow={currentIndex + 1} aria-valuetext={`${currentPeriod.label}${p.locale === "en-US" ? ", " : "，"}${currentValueText}${data ? '' : p.t("，演示数据")}`} aria-disabled={!chartInteractive} onKeyDown={chartKeyDown} onPointerMove={event => { if (chartInteractive && event.pointerType === 'mouse') setHoveredIndex(pointIndex(event.clientX, event.currentTarget)); }} onPointerLeave={() => setHoveredIndex(null)} onClick={event => { if (chartInteractive) { event.currentTarget.focus({ preventScroll: true }); selectPoint(pointIndex(event.clientX, event.currentTarget)); } }}>
@@ -285,14 +289,14 @@ export default function ReferenceWorkspace({ links = {}, messageHref, numberHref
             <span className="lp-ref-message-date"><span>{data ? message.date : p.locale === "zh-CN" ? "10 月 09 日" : p.date("2026-10-09T12:00:00", { month: "short", day: "2-digit" })}</span><strong>{message.time.slice(0, 5)}</strong></span>
             <span className="lp-ref-message-info">{data && message.code ? <CopyValue inline value={message.code.replace(/\s/g, '')} label={p.t("复制 {sender} 验证码 {code}", { sender: message.sender, code: message.code })} labels={{ ...p.copyLabels, success: p.t("验证码已复制") }} onCopied={() => setNotice('验证码已复制')} /> : <strong>{message.code || p.t("无验证码")}</strong>}<span><ServiceLogo service={message.sender} />{message.sender}{(data ? !message.unread : readIds.includes(message.id)) && <Check size={12} />}</span></span>
             {messageHref ? <a className="lp-ref-message-open" href={messageHref(message)} aria-label={p.t("查看 {sender} 验证码 {code}", { sender: message.sender, code: message.code })}><ArrowUpRight size={19} strokeWidth={1.6} /></a> : <button type="button" className="lp-ref-message-open" disabled={readingMessage} onClick={() => void openMessage(message)} aria-label={p.t("查看 {sender} 验证码 {code}", { sender: message.sender, code: message.code })}><ArrowUpRight size={19} strokeWidth={1.6} /></button>}
-          </div>)}{!filteredInbox.length && <p className="lp-ref-empty">{p.t("没有匹配的短信")}</p>}</div>
+          </div>)}{!filteredInbox.length && <p className="lp-ref-empty">{p.t(query.trim() ? "没有匹配的短信" : "暂无短信")}</p>}</div>
         <a className="lp-ref-see-all" href={destinations.inbox}>{p.t("查看全部短信")}<ChevronRight size={15} /></a>
       </section>
       <section className="lp-ref-expiries" aria-labelledby="lp-ref-expiry-title"><header><h2 id="lp-ref-expiry-title">{p.t("号码有效期")}</h2><p>{p.t("当前使用中的号码")}</p></header><div>{activeNumbersPreview.map(number => {
         const maximumDays = Math.max(30, number.remaining);
         const remaining = Math.min(100, Math.max(0, Math.round(number.remaining / maximumDays * 100)));
         return <a className="lp-ref-expiry-row" href={numberHref?.(number.id) ?? destinations.numbers} key={number.id} title={`${p.t("{phone} · 剩余 {days} 天", { phone: number.phone, days: p.n(number.remaining) })} · ${number.service}`}><span>{'phoneLabel' in number ? number.phoneLabel : p.t("{region}号码", { region: p.t(number.country) })}{data && <small className="lp-ref-expiry-service">{number.service}</small>}</span><span className="lp-ref-expiry-track" role="meter" aria-label={p.t("{phone} · 剩余 {days} 天", { phone: number.phone, days: p.n(number.remaining) })} aria-valuemin={0} aria-valuemax={maximumDays} aria-valuenow={number.remaining}><i style={{ width: `${remaining}%` }} /></span><span className="lp-ref-expiry-days">{p.t("{days}天", { days: p.n(number.remaining) })}</span><span className={`lp-ref-expiry-direction ${number.remaining <= 3 ? 'is-soon' : ''}`}>{number.remaining <= 3 ? <ArrowDown size={10} strokeWidth={3} /> : <ArrowUp size={10} strokeWidth={3} />}</span></a>;
-      })}{!activeNumbers.length && <p className="lp-ref-empty">{p.t("没有匹配的号码")}</p>}</div>{activeNumbers.length > activeNumbersPreview.length && <a className="lp-ref-see-all lp-ref-expiry-see-all" href={destinations.numbers}>{p.t("查看号码")}<ChevronRight size={15} /></a>}</section>
+      })}{!activeNumbers.length && <p className="lp-ref-empty">{p.t(query.trim() ? "没有匹配的号码" : "暂无使用中的号码")}</p>}</div>{activeNumbers.length > activeNumbersPreview.length && <a className="lp-ref-see-all lp-ref-expiry-see-all" href={destinations.numbers}>{p.t("查看号码")}<ChevronRight size={15} /></a>}</section>
     </aside>
 
     <dialog className="lp-ref-dialog" ref={dialog} onCancel={() => setSelected(null)} onClose={() => setSelected(null)} onClick={event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) setSelected(null); } }}>

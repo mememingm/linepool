@@ -1,22 +1,34 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
-import { uuidSchema } from '@linepool/contracts';
+import { uuidSchema, adminRechargeQuerySchema, rechargeSettingsInputSchema,
+  type AdminRechargeQuery, type RechargeSettingsInput } from '@linepool/contracts';
 import { adminQuerySchema, numberActionInputSchema, productInputSchema, userStatusInputSchema,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import { SessionGuard, type SessionRequest } from './authentication.js';
 import { SchemaPipe } from './http.js';
 import { Administration, AdminGuard, type AdminSection } from './administration.js';
+import { Recharge } from './recharge.js';
 
-const sectionSchema = z.enum(['users', 'numbers', 'products', 'orders', 'audit']);
+const sectionSchema = z.enum(['users', 'numbers', 'products', 'orders', 'audit', 'projects', 'receipts']);
 const detailSectionSchema = z.enum(['users', 'numbers', 'orders']);
 @Controller('admin')
 @UseGuards(SessionGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly admin: Administration) {}
+  constructor(private readonly admin: Administration, private readonly recharge: Recharge) {}
   @Get('session')
   session(@Req() request: SessionRequest) { return { data: request.user }; }
   @Get('summary')
   async summary() { return { data: await this.admin.summary() }; }
+  @Get('recharge-settings')
+  async rechargeSettings() { return { data: await this.recharge.settings() }; }
+  @Patch('recharge-settings')
+  async saveRechargeSettings(@Req() req: SessionRequest, @Body(new SchemaPipe(rechargeSettingsInputSchema)) input: RechargeSettingsInput) {
+    return { data: await this.recharge.saveSettings(req.user.id, input) };
+  }
+  @Get('recharges')
+  recharges(@Query(new SchemaPipe(adminRechargeQuerySchema)) input: AdminRechargeQuery) {
+    return this.recharge.records(input, input.userId, true);
+  }
   @Get(':section')
   list(@Param('section', new SchemaPipe(sectionSchema)) section: AdminSection,
     @Query(new SchemaPipe(adminQuerySchema)) input: AdminQuery) { return this.admin.list(section, input); }

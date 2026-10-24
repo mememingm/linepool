@@ -57,10 +57,10 @@ export class MockFulfillment {
       if (outcome !== 'UNCERTAIN') {
         const { rows: [order] } = await client.query<{ quantity: number; duration_days: number; fulfillment_status: string }>('SELECT quantity,duration_days,fulfillment_status FROM orders WHERE id=$1', [orderId]);
         if (order!.fulfillment_status !== 'PROCESSING') throw new ApiFailure(409, 'ORDER_STATE_CONFLICT', 'Order was already resolved');
-        const { rows: numbers } = await client.query<{ id: string }>('SELECT id FROM phone_numbers WHERE reserved_order_id=$1 ORDER BY id FOR UPDATE', [orderId]);
+        const { rows: numbers } = await client.query<{ id: string }>('SELECT number_id AS id FROM number_platforms WHERE reserved_order_id=$1 ORDER BY number_id FOR UPDATE', [orderId]);
         if (numbers.length !== order!.quantity) throw new ApiFailure(409, 'MOCK_RESERVATION_CONFLICT', 'Reserved inventory differs from order');
         if (outcome === 'SUCCEEDED') {
-          await client.query('UPDATE phone_numbers SET reserved_order_id=NULL WHERE reserved_order_id=$1', [orderId]);
+          await client.query('UPDATE number_platforms SET reserved_order_id=NULL WHERE reserved_order_id=$1', [orderId]);
           await new MockReceivingProvider().allocate(client, { userId, orderId, durationDays: order!.duration_days, numberIds: numbers.map(n => n.id) });
           await client.query("UPDATE orders SET fulfillment_status='COMPLETED',completed_at=now() WHERE id=$1", [orderId]);
         } else {
@@ -70,7 +70,7 @@ export class MockFulfillment {
           await client.query(`INSERT INTO point_ledger(user_id,type,delta,balance_after,description,reference_id,reverses_ledger_id)
             VALUES($1,'ADJUSTMENT',$2,$3,'Deferred Mock failure reversal',$4,$5)`, [userId, -debit.delta, balance!.points_balance, orderId, debit.id]);
           // Explicit failure releases the reservation into a quarantined, unsellable state.
-          await client.query('UPDATE phone_numbers SET reserved_order_id=NULL,sale_enabled=false WHERE reserved_order_id=$1', [orderId]);
+          await client.query('UPDATE number_platforms SET reserved_order_id=NULL,sale_enabled=false WHERE reserved_order_id=$1', [orderId]);
           await client.query("UPDATE orders SET fulfillment_status='FAILED',completed_at=NULL WHERE id=$1", [orderId]);
         }
       }

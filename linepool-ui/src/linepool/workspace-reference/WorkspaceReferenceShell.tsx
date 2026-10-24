@@ -1,21 +1,26 @@
 import { navigate } from '../../app/router';
-import { DisplayToolbar } from '../preferences/DisplayControls';
 import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import gsap from 'gsap';
 import { ArrowRight, ChevronsLeft, ChevronsRight, CircleUserRound, Clock3, LayoutDashboard, Menu, MessageCircle, Settings2, ShoppingBag, WalletCards, X } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
+import SidebarTools from './SidebarTools';
+import { RechargeProvider, SidebarRechargeButton } from '../wallet/Recharge';
 import ReferenceWorkspace from '../showcase/Reference';
 import { useWorkspaceApi } from './workspace-data';
 import { referenceData } from './reference-data';
-import WorkspaceAccess from './WorkspaceAccess';
 import { readShellRoute, shellHref, shellPageTitle, shellRouteKey, shellSidebarPage } from './navigation';
 import { catalogDetailTitle, regionPageTitle } from './detail-data';
+import PageContainer from './PageContainer';
 import WorkspacePages from './WorkspacePages';
 import './WorkspaceReferenceShell.css';
 import './WorkspaceVisual.css';
 
 const homepageLinks = { dashboard: shellHref('dashboard'), purchase: shellHref('purchase'), numbers: shellHref('numbers'), inbox: shellHref('inbox'), orders: shellHref('orders'), services: shellHref('regions') };
+
+function WorkspaceLoading({ error, retry }: { error: string; retry: () => void }) {
+  return <main className="lp-shell-page lp-shell-loading" role={error ? 'alert' : 'status'} aria-label={error ? '工作台加载失败' : '正在加载工作台'}><aside><i /><i /><i /><i /></aside><section><header><i /><i /></header><div className="lp-shell-loading-cards"><i /><i /><i /></div>{error && <div className="lp-shell-loading-error"><p>{error}</p><button type="button" onClick={retry}>重试</button></div>}</section></main>;
+}
 
 function SidebarItem({ label, icon, href, active = false, badge }: { label: string; icon: ReactNode; href: string; active?: boolean; badge?: string }) {
   const p = useDisplayPreferences();
@@ -28,7 +33,7 @@ export default function WorkspaceReferenceShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [alertVisible, setAlertVisible] = useState(true);
-  const workspace = useWorkspaceApi();
+  const workspace = useWorkspaceApi(route.page);
   const { data } = workspace;
   const liveReference = useMemo(() => data ? referenceData(data, p.locale) : undefined, [data, p.locale]);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -39,6 +44,7 @@ export default function WorkspaceReferenceShell() {
   const mobileToggleRef = useRef<HTMLButtonElement>(null);
   const unread = data?.dashboard.unreadMessages ?? 0;
   const expiring = data?.numbers.filter(number => number.status === 'ACTIVE' && number.remainingDays <= 3) ?? [];
+  const expiringCount = data?.dashboard.expiringNumbers ?? 0;
   const expiryNotice = data?.account.preferences.expiryNotice ?? false;
   const isDashboard = route.page === 'dashboard';
   const shellMode = isDashboard ? 'is-dashboard' : route.page === 'purchase' ? 'is-purchase' : route.page === 'inbox' ? 'is-inbox' : route.page === 'settings' ? 'is-settings' : route.page === 'account' ? 'is-account' : '';
@@ -98,6 +104,8 @@ export default function WorkspaceReferenceShell() {
     body.style.overscrollBehavior = 'none';
     sidebar.querySelector<HTMLButtonElement>('.lp-shell-drawer-close')?.focus({ preventScroll: true });
     const handleKeys = (event: KeyboardEvent) => {
+      // Portalled dropdowns manage their own keyboard navigation and Escape key.
+      if (event.target instanceof Element && event.target.closest('[data-slot="dropdown-menu-content"]')) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeSidebar(); return; }
       if (event.key !== 'Tab') return;
       const controls = [...sidebar.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])')].filter(element => element.getClientRects().length > 0);
@@ -124,7 +132,7 @@ export default function WorkspaceReferenceShell() {
     media.add('(prefers-reduced-motion: no-preference)', () => {
       const context = gsap.context(() => {
         const targets = isDashboard
-          ? ['.lp-ref-header', '.lp-ref-summary', '.lp-ref-analytics', '.lp-ref-sidebar'].flatMap(selector => [...shellRef.current!.querySelectorAll(selector)])
+          ? ['.lp-ref-summary', '.lp-ref-analytics', '.lp-ref-sidebar'].flatMap(selector => [...shellRef.current!.querySelectorAll(selector)])
           : [viewRef.current].filter((element): element is HTMLElement => Boolean(element));
         gsap.fromTo(targets, { y: 12, opacity: 0 }, {
           y: 0, opacity: 1, duration: 0.48, stagger: 0.065, ease: 'power3.out',
@@ -137,9 +145,9 @@ export default function WorkspaceReferenceShell() {
   }, [routeKey, data?.account.id]);
 
   if (workspace.needsLogin) return null;
-  if (!data) return <div className="lp-shell-page is-access" lang={p.locale} data-theme={p.theme}><WorkspaceAccess loading={workspace.loading} error={workspace.error} needsLogin={workspace.needsLogin} authenticate={workspace.authenticate} retry={() => void workspace.refresh(true)} /></div>;
+  if (!data) return <WorkspaceLoading error={workspace.error} retry={() => void workspace.refresh(true)} />;
 
-  return <div ref={shellRef} className={`lp-shell-page${shellMode ? ` ${shellMode}` : ''}${sidebarOpen ? ' is-sidebar-open' : ''}${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`} lang={p.locale} data-theme={p.theme}>
+  return <RechargeProvider account={data.account} onCredit={workspace.refresh}><div ref={shellRef} className={`lp-shell-page${shellMode ? ` ${shellMode}` : ''}${sidebarOpen ? ' is-sidebar-open' : ''}${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`} lang={p.locale} data-theme={p.theme}>
     {sidebarOpen && <button type="button" className="lp-shell-scrim" aria-label={p.t("关闭导航")} tabIndex={-1} onPointerDown={event => event.preventDefault()} onClick={() => closeSidebar()} />}
     <aside ref={sidebarRef} id="lp-shell-sidebar" className="lp-shell-sidebar" tabIndex={-1} role={sidebarOpen ? 'dialog' : undefined} aria-modal={sidebarOpen || undefined} aria-label={p.t("工作台导航")} onClick={event => {
       const link = event.target instanceof Element ? event.target.closest('a') : null;
@@ -156,17 +164,18 @@ export default function WorkspaceReferenceShell() {
           <SidebarItem label={p.t("账户设置")} active={route.page === 'settings'} href={shellHref('settings')} icon={<Settings2 size={17} strokeWidth={1.45} />} />
         </nav>
         <nav className="lp-shell-nav-group" aria-label={p.t("号码与订单")}><p>{p.t("号码与订单")}</p><SidebarItem label={p.t("我的号码")} active={route.page === 'numbers'} href={shellHref('numbers')} icon={<CircleUserRound size={17} strokeWidth={1.35} />} /><SidebarItem label={p.t("我的订单")} active={sidebarPage === 'orders'} href={shellHref('orders')} icon={<Clock3 size={17} strokeWidth={1.35} />} /><SidebarItem label={p.t("积分明细")} active={route.page === 'points'} href={shellHref('points')} icon={<WalletCards size={17} strokeWidth={1.35} />} /></nav>
+        <div className="lp-shell-recharge-entry"><SidebarRechargeButton onOpen={() => { if (sidebarOpen) closeSidebar(false); }} /></div>
 
-        {alertVisible && expiryNotice && expiring.length > 0 && <section className="lp-shell-expiry-alert"><header><h2>{p.t("{count} 个号码即将到期", { count: p.n(expiring.length) })}</h2><button type="button" aria-label={p.t("关闭到期提醒")} onClick={() => setAlertVisible(false)}><X size={14} /></button></header><p>{p.t("最近到期：{days} 天后", { days: p.n(Math.min(...expiring.map(number => number.remainingDays))) })}</p><div className="lp-shell-expiry-segments" aria-hidden="true">{['#35b66c', '#65c372', '#a9c752', '#edbf25', '#f7a51b', '#f27c19', '#ee4f2b', '', ''].map((color, index) => <i key={index} style={color ? { background: color } : undefined} />)}</div><a className="lp-shell-alert-link" href={shellHref('numbers')}>{p.t("查看号码")}<ArrowRight size={13} /></a></section>}
-        {alertVisible && expiryNotice && expiring.length > 0 && <a className="lp-shell-expiry-shortcut" aria-label={p.t("{count} 个号码即将到期，查看号码", { count: p.n(expiring.length) })} title={p.t("{count} 个号码即将到期，查看号码", { count: p.n(expiring.length) })} href={shellHref('numbers')}><Clock3 size={17} strokeWidth={1.5} /><span aria-hidden="true">{p.n(expiring.length)}</span></a>}
+        {alertVisible && expiryNotice && expiringCount > 0 && <section className="lp-shell-expiry-alert"><header><h2>{p.t("{count} 个号码即将到期", { count: p.n(expiring.length) })}</h2><button type="button" aria-label={p.t("关闭到期提醒")} onClick={() => setAlertVisible(false)}><X size={14} /></button></header>{expiring.length > 0 && <p>{p.t("最近到期：{days} 天后", { days: p.n(Math.min(...expiring.map(number => number.remainingDays))) })}</p>}<div className="lp-shell-expiry-segments" aria-hidden="true">{['#35b66c', '#65c372', '#a9c752', '#edbf25', '#f7a51b', '#f27c19', '#ee4f2b', '', ''].map((color, index) => <i key={index} style={color ? { background: color } : undefined} />)}</div><a className="lp-shell-alert-link" href={shellHref('numbers')}>{p.t("查看号码")}<ArrowRight size={13} /></a></section>}
+        {alertVisible && expiryNotice && expiringCount > 0 && <a className="lp-shell-expiry-shortcut" aria-label={p.t("{count} 个号码即将到期，查看号码", { count: p.n(expiring.length) })} title={p.t("{count} 个号码即将到期，查看号码", { count: p.n(expiring.length) })} href={shellHref('numbers')}><Clock3 size={17} strokeWidth={1.5} /><span aria-hidden="true">{p.n(expiring.length)}</span></a>}
       </div>
+      <SidebarTools />
     </aside>
-    <button ref={mobileToggleRef} type="button" className="lp-shell-mobile-toggle" inert={sidebarOpen} aria-label={sidebarOpen ? p.t("关闭账户导航") : p.t("展开账户导航")} aria-expanded={sidebarOpen} aria-controls="lp-shell-sidebar" onClick={() => setSidebarOpen(value => !value)}><Menu size={17} /></button>
+    <header className="lp-shell-mobile-header"><button ref={mobileToggleRef} type="button" className="lp-shell-mobile-toggle" inert={sidebarOpen} aria-label={sidebarOpen ? p.t("关闭账户导航") : p.t("展开账户导航")} aria-expanded={sidebarOpen} aria-controls="lp-shell-sidebar" onClick={() => setSidebarOpen(value => !value)}><Menu size={17} /></button><span>LINEPOOL</span></header>
     <div className="lp-shell-body">
-      <div className="lp-shell-display-bar" inert={sidebarOpen}><DisplayToolbar /></div>
       {workspace.error && <aside className="lp-shell-api-banner" role="alert"><span>{p.t(workspace.error)}</span><button type="button" disabled={workspace.loading} onClick={() => void workspace.refresh()}>{p.t("重试")}</button></aside>}
-      <div ref={referenceRef} className="lp-shell-reference" hidden={!isDashboard} inert={sidebarOpen} tabIndex={-1} role="region" aria-label={p.t("工作台")}>{isDashboard && <ReferenceWorkspace showSearch={false} enhancedMotion links={homepageLinks} messageHref={message => shellHref('inbox', { number: message.numberId, message: message.id })} numberHref={numberId => shellHref('numbers', { number: numberId })} data={liveReference} refreshing={workspace.loading} onRefresh={workspace.refresh} onMarkRead={workspace.markRead} />}</div>
+      <div ref={referenceRef} className="lp-shell-reference" hidden={!isDashboard} inert={sidebarOpen} tabIndex={-1} role="region" aria-label={p.t("工作台")}>{isDashboard && <PageContainer title={p.t('工作台')} titleId="lp-dashboard-title"><ReferenceWorkspace showHeader={false} showSearch={false} enhancedMotion links={homepageLinks} messageHref={message => shellHref('inbox', { number: message.numberId, message: message.id })} numberHref={numberId => shellHref('numbers', { number: numberId })} data={liveReference} refreshing={workspace.loading} onRefresh={workspace.refresh} onMarkRead={workspace.markRead} /></PageContainer>}</div>
       {!isDashboard && <main key={`${data.account.id}:${routeKey}`} ref={viewRef} className="lp-shell-view" inert={sidebarOpen} tabIndex={-1} aria-labelledby="lp-shell-view-title"><WorkspacePages data={data} actions={workspace} route={route} refreshing={workspace.loading} lastUpdated={workspace.lastUpdated} /></main>}
     </div>
-  </div>;
+  </div></RechargeProvider>;
 }

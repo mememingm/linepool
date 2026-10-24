@@ -16,8 +16,6 @@
   --green: #16805b; --green-tint: #e8f4ed; --orange: #a34e16; --orange-tint: #fff0e3; --red: #b83442; --red-tint: #fdebee;
   min-width: 0; min-height: 100dvh; color: var(--ink); background: var(--page); font-size: 14px; letter-spacing: 0; color-scheme: light;
 }
-.lp-shell-view-order-number { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 13px; }
-.lp-shell-view-order-number > span { overflow-wrap: anywhere; }
 .lp-shell-view-message:disabled { cursor: wait; }
 .lp-shell-view h1, .lp-shell-view h2, .lp-shell-view h3, .lp-shell-view p, .lp-shell-view dl { margin: 0; }
 .lp-shell-view h1 { font-size: 24px; line-height: 1.35; font-weight: 400; }
@@ -27,11 +25,6 @@
 .lp-shell-view input, .lp-shell-view select { font: inherit; }
 .lp-shell-view :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .lp-shell-view strong { font-weight: 500; }
-.lp-shell-view-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; padding: 14px 32px; border-bottom: 1px solid var(--line); }
-.lp-shell-view-header .lp-shell-view-actions { margin: 0; }
-.lp-shell-view-brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; font-size: 18px; font-weight: 500; }
-.lp-shell-view-brand span { color: var(--ink-2); font-size: 12px; font-weight: 400; }
-.lp-shell-view-content { max-width: 1320px; margin-inline: auto; padding: 28px 32px 48px; }
 .lp-shell-view-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 30px; }
 .lp-shell-view-title p { margin-top: 6px; font-size: 12px; color: var(--ink-2); }
 .lp-shell-view-account-balance { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 12px; white-space: nowrap; }
@@ -134,8 +127,7 @@
 .lp-shell-view-table .lp-shell-view-country { margin-bottom: 7px; font-size: 13px; }
 .lp-shell-view-ledger { min-width: 580px; }
 .lp-shell-page.is-inbox .lp-shell-view { display: flex; flex-direction: column; overflow: hidden; }
-.lp-shell-page.is-inbox .lp-shell-view-header { flex-shrink: 0; }
-.lp-shell-page.is-inbox .lp-shell-view-content { display: flex; flex: 1; flex-direction: column; width: 100%; min-height: 0; padding-bottom: 24px; }
+.lp-shell-page.is-inbox .lp-page-container { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .lp-shell-page.is-inbox .lp-shell-view-title { flex-shrink: 0; margin-bottom: 24px; }
 .lp-shell-inbox-page { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .lp-shell-inbox-page > .lp-shell-view-toolbar, .lp-shell-inbox-page > p { flex-shrink: 0; }
@@ -157,33 +149,6 @@
 .lp-shell-view-code { display: flex; align-items: flex-start; flex-direction: column; gap: 16px; padding: 24px 0 30px; }
 .lp-shell-view-code > strong { font-size: 32px; font-weight: 400; line-height: 1.25; overflow-wrap: anywhere; }
 .lp-shell-view-message-body { padding: 14px 0 22px; font-size: 13px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
-.lp-shell-view-order { padding: 24px 0; border-bottom: 1px solid var(--line); }
-.lp-shell-view-order > header { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 24px; }
-.lp-shell-view-order header strong, .lp-shell-view-order header small { display: block; }
-.lp-shell-view-order header small { margin-top: 5px; color: var(--ink-2); font-size: 12px; }
-.lp-shell-view-order-amount { text-align: right; font-size: 14px; }
-.lp-shell-view-order summary { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 18px; color: var(--ink-2); font-size: 12px; list-style: none; cursor: pointer; }
-.lp-shell-view-order summary::-webkit-details-marker { display: none; }
-.lp-shell-view-order summary > span:last-child { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; color: var(--accent-ink); }
-.lp-shell-view-order details[open] summary svg { transform: rotate(180deg); }
-.lp-shell-order-detail { min-width: 0; margin-top: 12px; padding: 16px 18px; border-top: 1px solid var(--line); background: var(--lp-soft, var(--page)); }
-.lp-shell-order-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; font-size: 13px; line-height: 1.6; }
-.lp-shell-order-facts > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: baseline; gap: 12px; min-width: 0; }
-.lp-shell-order-facts dt { color: var(--ink-2); }
-.lp-shell-order-facts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font-weight: 500; }
-.lp-shell-order-facts .lp-shell-order-points { color: var(--lp-link, var(--accent-ink)); font-weight: 600; font-variant-numeric: tabular-nums; }
-.lp-shell-order-numbers { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-.lp-shell-order-numbers > h3 { margin-bottom: 4px; font-size: 13px; }
-.lp-shell-order-numbers > ul { margin: 0; padding: 0; list-style: none; }
-.lp-shell-order-numbers > .lp-shell-view-error { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-block: 8px; }
-.lp-shell-order-numbers .lp-shell-view-order-number { padding-block: 10px; }
-.lp-shell-order-numbers .lp-shell-view-order-number:first-child { border-top: 0; }
-.lp-shell-order-numbers .lp-shell-view-order-number > span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-variant-numeric: tabular-nums; }
-.lp-shell-order-numbers .lp-shell-view-order-number > span > svg { flex-shrink: 0; color: var(--ink-2); }
-.lp-shell-order-reference { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 12px; }
-.lp-shell-order-reference > code { display: block; min-width: 0; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.lp-shell-order-reference .lp-copy-control { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.lp-shell-order-reference .lp-copy-control > [role="status"]:empty { display: none; }
 .lp-shell-view-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding-bottom: 30px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
 .lp-shell-view-metrics > div { display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 8px; color: var(--ink-2); font-size: 12px; }
 .lp-shell-view-metrics strong { grid-column: 2; color: var(--ink); font-size: 28px; font-weight: 400; font-variant-numeric: tabular-nums; }
@@ -199,7 +164,6 @@
 .lp-shell-view-region h2 { font-size: 15px; }
 .lp-shell-page.is-account .lp-shell-body { display: flex; flex-direction: column; }
 .lp-shell-page.is-account .lp-shell-view { flex: 1; min-height: 0; }
-.lp-shell-page.is-account .lp-shell-view-content { padding-top: 20px; padding-bottom: 24px; }
 .lp-shell-page.is-account .lp-shell-view-title { margin-bottom: 16px; }
 .lp-shell-account-center { display: grid; gap: 18px; }
 .lp-shell-account-overview { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; padding: 16px 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
@@ -225,7 +189,6 @@
 .lp-shell-account-facts .lp-shell-account-id { font-size: 12px; }
 .lp-shell-account-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .lp-shell-account-footer .lp-shell-view-error { flex-basis: 100%; }
-.lp-shell-page.is-settings .lp-shell-view-content { max-width: 1160px; padding-top: 24px; padding-bottom: 28px; }
 .lp-shell-page.is-settings .lp-shell-view-title { margin-bottom: 20px; }
 .lp-shell-view-settings { display: grid; gap: 24px; }
 .lp-shell-settings-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--line); }
@@ -234,8 +197,10 @@
 .lp-shell-settings-tabs > button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent-ink); }
 .lp-shell-settings-panel { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; gap: 28px 32px; min-width: 0; }
 .lp-shell-settings-panel[hidden] { display: none; }
+.lp-shell-settings-panel > .lp-shell-view-meta { grid-column: 1 / -1; }
 .lp-shell-settings-panel > .lp-shell-view-settings-group { padding-top: 12px; border-top: 0; border-bottom: 0; }
 .lp-shell-settings-panel .lp-account-profile { grid-column: auto; }
+.lp-shell-settings-panel[id$="-profile-panel"] { grid-template-columns: minmax(0, 1fr); }
 .lp-shell-settings-panel .lp-account-profile-row { min-height: 80px; padding-block: 16px; }
 .lp-shell-settings-panel .lp-account-profile-row > div:not(.lp-account-profile-trigger) { grid-template-columns: 1fr; gap: 6px; }
 .lp-shell-settings-panel .lp-account-profile-trigger { justify-self: end; }
@@ -280,10 +245,8 @@
 .lp-shell-settings-shortcuts > a > svg { color: var(--ink-2); }
 .lp-shell-settings-shortcuts > a > strong { color: var(--ink-2); font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
 /* Preserve the form's rhythm; short windows scroll instead of compressing controls. */
-.lp-shell-page.is-purchase .lp-shell-view-content { padding-top: 24px; padding-bottom: 24px; }
 .lp-shell-page.is-purchase .lp-shell-view-title { margin-bottom: 24px; }
 @media (max-width: 1100px) {
-  .lp-shell-view-content, .lp-shell-view-header { padding-inline: 24px; }
   .lp-shell-view-purchase { grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr); gap: 24px; }
   .lp-shell-view-options { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .lp-shell-view-option { justify-content: flex-start; padding-inline: 14px; }
@@ -296,7 +259,7 @@
   .lp-shell-view-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lp-shell-view-option { justify-content: center; }
   .lp-shell-page.is-inbox .lp-shell-view { display: block; overflow-y: auto; }
-  .lp-shell-page.is-inbox .lp-shell-view-content { display: block; }
+  .lp-shell-page.is-inbox .lp-page-container { display: block; }
   .lp-shell-view-inbox { grid-template-columns: 1fr; grid-template-rows: clamp(160px, 32dvh, 280px) auto; flex: none; }
   .lp-shell-view-message-detail { overflow: visible; padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   .lp-shell-settings-panel { grid-template-columns: 1fr; }
@@ -308,9 +271,6 @@
   .lp-shell-account-information { padding-inline: 16px; }
 }
 @media (max-width: 640px) {
-  .lp-shell-order-detail { padding: 14px 12px; }
-  .lp-shell-order-facts { grid-template-columns: 1fr; gap: 10px; }
-  .lp-shell-order-reference > code { max-width: min(24ch, 100%); }
   .lp-shell-account-overview { flex-direction: column; align-items: flex-start; gap: 14px; }
   .lp-shell-account-metrics { grid-template-columns: 1fr; gap: 10px; }
   .lp-shell-account-metric { gap: 8px 14px; }
@@ -321,18 +281,10 @@
   .lp-shell-account-facts > div:nth-last-child(2) { border-bottom: 1px solid var(--line); }
   .lp-shell-view-plans { grid-template-columns: 1fr; }
 }
-@media (max-width: 800px) {
-  .lp-shell-view-header { min-height: 66px; padding-left: 62px; }
-  .lp-shell-view-content { padding-top: 24px; }
-}
 @media (max-width: 540px) {
-  .lp-shell-view-content { padding: 22px 18px 36px; }
-  .lp-shell-view-header { padding-right: 18px; }
   .lp-shell-view-confirm-dialog { padding: 22px; }
   .lp-shell-view-confirm-actions { justify-content: stretch; }
   .lp-shell-view-confirm-actions > button { flex: 1; }
-  .lp-shell-view-brand { font-size: 16px; gap: 5px; }
-  .lp-shell-view-brand span { font-size: 11px; }
   .lp-shell-view-title { align-items: flex-start; margin-bottom: 24px; }
   .lp-shell-view-title h1 { font-size: 22px; }
   .lp-shell-view-account-balance { font-size: 11px; }
@@ -344,10 +296,6 @@
   .lp-shell-view-option { justify-content: flex-start; }
   .lp-shell-view-plan { padding: 14px; gap: 10px; }
   .lp-shell-view-plan b { font-size: 16px; }
-  .lp-shell-view-order > header { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; }
-  .lp-shell-view-order header > :last-child { grid-column: 1 / -1; justify-self: start; }
-  .lp-shell-view-order-amount strong { font-size: 13px; }
-  .lp-shell-view-order summary { flex-direction: column; gap: 10px; }
   .lp-shell-view-metrics { grid-template-columns: 1fr; gap: 18px; }
   .lp-shell-view-metrics > div { grid-template-columns: 20px minmax(0, 1fr) auto; }
   .lp-shell-view-metrics strong { grid-column: 3; font-size: 24px; }

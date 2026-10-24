@@ -7,6 +7,7 @@ export type ReferenceNumber = { id: string; phone: string; phoneLabel: string; c
 export type ReferencePeriod = { label: string; messages: number; numbers: number };
 export type ReferenceData = {
   userName: string; isDemo: boolean; balance: number; orderCount: number;
+  totalNumbers?: number; totalMessages?: number; activeNumbers?: number;
   numbers: ReferenceNumber[]; messages: ReferenceMessage[]; services: string[];
   currentMonth: string; months: string[];
   trends: Record<string, { endDate: string; monthMessages: number; weeks: ReferencePeriod[]; days: ReferencePeriod[] }>;
@@ -41,11 +42,24 @@ export function referenceData(data: WorkspaceData, locale: Locale = 'zh-CN'): Re
       weeks: [0, 7, 14, 21].map((offset, index) => period(beforeEnd(29 - offset), beforeEnd(index === 3 ? 0 : 23 - offset))),
     };
   }
+  const overview = data.dashboard.overview;
+  if (overview) {
+    const days = overview.daily.map(day => ({ label: dayLabel(new Date(day.date)), messages: day.messages, numbers: day.numbers }));
+    const chunks = [days.slice(0, 7), days.slice(7, 14), days.slice(14, 21), days.slice(21)];
+    trends[monthId(now)] = {
+      endDate: dateLabel(now, locale, { year: 'numeric', month: '2-digit', day: '2-digit' }),
+      monthMessages: overview.receivedThisMonth,
+      days: days.slice(-7),
+      weeks: chunks.filter(chunk => chunk.length).map(chunk => ({ label: `${chunk[0].label} ~ ${chunk[chunk.length - 1].label}`, messages: chunk.reduce((sum, day) => sum + day.messages, 0), numbers: chunk[chunk.length - 1].numbers })),
+    };
+  }
   return {
     userName: data.account.displayName, isDemo: data.account.isDemo, balance: data.account.pointsBalance,
-    orderCount: data.orders.length, services: [...new Set(data.numbers.map(number => number.service))],
+    orderCount: data.dashboard.overview?.totalOrders ?? data.orders.length,
+    totalNumbers: data.dashboard.overview?.totalNumbers, totalMessages: data.dashboard.overview?.totalMessages, activeNumbers: data.dashboard.activeNumbers,
+    services: [...new Set(data.numbers.map(number => number.service))],
     numbers: data.numbers.map(number => ({
-      id: number.id, phone: number.phoneNumber,
+      id: number.allocationId ?? number.id, phone: number.phoneNumber,
       phoneLabel: number.phoneNumber,
       country: number.country, service: number.service, remaining: number.remainingDays, status: number.status,
     })),

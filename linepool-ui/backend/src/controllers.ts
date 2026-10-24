@@ -51,6 +51,8 @@ export class WorkspaceController {
   async catalog() { return { data: await this.workspace.catalog() }; }
   @Get('dashboard')
   async dashboard(@Req() request: SessionRequest) { return { data: await this.workspace.dashboard(request.user.id) }; }
+  @Get('dashboard/overview')
+  async overview(@Req() request: SessionRequest) { return { data: await this.workspace.dashboardOverview(request.user.id) }; }
   @Get('numbers')
   numbers(@Req() request: SessionRequest, @Query(new SchemaPipe(numbersQuerySchema)) input: NumbersQuery) {
     return this.workspace.numbers(request.user.id, input);
@@ -81,7 +83,7 @@ export class WorkspaceController {
     return this.workspace.points(request.user.id, input);
   }
   @Get('account')
-  async account(@Req() request: SessionRequest) { return { data: await this.workspace.account(request.user.id) }; }
+  async account(@Req() request: SessionRequest) { return { data: { ...await this.workspace.account(request.user.id), sandboxEnabled: this.auth.sandboxEnabled } }; }
   @Patch('account/profile')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async profile(@Req() request: SessionRequest, @Body(new SchemaPipe(accountProfileInputSchema)) input: AccountProfileInput) {

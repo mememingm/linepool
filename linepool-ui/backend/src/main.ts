@@ -23,12 +23,18 @@ import { ReceivingSync } from './providers/receiving-sync.js';
 import { AllocationExpiry } from './allocation-expiry.js';
 import { BusinessThrottlerGuard } from './business-throttler.js';
 import { Sandbox, SandboxController } from './sandbox.js';
+import { WebhookInbox } from './providers/webhook-inbox.js';
+import { PingCodeWebhookController, type RawWebhookRequest } from './providers/pingcode-webhook.js';
+import { Recharge, RechargeController } from './recharge.js';
+import { AgentInventory } from './agent-inventory.js';
+import { AgentInventoryExpiry } from './agent-inventory-expiry.js';
+import { AgentInventoryController } from './agent-inventory-controller.js';
 
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }])],
-  controllers: [AuthController, WorkspaceController, HealthController, AdminController, NumberServicesController, SandboxController],
+  controllers: [AuthController, WorkspaceController, HealthController, AdminController, NumberServicesController, SandboxController, RechargeController, PingCodeWebhookController, AgentInventoryController],
   providers: [Environment, Database, Authentication, SessionGuard, Workspace, Ordering, Administration, AdminGuard, NumberServices,
-    AllocationExpiry, ReceivingSync, Sandbox, { provide: ReceivingProvider, useFactory: () => new MockReceivingProvider() },
+    AgentInventory, AgentInventoryExpiry, AllocationExpiry, ReceivingSync, Sandbox, Recharge, WebhookInbox, { provide: ReceivingProvider, useFactory: () => new MockReceivingProvider() },
     { provide: NumberServiceProvider, useClass: MockNumberServiceProvider },
     { provide: APP_GUARD, useClass: OriginGuard }, { provide: APP_GUARD, useClass: BusinessThrottlerGuard }],
 })
@@ -39,7 +45,11 @@ async function main() {
   if (environment.values.TRUSTED_PROXY_IPS.length) app.set('trust proxy', environment.values.TRUSTED_PROXY_IPS);
   app.setGlobalPrefix('api');
   app.use(helmet());
-  app.use(json({ limit: '16kb' }));
+  app.use(json({ limit: '16kb', verify: (request, _response, body) => {
+    if (request.url?.split('?')[0]?.replace(/\/+$/, '') === '/api/webhooks/pingcode') {
+      (request as RawWebhookRequest).rawBody = Buffer.from(body);
+    }
+  } }));
   app.use(cookieParser());
   app.use((_request: unknown, response: { setHeader: (name: string, value: string) => void }, next: () => void) => {
     response.setHeader('Cache-Control', 'no-store');

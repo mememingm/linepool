@@ -2,7 +2,7 @@
 .lp-shell-view .lp-purchase-flow h2, .lp-shell-view .lp-purchase-complete h2 { font-size: 19px; font-weight: 500; }
 .lp-purchase-flow button, .lp-purchase-flow input { font: inherit; }
 .lp-purchase-flow button:disabled { cursor: default; }
-.lp-purchase-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 24px; padding: 0; list-style: none; }
+.lp-purchase-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 24px; padding: 0; list-style: none; }
 .lp-purchase-steps li { min-width: 0; padding-bottom: 14px; border-bottom: 2px solid var(--line); }
 .lp-purchase-steps button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--ink-3); text-align: left; font-size: 14px; }
 .lp-purchase-steps button > span { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 50%; font-size: 13px; }
@@ -27,22 +27,22 @@
 .lp-purchase-platform { display: flex; flex-direction: column; justify-content: space-between; gap: 20px; min-width: 0; min-height: 122px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); text-align: left; transition: border-color 140ms ease, background 140ms ease; }
 .lp-purchase-platform:hover:not(:disabled), .lp-purchase-platform.is-selected { border-color: var(--accent); background: var(--accent-tint); }
 .lp-purchase-platform:disabled { color: var(--ink-2); background: transparent; }
-.lp-purchase-platform .lp-shell-view-service { display: flex; align-items: center; gap: 12px; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
-.lp-purchase-platform .lp-shell-view-service img { flex: 0 0 28px; width: 28px; height: 28px; padding: 3px; border-radius: 4px; background: #fff; object-fit: contain; }
+.lp-purchase-platform .lp-shell-view-service { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600; line-height: 1.4; word-break: normal; overflow-wrap: normal; white-space: nowrap; flex-wrap: wrap; }
+.lp-purchase-platform .lp-shell-view-service img { flex: 0 0 40px; width: 40px; height: 40px; padding: 3px; border-radius: 4px; background: #fff; object-fit: contain; }
 .lp-purchase-platform-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; color: var(--ink-2); font-size: 12px; }
 .lp-purchase-platform:not(:disabled) .lp-purchase-platform-status { color: var(--accent-ink); }
 .lp-purchase-context { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; padding-bottom: 18px; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 14px; }
 .lp-purchase-context > span { display: inline-flex; align-items: center; gap: 8px; }
 .lp-purchase-context img { object-fit: contain; }
-.lp-purchase-countries { display: grid; gap: 10px; }
+.lp-purchase-region, .lp-purchase-area-code { display: grid; gap: 10px; }
+.lp-purchase-field-label { color: var(--ink); font-size: 14px; font-weight: 500; }
+.lp-purchase-region > p { margin: 0; color: var(--ink-2); font-size: 12px; }
 .lp-purchase-country { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); text-align: left; }
 .lp-purchase-country > span:first-of-type { flex: 1; min-width: 0; }
 .lp-purchase-country strong, .lp-purchase-country small { display: block; }
 .lp-purchase-country strong { font-size: 15px; font-weight: 500; }
 .lp-purchase-country small { margin-top: 3px; color: var(--ink-2); font-size: 12px; }
 .lp-purchase-country > img { flex: 0 0 28px; width: 28px; object-fit: contain; }
-.lp-purchase-country:hover:not(:disabled), .lp-purchase-country.is-selected { border-color: var(--accent); background: var(--accent-tint); }
-.lp-purchase-country:disabled { opacity: .6; }
 .lp-purchase-allocation { display: grid; gap: 12px; }
 .lp-purchase-allocation label { display: flex; align-items: center; gap: 12px; min-height: 80px; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
 .lp-purchase-allocation label > span { flex: 1; }
@@ -53,9 +53,10 @@
 .lp-purchase-allocation label > svg { color: var(--ink-3); }
 .lp-purchase-allocation label.is-selected { border-color: var(--accent); background: var(--accent-tint); }
 .lp-purchase-allocation label.is-selected > svg { color: var(--accent); }
+.lp-purchase-allocation label:has(input:disabled) { cursor: default; opacity: .6; }
 .lp-purchase-next { display: flex; justify-content: flex-end; padding-top: 12px; }
-.lp-purchase-capability { display: flex; align-items: center; gap: 10px; color: var(--ink); }
-.lp-purchase-capability strong { font-size: 15px; font-weight: 500; }
+.lp-purchase-capability { display: flex; align-items: center; gap: 8px; min-height: 24px; color: var(--ink-2); font-size: 14px; font-weight: 500; line-height: 1.5; }
+.lp-purchase-capability > svg { flex: 0 0 16px; }
 .lp-purchase-plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .lp-purchase-plans label { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 12px; min-height: 142px; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
 .lp-purchase-plans label.is-selected { border-color: var(--accent); background: var(--accent-tint); }
@@ -100,7 +101,7 @@
   .lp-purchase-platforms { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .lp-purchase-platform { min-height: 116px; padding: 14px 12px; }
   .lp-purchase-platform .lp-shell-view-service { gap: 8px; font-size: 14px; }
-  .lp-purchase-platform .lp-shell-view-service img { flex-basis: 24px; width: 24px; height: 24px; }
+  .lp-purchase-platform .lp-shell-view-service img { flex-basis: 32px; width: 32px; height: 32px; }
   .lp-purchase-plans label { padding: 14px 12px; gap: 10px; }
   .lp-purchase-plans strong { font-size: 18px; }
   .lp-purchase-country { padding: 12px; gap: 10px; }

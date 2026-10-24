@@ -49,6 +49,9 @@ export async function seedDemo(client: pg.Client, input: RegisterInput) {
             stableId(`number:${region.id}:${service}:${index}`), region.id, service,
             generatedPhoneNumber(region.id, service, index),
           ]);
+          const numberId = stableId(`number:${region.id}:${service}:${index}`);
+          await client.query(`INSERT INTO number_platforms(id,number_id,platform_id,provider,external_project_id)
+            VALUES($1,$1,$2,'pingcode-mock',$2) ON CONFLICT(number_id,platform_id) DO NOTHING`, [numberId,service]);
         }
       }
     }
@@ -78,8 +81,8 @@ export async function seedDemo(client: pg.Client, input: RegisterInput) {
         const expiresAt = new Date(assignedAt.getTime() + offer.duration_days * 86400000);
         await client.query(`INSERT INTO orders(id,order_number,user_id,region_id,service,plan,plan_name,quantity,unit_points,total_points,duration_days,idempotency_key,created_at,fulfillment_status,completed_at)
           VALUES($1,$2,$3,$4,$5,$6,$7,1,$8,$8,$9,$10,$11,'COMPLETED',$11)`, [orderId, `LP-DEMO-${index + 1}`, userId, fixture.region, fixture.service, fixture.plan, offer.name, offer.unit_points, offer.duration_days, stableId(`request:${index}`), assignedAt]);
-        const allocated = await client.query('UPDATE phone_numbers SET assigned_user_id=$1,order_id=$2,assigned_at=$3,expires_at=$4 WHERE id=$5 AND assigned_user_id IS NULL', [userId, orderId, assignedAt, expiresAt, numberId]);
-        if (allocated.rowCount !== 1) throw new Error('Demo fixture inventory was already assigned');
+        await client.query(`INSERT INTO number_allocations(number_id,platform_id,user_id,order_id,assigned_at,expires_at)
+          VALUES($1,$2,$3,$4,$5,$6)`, [numberId,fixture.service,userId,orderId,assignedAt,expiresAt]);
         balance -= offer.unit_points;
         if (balance < 0) throw new Error('Demo fixtures exceed initial credit');
         await client.query("INSERT INTO point_ledger(id,user_id,type,delta,balance_after,description,reference_id,created_at) VALUES($1,$2,'ORDER_DEBIT',$3,$4,$5,$6,$7)", [stableId(`ledger:${index}`), userId, -offer.unit_points, balance, `Demo purchase ${fixture.region}`, orderId, assignedAt]);

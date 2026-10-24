@@ -4,7 +4,7 @@ import markup from './reference/authkit-home.html?raw';
 import overrides from './reference/authkit-home-overrides.css?raw';
 import sharedStyles from './welcome.css?raw';
 import { mountHomeMotion } from './reference/authkit-home-motion';
-import { OriginalScene, PreferenceControls, useWelcomePreferences } from './WelcomeShared';
+import { PreferenceControls, useWelcomePreferences } from './WelcomeShared';
 
 function mountCards(root: ShadowRoot) {
   const cards = [...root.querySelectorAll<HTMLElement>('.hero__cards > div')];
@@ -115,5 +115,5 @@ export default function WelcomePage() {
     if (selected) selected.textContent = preferences.t('{months} 个月', { months: period });
     document.title = `LINEPOOL · ${preferences.t('号码与短信服务')}`;
   }, [root, preferences.language, preferences.theme]);
-  return <div className="lp-welcome-page"><OriginalScene /><div ref={host} className="authkit-home" data-theme={preferences.theme} lang={preferences.locale} />{controls && createPortal(<PreferenceControls preferences={preferences} />, controls)}</div>;
+  return <div className="lp-welcome-page"><div ref={host} className="authkit-home" data-theme={preferences.theme} lang={preferences.locale} />{controls && createPortal(<PreferenceControls preferences={preferences} />, controls)}</div>;
 }

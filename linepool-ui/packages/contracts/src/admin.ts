@@ -1,22 +1,24 @@
 import { z } from 'zod';
-import { paginationQuerySchema, regionIdSchema, serviceSchema, uuidSchema, planIdSchema, fulfillmentStatusSchema } from './index.js';
+import { paginationQuerySchema, regionIdSchema, serviceSchema, uuidSchema, planIdSchema, fulfillmentStatusSchema } from './primitives.js';
 
 export const adminQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(200).default(''),
   status: z.string().max(40).default(''),
   region: regionIdSchema.optional(),
   userId: uuidSchema.optional(),
+  provider: z.enum(['pingcode', 'pingcode-mock']).optional(),
 });
+export const serviceDurationSchema = z.union([z.literal(7), z.literal(30)]);
 export const reasonSchema = z.string().trim().min(3).max(500);
 export const userStatusInputSchema = z.strictObject({ status: z.enum(['ACTIVE', 'DISABLED']), reason: reasonSchema });
 export const numberActionInputSchema = z.discriminatedUnion('action', [
-  z.strictObject({ action: z.literal('assign'), userId: uuidSchema, durationDays: z.number().int().min(1).max(365), reason: reasonSchema }),
+  z.strictObject({ action: z.literal('assign'), userId: uuidSchema, durationDays: serviceDurationSchema, reason: reasonSchema }),
   z.strictObject({ action: z.literal('reclaim'), expectedUserId: uuidSchema, expectedAllocationId: uuidSchema, reason: reasonSchema }),
   z.strictObject({ action: z.literal('sale'), saleEnabled: z.boolean(), reason: reasonSchema }),
 ]);
 export const productInputSchema = z.strictObject({
   region: regionIdSchema, service: serviceSchema, plan: planIdSchema,
-  name: z.string().trim().min(1).max(100), durationDays: z.number().int().min(1).max(365),
+  name: z.string().trim().min(1).max(100), durationDays: serviceDurationSchema,
   unitPoints: z.number().int().min(1).max(1000000), isActive: z.boolean(),
   areaPrefix: z.string().trim().max(20).regex(/^\+?\d*$/),
   capability: z.literal('RECEIVE'),
@@ -29,7 +31,9 @@ export const adminUserSchema = z.object({
   is_demo: z.boolean(), number_count: z.number(), order_count: z.number(),
 });
 export const adminNumberSchema = z.object({
-  id: uuidSchema, phone_number: z.string(), region_id: regionIdSchema, country: z.string(), prefix: z.string(),
+  id: uuidSchema, number_id: uuidSchema, phone_number: z.string(), region_id: regionIdSchema, country: z.string(), prefix: z.string(),
+  provider: z.enum(['pingcode', 'pingcode-mock']), external_number_id: z.string().nullable(),
+  external_project_id: z.string(), project_name: z.string(), resource_expires_at: date.nullable(),
   service: serviceSchema, capability: z.string(), resource_status: z.string(), sale_enabled: z.boolean(),
   sale_status: z.string(), assigned_user_id: uuidSchema.nullable(), owner_name: z.string().nullable(),
   allocation_id: uuidSchema.nullable(),
@@ -39,7 +43,8 @@ export const adminProductSchema = z.object({
   region_id: regionIdSchema, service: serviceSchema, plan: planIdSchema, name: z.string(),
   duration_days: z.number(), unit_points: z.number(), is_active: z.boolean(), country: z.string(),
   area_prefix: z.string(), capability: z.literal('RECEIVE'),
-  allow_renewal: z.boolean(), available_count: z.number(),
+  allow_renewal: z.boolean(), available_count: z.number(), pc_available_count: z.number(),
+  pc_project_id: z.string().nullable(), pc_project_name: z.string().nullable(),
 });
 export const adminOrderSchema = z.object({
   id: uuidSchema, order_number: z.string(), user_id: uuidSchema, owner_name: z.string(),
@@ -48,15 +53,30 @@ export const adminOrderSchema = z.object({
   is_demo: z.boolean(), assigned_count: z.number(),
 });
 export const allocationSchema = z.object({
-  id: uuidSchema, number_id: uuidSchema, user_id: uuidSchema, order_id: uuidSchema.nullable(),
+  id: uuidSchema, number_id: uuidSchema, platform_id: serviceSchema, user_id: uuidSchema, order_id: uuidSchema.nullable(),
   phone_number: z.string(), owner_name: z.string(), assigned_at: date, expires_at: date, released_at: date.nullable(),
 });
 export const auditSchema = z.object({
   id: uuidSchema, actor_name: z.string(), action: z.string(), target_id: z.string(),
   reason: z.string(), before_data: z.unknown(), after_data: z.unknown(), created_at: date,
 });
+export const adminProjectSchema = z.object({
+  provider: z.enum(['pingcode', 'pingcode-mock']), external_project_id: z.string(),
+  project_name: z.string(), platform_id: serviceSchema, platform_name: z.string(),
+  is_active: z.boolean(), synced_at: date, number_count: z.number(),
+});
+export const adminReceiptSchema = z.object({
+  provider: z.enum(['pingcode', 'pingcode-mock']), external_message_id: z.string(),
+  external_project_id: z.string().nullable(), external_number_id: z.string().nullable(),
+  platform: z.string().nullable(), phone_number: z.string().nullable(), owner_name: z.string().nullable(),
+  sender: z.string().nullable(), body: z.string().nullable(), sms_received_at: date.nullable(),
+  recorded_at: date, processed_at: date.nullable(),
+  processing_status: z.enum(['PENDING', 'IMPORTED', 'UNMATCHED']), failure_reason: z.string().nullable(),
+  event_id: z.string().nullable(), delivery_count: z.number(),
+});
 export const adminSummarySchema = z.object({
   users: z.number(), activeNumbers: z.number(), saleNumbers: z.number(), expiringNumbers: z.number(),
+  pcSaleNumbers: z.number(), demoSaleNumbers: z.number(),
   todayOrders: z.number(),
   recentOrders: z.array(adminOrderSchema), expiring: z.array(adminNumberSchema),
   recentAudit: z.array(auditSchema), exceptionOrders: z.number(),
@@ -68,6 +88,8 @@ export type AdminProduct = z.infer<typeof adminProductSchema>;
 export type AdminOrder = z.infer<typeof adminOrderSchema>;
 export type Allocation = z.infer<typeof allocationSchema>;
 export type AdminAudit = z.infer<typeof auditSchema>;
+export type AdminProject = z.infer<typeof adminProjectSchema>;
+export type AdminReceipt = z.infer<typeof adminReceiptSchema>;
 export type AdminSummary = z.infer<typeof adminSummarySchema>;
 export type ProductInput = z.infer<typeof productInputSchema>;
 export type NumberActionInput = z.infer<typeof numberActionInputSchema>;

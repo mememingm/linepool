@@ -5,6 +5,9 @@
 .lp-display-settings { margin-top: 28px; }
 .lp-display-settings h2 { margin-bottom: 12px; }
 .lp-display-settings .lp-select-trigger { width: 160px; min-width: 110px; max-width: 48%; }
-.lp-shell-display-bar { display: flex; justify-content: flex-end; padding: 14px 32px 0; }
-.lp-shell-page.is-dashboard .lp-shell-display-bar { margin-bottom: -5px; }
-@media (max-width: 800px) { .lp-shell-display-bar { padding: 10px 14px 0 54px; min-height: 42px; } }
+.lp-shell-display-bar { display: flex; justify-content: flex-end; min-width: 0; min-height: 54px; padding: 10px 32px; border-bottom: 1px solid var(--shell-line); }
+.lp-shell-display-bar > .lp-display-toolbar, .lp-shell-header-actions { flex: 0 0 auto; max-width: 100%; }
+.lp-shell-header-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.lp-shell-refresh-label { white-space: nowrap; }
+@media (max-width: 800px) { .lp-shell-display-bar { padding: 10px 14px 10px 54px; } }
+@media (max-width: 540px) { .lp-shell-refresh-label { display: none; } }

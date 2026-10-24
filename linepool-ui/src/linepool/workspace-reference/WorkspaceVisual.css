@@ -45,15 +45,13 @@
 .lp-shell-page[data-theme] .lp-shell-display-bar { background: var(--shell-surface); }
 .lp-shell-page .lp-display-toolbar button { border-radius: 8px; }
 .lp-shell-page :is(.lp-display-toolbar, .lp-display-settings) :is(button, select):focus-visible { outline-color: var(--lp-blue); }
-.lp-shell-page[data-theme] .lp-shell-view-header { background: var(--surface); border-color: var(--line); }
-.lp-shell-page .lp-shell-view-brand { font-weight: 700; color: var(--lp-link); }
 .lp-shell-page .lp-shell-view-title h1 { font-size: 26px; font-weight: 600; letter-spacing: -.5px; }
 .lp-shell-page .lp-shell-view-title p { line-height: 1.7; }
 .lp-shell-page .lp-shell-view :is(h2, h3) { font-weight: 600; }
 .lp-shell-page .lp-shell-view strong { font-weight: 600; }
 .lp-shell-page .lp-shell-view-account-balance { padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); }
 .lp-shell-page .lp-shell-view .lp-shell-view-link { color: var(--lp-link); }
-.lp-shell-page .lp-shell-view :is(.lp-shell-view-search, .lp-shell-view-toolbar select, .lp-region-select-trigger, .lp-shell-view-stepper) { border-radius: 9px; }
+.lp-shell-page .lp-shell-view :is(.lp-shell-view-toolbar select, .lp-region-select-trigger, .lp-shell-view-stepper) { border-radius: 9px; }
 
 /* Purchase: one clear form card and a compact, visually anchored checkout card. */
 .lp-shell-page .lp-shell-view-purchase { gap: 24px; }
@@ -113,7 +111,6 @@
 .lp-shell-page .lp-shell-view-table th { background: var(--lp-soft); font-weight: 500; }
 .lp-shell-page .lp-shell-view-table tbody tr:hover { background: var(--lp-soft); }
 .lp-shell-page .lp-shell-view-table tbody tr:last-child td { border-bottom: 0; }
-.lp-shell-page .lp-shell-view-order { margin-bottom: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--lp-shadow); }
 .lp-shell-page .lp-shell-view-metrics { gap: 16px; border-bottom: 0; margin-bottom: 0; padding-bottom: 24px; }
 .lp-shell-page .lp-shell-view-metrics > div { padding: 20px; border: 1px solid var(--line); border-radius: var(--lp-radius); background: var(--surface); box-shadow: var(--lp-shadow); }
 .lp-shell-page .lp-shell-view-metrics strong, .lp-shell-page .lp-shell-account-metric strong { font-size: 30px; font-weight: 650; }
@@ -149,7 +146,7 @@
 .lp-shell-page[data-theme="dark"] :is(.lp-ref-metric, .lp-shell-view-order-summary, .lp-shell-account-metric:first-child),
 .lp-shell-page[data-theme="dark"] .lp-shell-view-order-summary.is-complete { background: var(--surface); }
 .lp-shell-page[data-theme="dark"] :is(.lp-ref-metric-icon, .lp-ref-account-stat-icon, .lp-shell-account-metric-label > svg) { color: var(--ink-2); }
-.lp-shell-page[data-theme="dark"] :is(.lp-ref-metric-value strong, .lp-shell-view-total strong, .lp-shell-settings-balance strong, .lp-shell-view-code > strong, .lp-shell-order-points) { color: var(--ink); }
+.lp-shell-page[data-theme="dark"] :is(.lp-ref-metric-value strong, .lp-shell-view-total strong, .lp-shell-settings-balance strong, .lp-shell-view-code > strong) { color: var(--ink); }
 .lp-shell-page[data-theme="dark"] .lp-shell-view-confirm-dialog::backdrop { background: var(--lp-dark-overlay); }
 .lp-shell-page[data-theme="dark"] :is(.lp-shell-view-submit, .lp-shell-view-confirm-actions, .lp-shell-view-success-primary) { --accent-ink: var(--lp-dark-brand-hover); }
 .lp-shell-page[data-theme="dark"] :is(.lp-shell-view-submit > button, .lp-shell-view-confirm-actions > button:last-child, .lp-shell-view-success-primary) { color: var(--lp-dark-page); }

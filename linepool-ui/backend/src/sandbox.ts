@@ -7,13 +7,13 @@ import { SessionGuard, type SessionRequest } from './authentication.js';
 import { ReceivingSync } from './providers/receiving-sync.js';
 import { MockFulfillment } from './mock-fulfillment.js';
 const outcome = z.enum(['SUCCESS','FAILED','UNKNOWN']);
-const inboundSchema=z.object({id:z.uuid(),numberId:z.uuid(),outcome,resolve:z.boolean().optional()}).strict();
+const inboundSchema=z.object({id:z.uuid(),numberId:z.uuid(),allocationId:z.uuid().optional(),outcome,resolve:z.boolean().optional()}).strict();
 const fulfillmentSchema=z.object({orderId:z.uuid(),outcome}).strict();
 
 @Injectable()
 export class Sandbox {
  constructor(private readonly db:Database,private readonly environment:Environment,private readonly receiving:ReceivingSync){}
- get enabled(){return this.environment.values.LOCAL_SANDBOX;}
+ get enabled(){return this.environment.values.NODE_ENV !== 'production' && this.environment.values.LOCAL_SANDBOX;}
  private guard(){if(!this.enabled)throw new ApiFailure(404,'NOT_FOUND','Local sandbox is disabled');}
  async credit(userId:string){
   this.guard();return this.db.transaction(async client=>{
@@ -38,17 +38,19 @@ export class Sandbox {
    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`sandbox:${input.id}`]);
    const {rows:[prior]}=await client.query('SELECT * FROM sandbox_inbound WHERE id=$1',[input.id]);
    if(prior){
-    if(prior.user_id!==userId||prior.number_id!==input.numberId)throw new ApiFailure(409,'IDEMPOTENCY_CONFLICT','Mock event belongs to a different request');
+    if(prior.user_id!==userId||prior.number_id!==input.numberId||(input.allocationId&&prior.allocation_id!==input.allocationId))throw new ApiFailure(409,'IDEMPOTENCY_CONFLICT','Mock event belongs to a different request');
     if(input.resolve&&prior.outcome==='UNKNOWN'){
      await client.query("UPDATE sandbox_inbound SET outcome='SUCCESS' WHERE id=$1",[input.id]);prior.outcome='SUCCESS';
     }else if(prior.outcome!==input.outcome&&!(input.resolve&&prior.outcome==='SUCCESS'))throw new ApiFailure(409,'IDEMPOTENCY_CONFLICT','Mock event outcome differs');
     return prior;
    }
    if(input.resolve)throw new ApiFailure(404,'NOT_FOUND','Mock event not found');
-   const {rows:[number]}=await client.query(`SELECT n.service,a.id AS allocation_id FROM phone_numbers n JOIN number_allocations a
-    ON a.number_id=n.id AND a.user_id=n.assigned_user_id AND a.released_at IS NULL
-    WHERE n.id=$1 AND n.assigned_user_id=$2 AND n.expires_at>now() FOR UPDATE OF n,a`,[input.numberId,userId]);
-   if(!number)throw new ApiFailure(409,'PROVIDER_ALLOCATION_INACTIVE','Service is not active for this account');
+   const {rows:numbers}=await client.query(`SELECT a.platform_id AS service,a.id AS allocation_id FROM phone_numbers n JOIN number_allocations a
+    ON a.number_id=n.id AND a.released_at IS NULL
+    WHERE n.id=$1 AND a.user_id=$2 AND a.expires_at>now() AND ($3::uuid IS NULL OR a.id=$3)
+    FOR UPDATE OF n,a`,[input.numberId,userId,input.allocationId??null]);
+   const number=numbers.length===1?numbers[0]:undefined;
+   if(!number)throw new ApiFailure(409,'PROVIDER_ALLOCATION_INACTIVE','Choose one active platform service for this account');
    const {rows:[event]}=await client.query(`INSERT INTO sandbox_inbound(id,user_id,number_id,allocation_id,service,outcome)
     VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,[input.id,userId,input.numberId,number.allocation_id,number.service,input.outcome]);return event!;
   });
@@ -63,7 +65,7 @@ export class Sandbox {
 @UseGuards(SessionGuard)
 export class SandboxController {
  constructor(private readonly sandbox:Sandbox){}
- @Get()status(){return {data:{enabled:this.sandbox.enabled}};}
+ @Get()status(){if(!this.sandbox.enabled)throw new ApiFailure(404,'NOT_FOUND','Not found');return {data:{enabled:true}};}
  @Post('credit')async credit(@Req()r:SessionRequest){return {data:await this.sandbox.credit(r.user.id)};}
  @Post('fulfill')async fulfill(@Req()r:SessionRequest,@Body(new SchemaPipe(fulfillmentSchema))input:z.infer<typeof fulfillmentSchema>){return {data:await this.sandbox.fulfill(r.user.id,input)};}
  @Post('inbound')async inbound(@Req()r:SessionRequest,@Body(new SchemaPipe(inboundSchema))input:z.infer<typeof inboundSchema>){return {data:await this.sandbox.inbound(r.user.id,input)};}

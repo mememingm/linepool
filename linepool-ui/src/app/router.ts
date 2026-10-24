@@ -1,5 +1,6 @@
 import { isShellPath } from '../linepool/workspace-reference/navigation';
 import { isAdminPath } from '../linepool/admin/navigation';
+import { isAgentPath } from '../linepool/agent/navigation';
 
 export function navigate(href: string, replace = false) {
   const url = new URL(href, window.location.origin);
@@ -24,7 +25,7 @@ export function normalizeAddress() {
 }
 
 function isAppPage(path: string) {
-  return path === '/' || path === '/login' || path === '/register' || isShellPath(path) || isAdminPath(path);
+  return path === '/' || path === '/ascii-sharks' || path === '/login' || path === '/register' || isShellPath(path) || isAdminPath(path) || isAgentPath(path);
 }
 
 // Use composedPath so links inside the homepage's Shadow DOM work too.

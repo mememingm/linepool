@@ -1,35 +1,29 @@
 import pg from 'pg';
-import { readFile } from 'node:fs/promises';
 import { Environment } from '../src/environment.js';
 
-// Operational data audit, not a test: one read-only snapshot, no schema or data mutations.
+// Operational read-only data inventory; it neither generates fixtures nor changes data.
 const environment = new Environment();
 const client = new pg.Client({ connectionString: environment.values.DATABASE_URL, connectionTimeoutMillis: 5000, statement_timeout: 30000 });
 try {
   await client.connect();
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-  const migration = await readFile(new URL('../../../db/migrations/009_sms_allocation_ownership.sql', import.meta.url), 'utf8');
-  const start = migration.indexOf('SELECT m.id AS message_id,');
-  const end = migration.indexOf(';', start);
-  if (start < 0 || end < start) throw new Error('Allocation resolution SQL not found');
-  const { rows: [tables] } = await client.query<{ receipts: string | null }>("SELECT to_regclass('provider_message_receipts')::text AS receipts");
-  // 008 may exist in source but not yet be applied locally. No receipts means no receipt evidence.
-  const resolution = migration.slice(start, end).replace('provider_message_receipts p', tables!.receipts
-    ? 'provider_message_receipts p' : '(SELECT NULL::uuid AS message_id,NULL::uuid AS allocation_id WHERE false) p');
-  const { rows: counts } = await client.query(`WITH resolution AS (${resolution}) SELECT resolution,count(*)::int AS messages FROM resolution GROUP BY resolution ORDER BY resolution`);
+  const { rows: counts } = await client.query(`SELECT CASE
+    WHEN m.allocation_id IS NULL THEN 'LEGACY_UNRESOLVED'
+    WHEN a.id IS NULL OR a.number_id<>m.number_id OR a.user_id<>m.user_id OR a.platform_id IS DISTINCT FROM m.platform_id
+      OR m.received_at<a.assigned_at OR m.received_at>=LEAST(a.expires_at,COALESCE(a.released_at,a.expires_at)) THEN 'OWNERSHIP_CONFLICT'
+    ELSE 'PLATFORM_SERVICE_MATCH' END AS resolution,count(*)::int AS messages
+    FROM sms_messages m LEFT JOIN number_allocations a ON a.id=m.allocation_id GROUP BY resolution ORDER BY resolution`);
   const { rows: lifecycle } = await client.query(`SELECT
-    (SELECT count(*)::int FROM phone_numbers WHERE assigned_user_id IS NOT NULL AND expires_at<=now()) AS expired_assignments,
+    (SELECT count(*)::int FROM number_allocations WHERE released_at IS NULL AND expires_at<=now()) AS expired_services_awaiting_release,
     (SELECT count(*)::int FROM orders WHERE fulfillment_status='COMPLETED' AND completed_at IS NULL) AS missing_completion_times,
-    (SELECT count(*)::int FROM number_allocations a LEFT JOIN phone_numbers n ON n.id=a.number_id
-      WHERE a.released_at IS NULL AND (a.user_id IS DISTINCT FROM n.assigned_user_id OR a.assigned_at IS DISTINCT FROM n.assigned_at
-      OR a.order_id IS DISTINCT FROM n.order_id OR a.expires_at IS DISTINCT FROM n.expires_at)) AS mismatched_current_allocations,
-    (SELECT count(*)::int FROM phone_numbers n WHERE n.assigned_user_id IS NOT NULL AND NOT EXISTS (
-      SELECT 1 FROM number_allocations a WHERE a.number_id=n.id AND a.released_at IS NULL)) AS missing_current_allocations`);
+    (SELECT count(*)::int FROM number_allocations a LEFT JOIN number_platforms s ON s.number_id=a.number_id AND s.platform_id=a.platform_id
+      WHERE s.number_id IS NULL) AS missing_platform_stock,
+    (SELECT count(*)::int FROM provider_message_receipts WHERE processing_status<>'IMPORTED') AS pending_receipts,
+    (SELECT count(*)::int FROM phone_numbers WHERE resource_expires_at IS NOT NULL) AS known_resource_expiries`);
   const { rows: versions } = await client.query('SELECT version FROM schema_migrations ORDER BY version');
-  const result: Record<string, unknown> = { auditedAt: new Date().toISOString(), mode: 'READ_ONLY_PRE_MIGRATION_AUDIT', versions, counts, lifecycle };
+  const result: Record<string, unknown> = { auditedAt: new Date().toISOString(), mode: 'READ_ONLY_PLATFORM_SERVICE_AUDIT', versions, counts, lifecycle };
   if (process.argv.includes('--details')) {
-    const { rows } = await client.query(`WITH resolution AS (${resolution}) SELECT message_id,resolution,interval_matches FROM resolution
-      WHERE allocation_id IS NULL ORDER BY resolution,message_id`);
+    const { rows } = await client.query(`SELECT m.id AS message_id FROM sms_messages m WHERE m.allocation_id IS NULL ORDER BY m.id`);
     result.unresolved = rows;
   }
   console.log(JSON.stringify(result, null, 2));

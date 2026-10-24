@@ -3,8 +3,9 @@
 .lp-shell-records .lp-shell-view-toolbar { padding-bottom: 12px; }
 .lp-shell-record-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding-top: 12px; color: var(--ink-2); font-size: 12px; }
 .lp-shell-record-total { margin-right: auto; }
-.lp-shell-record-pagination label, .lp-shell-record-page-actions { display: flex; align-items: center; gap: 8px; }
-.lp-shell-record-pagination .lp-select-trigger { width: 76px; min-width: 0; }
+.lp-shell-record-page-size, .lp-shell-record-page-actions { display: flex; align-items: center; gap: 8px; }
+.lp-shell-record-page-size-menu { font-family: Inter, 'Reference Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif; }
+.lp-shell-record-page-size-menu[data-theme="dark"] { --surface: var(--lp-dark-surface); --ink: var(--lp-dark-ink); --line: var(--lp-dark-line); --hover: var(--lp-dark-hover); }
 .lp-shell-record-page { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lp-shell-record-page-actions > button { flex: 0 0 32px; width: 32px; min-height: 32px; padding: 0; }
 .lp-shell-view:has(.lp-shell-records-numbers) { scrollbar-gutter: stable; }
@@ -14,18 +15,11 @@
 .lp-shell-number-cell { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
 .lp-shell-number-cell .lp-shell-view-phone { margin: 0; }
 .lp-shell-number-cell .lp-copy-control { display: inline-flex; align-items: center; gap: 8px; }
-.lp-shell-records-orders .lp-shell-view-order { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding-block: 8px; }
-.lp-shell-records-orders .lp-shell-view-order > header { grid-column: 1 / -1; gap: 16px; }
-.lp-shell-records-orders .lp-shell-view-order > details { min-width: 0; }
-.lp-shell-records-orders .lp-shell-view-order summary { margin-top: 0; }
-.lp-shell-records-orders .lp-shell-view-order > .lp-shell-detail-actions { align-self: start; margin: 0; }
 @media (min-width: 801px) and (max-height: 767px) {
   .lp-shell-view-content.lp-shell-records-content { padding-block: 12px; }
-  .lp-shell-records-orders .lp-shell-view-order { row-gap: 4px; padding-block: 6px; }
 }
 @media (max-width: 640px) {
   .lp-shell-record-pagination { gap: 10px 12px; }
   .lp-shell-record-total { flex-basis: 100%; }
   .lp-shell-record-page-actions { margin-left: auto; }
-  .lp-shell-records-orders .lp-shell-view-order { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-block: 12px; }
 }

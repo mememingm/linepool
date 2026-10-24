@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BarChart3, Clock3, Database, MessageSquare, Phone, RefreshCw, X } from 'lucide-react';
 import { ActionButton } from '../components';
+import SelectField from '../SelectField';
 import { StatusPill } from '../../vendor/beautiful/src/components/atoms/StatusPill';
 import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
 import { LinepoolApiError } from '../api/client';
@@ -31,7 +32,7 @@ function SourceNotice({ source, usage = false, loading = false }: { source?: 'mo
 }
 function RenewalPanel({ number, userId, actions, onBusy }: { number: AssignedNumber; userId: string; actions: WorkspaceActions; onBusy: (busy: boolean) => void }) {
   const p = useDisplayPreferences();
-  const key = storageKey(userId, number.id);
+  const key = storageKey(userId, (number.allocationId ?? number.id));
   const [pending, setPending] = useState(() => readIntent(key));
   const [options, setOptions] = useState<RenewalOptions | null>(null);
   const [days, setDays] = useState<number | null>(pending?.durationDays ?? null);
@@ -51,16 +52,16 @@ function RenewalPanel({ number, userId, actions, onBusy }: { number: AssignedNum
   useEffect(() => {
     const controller = new AbortController();
     setOptions(null); setOptionError('');
-    void renewalOptions(number.id, { signal: controller.signal }).then(value => {
+    void renewalOptions((number.allocationId ?? number.id), { signal: controller.signal }).then(value => {
       if (controller.signal.aborted) return;
       setOptions(value); setDays(current => value.options.some(option => option.durationDays === current) ? current : value.options[0]?.durationDays ?? null);
     }).catch(failure => { if (!controller.signal.aborted) setOptionError(apiMessage(failure)); });
     return () => controller.abort();
-  }, [number.id, renewalOptions, revision]);
+  }, [(number.allocationId ?? number.id), renewalOptions, revision]);
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setRecordError('');
-    void renewals(number.id, { page, pageSize: 3 }, { signal: controller.signal }).then(value => {
+    void renewals((number.allocationId ?? number.id), { page, pageSize: 3 }, { signal: controller.signal }).then(value => {
       if (controller.signal.aborted) return;
       setRecords(value);
       const confirmed = value.data.filter(record => record.status === 'SUCCESS' && record.source === 'live').map(record => record.id).join(',');
@@ -68,7 +69,7 @@ function RenewalPanel({ number, userId, actions, onBusy }: { number: AssignedNum
     }).catch(failure => { if (!controller.signal.aborted) { setRecords(null); setRecordError(apiMessage(failure)); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [number.id, renewals, refresh, page, revision]);
+  }, [(number.allocationId ?? number.id), renewals, refresh, page, revision]);
   const selected = options?.options.find(option => option.durationDays === days);
   const openApplication = records?.data.some(record => record.status === 'PENDING');
   async function submit() {
@@ -77,7 +78,7 @@ function RenewalPanel({ number, userId, actions, onBusy }: { number: AssignedNum
     lock.current = true; setBusy(true); onBusy(true); setError(''); setNotice('');
     setPending(input); saveIntent(key, input);
     try {
-      const record = await createRenewal(number.id, input);
+      const record = await createRenewal((number.allocationId ?? number.id), input);
       setPending(null); saveIntent(key, null);
       setNotice(record.status === 'FAILED' ? '申请处理失败，请查看申请记录。' : record.status === 'SUCCESS' ? '服务端已确认续费成功。' : '申请已保存，状态为待处理；到期日期尚未变更。');
       setTab('records'); setPage(1); setRevision(value => value + 1);
@@ -155,17 +156,15 @@ function UsagePanel({ number, actions }: { number: AssignedNumber; actions: Work
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setError(''); setUsage(null);
-    void numberUsage(number.id, scenario === 'standard' ? {} : { scenario }, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) setUsage(value); })
+    void numberUsage((number.allocationId ?? number.id), scenario === 'standard' ? {} : { scenario }, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) setUsage(value); })
       .catch(failure => { if (!controller.signal.aborted) setError(apiMessage(failure)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [number.id, scenario, revision, numberUsage]);
+  }, [(number.allocationId ?? number.id), scenario, revision, numberUsage]);
   return <>
     <SourceNotice source={usage?.source} usage loading={loading} />
     <div className="lp-number-service-usage-heading"><span className="lp-number-service-phone">{number.phoneNumber}</span><ActionButton size="xs" variant="quiet" disabled={loading} onClick={() => setRevision(value => value + 1)}><RefreshCw size={14} />{p.t('刷新')}</ActionButton></div>
-    {usage?.source === 'mock' && <label className="lp-number-service-scenario">{p.t('模拟场景')}<select value={scenario} onChange={event => setScenario(event.target.value as UsageScenario)}>
-      {([['standard', '标准套餐'], ['unlimited', '不限量套餐'], ['no_package', '无套餐'], ['unsupported', '不支持查询'], ['error', '接口异常']] as const).map(([value, label]) => <option key={value} value={value}>{p.t(label)}</option>)}
-    </select></label>}
+    {usage?.source === 'mock' && <label className="lp-number-service-scenario">{p.t('模拟场景')}<SelectField aria-label={p.t('模拟场景')} value={scenario} onValueChange={value => setScenario(value as UsageScenario)} options={([['standard', '标准套餐'], ['unlimited', '不限量套餐'], ['no_package', '无套餐'], ['unsupported', '不支持查询'], ['error', '接口异常']] as const).map(([value, label]) => ({ value, label: p.t(label) }))} /></label>}
     {loading ? <p className="lp-number-service-state" role="status">{p.t('正在查询套餐用量…')}</p> : error ? <div role="alert"><p className="lp-shell-view-error">{p.t(error)}</p><ActionButton size="sm" onClick={() => setRevision(value => value + 1)}>{p.t('重试')}</ActionButton></div> : usage && <div className="lp-number-service-quotas"><QuotaCard name="短信" unit="条" quota={usage.sms} icon={MessageSquare} /><QuotaCard name="语音" unit="分钟" quota={usage.voice} icon={Phone} /><QuotaCard name="流量" unit="MB" quota={usage.data} icon={Database} /></div>}
     <p className="lp-shell-view-meta lp-number-service-updated">{p.t(usage?.source === 'mock' ? '模拟快照更新时间' : '用量最后更新时间')}：{usage?.updatedAt ? <time dateTime={usage.updatedAt}>{p.date(usage.updatedAt)}</time> : p.t('暂无成功更新')}</p>
   </>;

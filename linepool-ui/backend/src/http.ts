@@ -1,5 +1,5 @@
 import {
-  ArgumentsHost, Catch, HttpException, HttpStatus, Injectable,
+  ArgumentsHost, Catch, HttpException, HttpStatus, Injectable, SetMetadata,
   type CanActivate, type ExceptionFilter, type ExecutionContext, type PipeTransform,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
@@ -23,12 +23,18 @@ export class SchemaPipe<T extends z.ZodType> implements PipeTransform<unknown, z
     return result.data;
   }
 }
+const signedWebhookMetadata = Symbol('linepool:signed-webhook');
+/** Reserved for callbacks that verify their raw-body signature before reading or writing data. */
+export const SignedWebhook = () => SetMetadata(signedWebhookMetadata, true);
+
 @Injectable()
 export class OriginGuard implements CanActivate {
   constructor(private readonly environment: Environment) {}
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<Request>();
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return true;
+    const handler = typeof context.getHandler === 'function' ? context.getHandler() : undefined;
+    if (handler && Reflect.getMetadata(signedWebhookMetadata, handler) === true) return true;
     if (request.headers.origin !== this.environment.values.WEB_ORIGIN) {
       throw new ApiFailure(403, 'ORIGIN_REJECTED', 'Request origin is not allowed');
     }

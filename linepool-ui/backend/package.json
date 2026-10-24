@@ -21,6 +21,7 @@
     "db:create": "node --env-file=.env dist/backend/scripts/create-database.js",
     "db:migrate": "node --env-file=.env dist/backend/scripts/migrate.js",
     "db:seed": "node --env-file=.env dist/backend/scripts/seed.js",
+    "db:seed:agent-inventory": "node --env-file=.env dist/backend/scripts/seed-agent-inventory.js",
     "db:allocation-audit": "node --env-file=.env dist/backend/scripts/allocation-audit.js",
     "mock:fulfillment": "node --env-file=.env dist/backend/scripts/mock-fulfillment.js",
     "admin:grant": "node --env-file=.env dist/backend/scripts/admin-grant.js"

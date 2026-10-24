@@ -8,7 +8,7 @@ import { MagicCard } from '../vendor/magic/src/components/ui/magic-card';
 import { NumberTicker } from '../vendor/magic/src/components/ui/number-ticker';
 
 export function LinePoolUIProvider({ children, ...props }: ComponentProps<typeof ThemeProvider>) {
-  return <ThemeProvider attribute="class" defaultTheme="system" enableSystem {...props}>{children}</ThemeProvider>;
+  return <ThemeProvider attribute="class" defaultTheme="system" enableSystem {...props} scriptProps={{ type: 'application/json', ...props.scriptProps }}>{children}</ThemeProvider>;
 }
 
 export type ActionButtonProps = ComponentProps<typeof Button> & { busy?: boolean; busyLabel?: string };

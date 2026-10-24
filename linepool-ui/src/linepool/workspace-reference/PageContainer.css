@@ -1,0 +1,12 @@
+/* One container owns spacing for every workspace page, including the dashboard. */
+.lp-shell-page .lp-shell-body .lp-page-container { width: 100%; max-width: 1280px; min-width: 0; margin: 0 auto; padding: 32px; }
+.lp-page-title-accessible { margin: 0 0 24px; color: var(--ink, var(--shell-ink)); font-size: 24px; font-weight: 650; line-height: 1.35; letter-spacing: -.025em; }
+.lp-page-notice { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.lp-shell-page .lp-page-container .lp-shell-view-toolbar { padding-bottom: 16px; }
+/* Service notices keep a single gap before filters. */
+.lp-page-notice > .lp-platform-sms-notice, .lp-shell-page .lp-page-notice > .lp-shell-view-meta { margin: 0; }
+.lp-shell-page .lp-page-notice > .lp-shell-view-meta { font-size: 12px; line-height: 20px; }
+@media (max-width: 800px) {
+  /* The existing mobile navigation toggle occupies the row above page content. */
+  .lp-shell-body { padding-top: 64px; }
+}

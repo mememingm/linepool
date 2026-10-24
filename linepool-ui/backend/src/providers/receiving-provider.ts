@@ -6,7 +6,7 @@ import type { PingCodeAdapter } from './pingcode-adapter.js';
 export abstract class ReceivingProvider {
   abstract readonly source: 'mock';
   abstract readonly reader: PingCodeAdapter;
-  abstract reserve(client: PoolClient, input: CreateOrderInput, offer: { capability: string; area_prefix: string }): Promise<string[]>;
+  abstract reserve(client: PoolClient, input: CreateOrderInput, offer: { capability: string; area_prefix: string; duration_days: number }): Promise<string[]>;
   abstract allocate(client: PoolClient, allocation: { userId: string; orderId: string; durationDays: number; numberIds: string[] }): Promise<void>;
 }
 

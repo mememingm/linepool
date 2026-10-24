@@ -1,0 +1,50 @@
+@import './SelectField.css';
+
+/* More specific than legacy page field rules; all dimensions and colors share Select tokens. */
+.lp-search-input.lp-search-input {
+  display: flex; align-items: center; gap: 0; min-width: 0; max-width: 100%;
+  height: var(--control-height); min-height: var(--control-height); padding: 0;
+  border: 1px solid var(--select-line); border-radius: var(--control-radius);
+  background: var(--select-surface); color: var(--select-ink); box-shadow: 0 1px 2px rgb(24 50 91 / .025);
+  font-size: var(--control-font-size); transition: border-color var(--control-duration), box-shadow var(--control-duration);
+}
+.lp-search-input.lp-search-input:focus-within { border-color: var(--select-accent); outline: none; box-shadow: 0 0 0 3px var(--select-ring); }
+.lp-search-input.lp-search-input > input {
+  flex: 1; width: 0; min-width: 0; max-width: 100%; height: 100%; padding: 0 8px;
+  border: 0; border-radius: 0; background: transparent; color: var(--select-ink);
+  font: inherit; font-size: var(--control-font-size); line-height: 20px; box-shadow: none; outline: none;
+}
+.lp-search-input.lp-search-input > input:focus-visible { outline: none; box-shadow: none; }
+.lp-search-input.lp-search-input > input::placeholder { color: var(--select-muted); opacity: 1; }
+.lp-search-input input::-webkit-search-cancel-button, .lp-search-input input::-webkit-search-decoration { appearance: none; }
+.lp-search-input [data-slot="input-group-addon"] { flex-shrink: 0; color: var(--select-muted); }
+.lp-search-input [data-align="inline-start"] { padding-left: 12px; }
+.lp-search-input [data-align="inline-end"] { gap: 6px; padding-right: 8px; }
+.lp-search-input [data-slot="button"] { color: var(--select-muted); border-radius: 6px; transition: background-color 150ms, color 150ms; }
+.lp-search-input [data-slot="button"]:hover { background: var(--select-hover); color: var(--select-ink); }
+.lp-search-input[data-disabled="true"], .lp-search-input:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+.lp-control-spinner { animation: lp-control-spin .8s linear infinite; }
+@keyframes lp-control-spin { to { transform: rotate(360deg); } }
+.lp-combobox-menu.lp-select-menu {
+  --lp-select-available-height: var(--radix-popover-content-available-height);
+  width: max(240px, var(--radix-popover-trigger-width)); padding: 0;
+}
+.lp-combobox-command { height: auto; border-radius: inherit; background: var(--select-surface); color: var(--select-ink); }
+.lp-combobox-search { position: relative; flex-shrink: 0; }
+.lp-combobox-search [data-slot="command-input-wrapper"] { height: 44px; border-color: var(--select-line); color: var(--select-muted); }
+.lp-select-menu .lp-combobox-search input {
+  flex: 1; min-width: 0; height: 42px; margin: 0; padding: 0 24px 0 0;
+  border: 0; border-radius: 0; background: transparent; color: var(--select-ink); font: inherit; outline: none; box-shadow: none;
+}
+.lp-select-menu .lp-combobox-search input:focus-visible { outline: none; box-shadow: none; }
+.lp-combobox-search:focus-within { box-shadow: inset 0 -2px var(--select-focus); }
+.lp-combobox-search input::placeholder { color: var(--select-muted); }
+.lp-combobox-clear { position: absolute; top: 10px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--select-muted); cursor: pointer; }
+.lp-combobox-clear:hover { background: var(--select-hover); color: var(--select-ink); }
+.lp-combobox-list { min-height: 0; max-height: min(266px, calc(var(--lp-select-available-height) - 46px)); padding: 5px; }
+.lp-combobox-option-content { display: flex; align-items: center; flex: 1; min-width: 0; gap: 10px; }
+.lp-combobox-empty { padding: 24px 12px; color: var(--select-muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-search-input.lp-search-input, .lp-search-input [data-slot="button"] { transition: none; }
+  .lp-control-spinner { animation: none; }
+}
