@@ -9,19 +9,14 @@ function stableId(key: string) {
 }
 const regions = [
   { id: 'us', name: '美国', english: 'United States', prefix: '+1', area: '北美', price: 15 },
-  { id: 'gb', name: '英国', english: 'United Kingdom', prefix: '+44', area: '欧洲', price: 18 },
-  { id: 'ca', name: '加拿大', english: 'Canada', prefix: '+1', area: '北美', price: 15 },
-  { id: 'sg', name: '新加坡', english: 'Singapore', prefix: '+65', area: '亚洲', price: 22 },
-  { id: 'de', name: '德国', english: 'Germany', prefix: '+49', area: '欧洲', price: 20 },
-  { id: 'nl', name: '荷兰', english: 'Netherlands', prefix: '+31', area: '欧洲', price: 18 },
 ] as const;
 const services = ['Telegram', 'WhatsApp', 'Google'] as const;
 const plans = [
   { id: 'week', name: '7 天短期服务', days: 7 },
   { id: 'month', name: '30 天短期服务', days: 30 },
 ] as const;
-const nationalNumberLengths: Record<(typeof regions)[number]['id'], number> = { us: 10, gb: 10, ca: 10, sg: 8, de: 10, nl: 9 };
-const nationalNumberPrefixes: Record<(typeof regions)[number]['id'], string> = { us: '959', gb: '740', ca: '647', sg: '81', de: '151', nl: '620' };
+const nationalNumberLengths: Record<(typeof regions)[number]['id'], number> = { us: 10 };
+const nationalNumberPrefixes: Record<(typeof regions)[number]['id'], string> = { us: '959' };
 function generatedPhoneNumber(regionId: (typeof regions)[number]['id'], service: string, index: number) {
   const region = regions.find(item => item.id === regionId);
   if (!region) throw new Error(`Unknown demo region: ${regionId}`);
@@ -68,8 +63,8 @@ export async function seedDemo(client: pg.Client, input: RegisterInput) {
       const now = Date.now();
       await client.query("INSERT INTO point_ledger(id,user_id,type,delta,balance_after,description,created_at) VALUES($1,$2,'SEED_CREDIT',$3,$3,$4,$5)", [stableId('credit'), userId, balance, 'Local demo credit (no payment)', new Date(now - 11 * 86400000)]);
       const fixtures: { region: Order['region']; service: Order['service']; plan: Order['plan']; ageDays: number }[] = [
-        { region: 'nl', service: 'Google', plan: 'week', ageDays: 9 },
-        { region: 'gb', service: 'WhatsApp', plan: 'week', ageDays: 6 },
+        { region: 'us', service: 'Google', plan: 'week', ageDays: 9 },
+        { region: 'us', service: 'WhatsApp', plan: 'week', ageDays: 6 },
         { region: 'us', service: 'Telegram', plan: 'month', ageDays: 1 },
       ];
       for (const [index, fixture] of fixtures.entries()) {

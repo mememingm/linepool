@@ -11,14 +11,9 @@ const platformCodes = [
   { id: 'Google', code: 'GO' },
   { id: 'WhatsApp', code: 'WA' },
 ] as const;
-const regions = ['us', 'sg', 'ca', 'gb', 'de', 'nl'] as const;
+const regions = ['us'] as const;
 const phonePrefixes: Record<(typeof regions)[number], string> = {
   us: '+1959556',
-  sg: '+6581556',
-  ca: '+1647556',
-  gb: '+4474005',
-  de: '+4915112',
-  nl: '+3161234',
 };
 
 const client = new pg.Client({ connectionString: environment.values.DATABASE_URL, connectionTimeoutMillis: 5000 });
