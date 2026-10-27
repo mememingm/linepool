@@ -31,6 +31,8 @@ export function apiMessage(error: unknown, locale: Locale = 'zh-CN'): string {
   const labels: Record<string, string> = {
     INVALID_CREDENTIALS: '账号或密码不正确', EMAIL_EXISTS: '该邮箱已注册',
     INVALID_CURRENT_PASSWORD: '当前密码不正确，请重新输入',
+    PASSWORD_RECOVERY_UNAVAILABLE: '邮件找回暂未配置，请联系管理员重置密码',
+    INVALID_RESET_TOKEN: '重置链接无效或已过期，请重新申请。',
     UNAUTHENTICATED: '登录已过期，请重新登录', NETWORK_ERROR: '无法连接 API，请检查服务后重试',
     NUMBER_NOT_FOUND: '号码不存在或已不再属于当前账号',
     RENEWAL_DISABLED: '短期短信接收服务暂不支持续费',

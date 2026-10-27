@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { z } from 'zod';
 import {
+  forgotPasswordInputSchema, resetPasswordInputSchema, type ForgotPasswordInput, type ResetPasswordInput,
   accountProfileInputSchema, createOrderInputSchema, inboxQuerySchema, listQuerySchema, loginInputSchema, markReadInputSchema,
   createRenewalInputSchema, paginationQuerySchema, usageQuerySchema,
   numbersQuerySchema, pointsQuerySchema, preferencesInputSchema, registerInputSchema, uuidSchema,
@@ -15,6 +16,7 @@ import { Database } from './database.js';
 import { Ordering } from './ordering.js';
 import { Workspace } from './workspace.js';
 import { NumberServices } from './number-services.js';
+import { PasswordRecovery } from './password-recovery.js';
 
 @Controller('auth')
 export class AuthController {
@@ -41,6 +43,20 @@ export class AuthController {
   async logout(@Req() request: SessionRequest, @Res({ passthrough: true }) response: Response) {
     await this.auth.logout(request, response);
     return { data: { loggedOut: true } };
+  }
+}
+@Controller('auth')
+export class PasswordRecoveryController {
+  constructor(private readonly recovery: PasswordRecovery) {}
+  @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async forgotPassword(@Body(new SchemaPipe(forgotPasswordInputSchema)) input: ForgotPasswordInput) {
+    return { data: await this.recovery.request(input) };
+  }
+  @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async resetPassword(@Body(new SchemaPipe(resetPasswordInputSchema)) input: ResetPasswordInput) {
+    return { data: await this.recovery.reset(input) };
   }
 }
 @Controller()

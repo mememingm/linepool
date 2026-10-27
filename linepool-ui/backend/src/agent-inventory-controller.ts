@@ -3,11 +3,15 @@ import { Throttle } from '@nestjs/throttler';
 import { z } from 'zod';
 import {
   adjustBalanceInputSchema, agentInventoryQuerySchema, agentNumberImportInputSchema, agentStatusInputSchema, agentStockQuerySchema, agentTransactionsQuerySchema,
-  claimAgentNumberInputSchema, claimAgentNumbersInputSchema, createAgentInputSchema, createCustomerInputSchema, createHoldingInputSchema, createTxOrderInputSchema,
+  claimAgentNumberInputSchema, claimAgentNumbersInputSchema, createAgentInputSchema, createCustomerInputSchema, createHoldingInputSchema, createTxOrderInputSchema, assignHoldingInputSchema,
+  holdingBatchInputSchema, holdingBatchPreviewInputSchema, type HoldingBatchInput, type HoldingBatchPreviewInput,
   paginationQuerySchema, releaseHoldingInputSchema, resellHoldingInputSchema, transferBalanceInputSchema, upsertPriceRuleInputSchema, uuidSchema,
   type AdjustBalanceInput, type AgentInventoryQuery, type AgentNumberImportInput, type AgentStatusInput, type AgentStockQuery, type AgentTransactionsQuery,
-  type ClaimAgentNumberInput, type ClaimAgentNumbersInput, type CreateAgentInput, type CreateCustomerInput, type CreateHoldingInput, type CreateTxOrderInput, type OwnerRef,
+  type ClaimAgentNumberInput, type ClaimAgentNumbersInput, type CreateAgentInput, type CreateCustomerInput, type CreateHoldingInput, type CreateTxOrderInput, type AssignHoldingInput, type OwnerRef,
   type PaginationQuery, type ReleaseHoldingInput, type ResellHoldingInput, type TransferBalanceInput, type UpsertPriceRuleInput,
+  createSubagentInputSchema, subagentsQuerySchema, subagentStatusInputSchema, updateAgentNameInputSchema, agentMetricPeriodSchema,
+  type SubagentsQuery, type UpdateAgentNameInput, type AgentMetricPeriod,
+  updateCustomerInputSchema, ledgerQuerySchema, type UpdateCustomerInput, type LedgerQuery,
 } from '@linepool/contracts';
 import { SessionGuard, type SessionRequest } from './authentication.js';
 import { ApiFailure, SchemaPipe } from './http.js';
@@ -30,14 +34,88 @@ function toOwnerRef(params: { ownerType: 'agent' | 'customer'; ownerId: string }
 export class AgentInventoryController {
   constructor(private readonly inventory: AgentInventory, private readonly db: Database) {}
 
+  @Get('context')
+  context(@Req() request: SessionRequest) { return this.inventory.context(request.user.id); }
+
+  @Patch('profile')
+  updateProfile(@Req() request: SessionRequest, @Body(new SchemaPipe(updateAgentNameInputSchema)) input: UpdateAgentNameInput) {
+    return this.inventory.updateProfile(request.user.id, input);
+  }
+
+  @Patch('customers/:customerId')
+  updateCustomer(@Req() request: SessionRequest, @Param('customerId', new SchemaPipe(uuidSchema)) customerId: string,
+    @Body(new SchemaPipe(updateCustomerInputSchema)) input: UpdateCustomerInput) {
+    return this.inventory.updateCustomer(request.user.id, customerId, input);
+  }
+
+  @Get('dashboard')
+  dashboard(@Req() request: SessionRequest, @Query('period', new SchemaPipe(agentMetricPeriodSchema)) period: AgentMetricPeriod = '7d') {
+    return this.inventory.dashboard(request.user.id, period);
+  }
+
+  @Get('subagents')
+  subagents(@Req() request: SessionRequest, @Query(new SchemaPipe(subagentsQuerySchema)) input: SubagentsQuery) {
+    return this.inventory.subagents(request.user.id, input);
+  }
+
+  @Post('subagents')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async createSubagent(@Req() request: SessionRequest,
+    @Body(new SchemaPipe(createSubagentInputSchema)) input: { userId: string; name: string; idempotencyKey: string }) {
+    await this.inventory.context(request.user.id);
+    const result = await this.inventory.createAgent(request.user.id, { ...input, parentAgentId: null, level: 1 });
+    const { userId: _userId, ...profile } = result.data;
+    return { data: profile };
+  }
+
+  @Get('subagents/:agentId')
+  subagent(@Req() request: SessionRequest, @Param('agentId', new SchemaPipe(uuidSchema)) agentId: string) {
+    return this.inventory.subagent(request.user.id, agentId);
+  }
+
+  @Patch('subagents/:agentId/name')
+  renameSubagent(@Req() request: SessionRequest, @Param('agentId', new SchemaPipe(uuidSchema)) agentId: string,
+    @Body(new SchemaPipe(updateAgentNameInputSchema)) input: UpdateAgentNameInput) {
+    return this.inventory.renameSubagent(request.user.id, agentId, input);
+  }
+
+  @Patch('subagents/:agentId/status')
+  async updateSubagentStatus(@Req() request: SessionRequest, @Param('agentId', new SchemaPipe(uuidSchema)) agentId: string,
+    @Body(new SchemaPipe(subagentStatusInputSchema)) input: AgentStatusInput) {
+    await this.inventory.subagent(request.user.id, agentId);
+    return this.inventory.updateAgentStatus(request.user.id, agentId, input);
+  }
+
+  @Get('subagents/:agentId/holdings')
+  subagentHoldings(@Req() request: SessionRequest, @Param('agentId', new SchemaPipe(uuidSchema)) agentId: string,
+    @Query(new SchemaPipe(paginationQuerySchema)) input: PaginationQuery) {
+    return this.inventory.subagentHoldings(request.user.id, agentId, input);
+  }
+
+  @Get('subagents/:agentId/transactions')
+  subagentTransactions(@Req() request: SessionRequest, @Param('agentId', new SchemaPipe(uuidSchema)) agentId: string,
+    @Query(new SchemaPipe(paginationQuerySchema)) input: PaginationQuery) {
+    return this.inventory.subagentTransactions(request.user.id, agentId, input);
+  }
+
+  @Get('transferable-holdings')
+  transferableHoldings(@Req() request: SessionRequest, @Query(new SchemaPipe(agentInventoryQuerySchema)) input: AgentInventoryQuery) {
+    return this.inventory.transferableHoldings(request.user.id, input);
+  }
+
   @Get('agents')
   async agents(@Req() request: SessionRequest) {
     if (request.user.role === 'ADMIN') {
+      // Admins also get contact email, USD balance and active number count so the agent list is useful at a glance.
       const { rows } = await this.db.query(
-        'SELECT id,user_id,parent_agent_id,level,name,status,created_at FROM agents ORDER BY level,parent_agent_id NULLS FIRST,created_at,id');
+        `SELECT a.id,a.user_id,a.parent_agent_id,a.level,a.name,a.status,a.created_at,u.email,
+           COALESCE((SELECT b.balance_minor FROM balance_accounts b WHERE b.owner_type='AGENT' AND b.agent_id=a.id AND b.currency='USD'),0)::bigint AS balance_minor,
+           (SELECT count(*) FROM number_holdings h WHERE h.owner_type='AGENT' AND h.agent_id=a.id AND h.status='ACTIVE')::int AS holding_count
+         FROM agents a JOIN users u ON u.id=a.user_id ORDER BY a.level,a.parent_agent_id NULLS FIRST,a.created_at,a.id`);
       return { data: rows.map(row => ({
         id: row.id, userId: row.user_id, parentAgentId: row.parent_agent_id, level: row.level,
         name: row.name, status: row.status, createdAt: row.created_at.toISOString(),
+        email: row.email, balanceMinor: Number(row.balance_minor), holdingCount: row.holding_count,
       })) };
     }
     const actor = await this.inventory.resolveActor(request.user.id);
@@ -74,6 +152,12 @@ export class AgentInventoryController {
     })) };
   }
 
+  @Get('customers/:customerId/holdings')
+  customerHoldings(@Req() request: SessionRequest, @Param('customerId', new SchemaPipe(uuidSchema)) customerId: string,
+    @Query(new SchemaPipe(paginationQuerySchema)) input: PaginationQuery) {
+    return this.inventory.customerHoldings(request.user.id, customerId, input);
+  }
+
   @Get('holdings')
   holdings(@Req() request: SessionRequest, @Query(new SchemaPipe(agentInventoryQuerySchema)) input: AgentInventoryQuery) {
     return this.inventory.holdings(request.user.id, input);
@@ -103,6 +187,21 @@ export class AgentInventoryController {
     @Body(new SchemaPipe(releaseHoldingInputSchema)) input: ReleaseHoldingInput) {
     return this.inventory.releaseHolding(request.user.id, holdingId, input);
   }
+  @Post('holdings/batch-preview')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  previewHoldingBatch(@Req() request: SessionRequest, @Body(new SchemaPipe(holdingBatchPreviewInputSchema)) input: HoldingBatchPreviewInput) {
+    return this.inventory.previewHoldingBatch(request.user.id, input);
+  }
+  @Post('holdings/batch-transfer')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  transferHoldingBatch(@Req() request: SessionRequest, @Body(new SchemaPipe(holdingBatchInputSchema)) input: HoldingBatchInput) {
+    return this.inventory.transferHoldingBatch(request.user.id, input);
+  }
+  @Post('holdings/assign-customer')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  assignHoldingToCustomer(@Req() request: SessionRequest, @Body(new SchemaPipe(assignHoldingInputSchema)) input: AssignHoldingInput) {
+    return this.inventory.assignHoldingToCustomer(request.user.id, input);
+  }
   @Post('holdings/resell')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   resellHolding(@Req() request: SessionRequest, @Body(new SchemaPipe(resellHoldingInputSchema)) input: ResellHoldingInput) {
@@ -119,7 +218,7 @@ export class AgentInventoryController {
   @Get('ledger/:ownerType/:ownerId')
   async ledger(@Req() request: SessionRequest,
     @Param(new SchemaPipe(ownerRefParamsSchema)) params: { ownerType: 'agent' | 'customer'; ownerId: string },
-    @Query(new SchemaPipe(paginationQuerySchema)) input: PaginationQuery) {
+    @Query(new SchemaPipe(ledgerQuerySchema)) input: LedgerQuery) {
     return this.inventory.ledger(request.user.id, toOwnerRef(params), input);
   }
   @Get('prices')

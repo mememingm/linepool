@@ -1,0 +1,7 @@
+# Callback contents and local runtime artifacts
+.local/
+events.json
+events.json.tmp
+attempts.json
+attempts.json.tmp
+*.log

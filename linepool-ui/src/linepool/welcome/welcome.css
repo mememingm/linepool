@@ -19,7 +19,7 @@
 .lp-welcome-auth[data-theme='dark'] .lp-welcome-account-note { border-color: var(--lp-dark-line); }
 .lp-welcome-auth[data-theme='dark'] .lp-welcome-submit { background: var(--lp-dark-brand); border-color: var(--lp-dark-brand); color: var(--lp-dark-page); }
 .lp-welcome-auth[data-theme='dark'] .lp-welcome-submit:hover { background: var(--lp-dark-brand-hover); }
-.lp-welcome-auth[data-theme='dark'] .lp-welcome-auth-switch button { color: var(--lp-dark-link); }
+.lp-welcome-auth[data-theme='dark'] .lp-welcome-auth-switch :is(button, a) { color: var(--lp-dark-link); }
 .lp-welcome-auth[data-theme='dark'] .lp-welcome-error { background: var(--lp-dark-red-tint); border-color: var(--lp-dark-line); color: var(--lp-dark-red); }
 .lp-welcome-auth[data-theme='dark'] .lp-welcome-preferences button { background: var(--lp-dark-field); border-color: var(--lp-dark-line); color: var(--lp-dark-muted); }
 .lp-welcome-preferences { display: flex; align-items: center; gap: 8px; color: inherit; }
@@ -52,10 +52,12 @@
 .lp-welcome-password button { position: absolute; right: 6px; top: 4px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: transparent; color: #c9d0dc; cursor: pointer; }
 .lp-welcome-submit { width: 100%; min-height: 44px; margin-top: 6px; border: 1px solid #bed4fb; border-radius: 8px; background: #ccdefb; color: #14223a; font-size: 14px; font-weight: 550; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; white-space: nowrap; }
 .lp-welcome-submit:hover { background: #e1ebfd; }
+.lp-welcome-forgot { margin: -2px 0 4px; }
+.lp-welcome-recovery-notice { padding: 10px 12px; border: 1px solid var(--auth-accent); border-radius: 8px; font-size: 13px; line-height: 1.6; color: var(--auth-text); }
 .lp-welcome-auth button:disabled, .lp-welcome-auth fieldset:disabled { opacity: .65; cursor: wait; }
 .lp-welcome-error { padding: 10px 12px; color: #ffc0c7; background: #90263c33; border: 1px solid #9c5366; border-radius: 8px; font-size: 13px; line-height: 1.5; }
 .lp-welcome-auth-switch { display: flex; justify-content: flex-end; gap: 8px; margin: 18px 0 0; color: var(--auth-muted); font-size: 13px; }
-.lp-welcome-auth-switch button { color: #d2e2fc; background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.lp-welcome-auth-switch :is(button, a) { color: #d2e2fc; background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 .lp-welcome-account-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid #ffffff30; font-size: 12px; line-height: 1.7; color: #b8c1d0; }
 .lp-welcome-account-note p { margin: 0 0 6px; }
 .lp-welcome-auth :focus-visible { outline: 2px solid var(--auth-accent); outline-offset: 4px; }
@@ -63,7 +65,7 @@
 .lp-welcome-auth[data-theme='light'] :is(label, .lp-welcome-account-note) { color: #535d6b; }
 .lp-welcome-auth[data-theme='light'] input { color: #20242a; background: #fff; border-color: #aeb7c4; }
 .lp-welcome-auth[data-theme='light'] input::placeholder { color: #5e6670; }
-.lp-welcome-auth[data-theme='light'] :is(.lp-welcome-auth-switch button, .lp-welcome-password button) { color: #245bb0; }
+.lp-welcome-auth[data-theme='light'] :is(.lp-welcome-auth-switch button, .lp-welcome-auth-switch a, .lp-welcome-password button) { color: #245bb0; }
 .lp-welcome-auth[data-theme='light'] .lp-welcome-account-note { border-color: #d2d8e0; }
 .lp-welcome-auth[data-theme='light'] .lp-welcome-error { color: #a01935; background: #fff1f2; border-color: #e8bfc6; }
 @media (max-width: 960px) { .lp-welcome-auth { padding: 100px 32px 40px; } .lp-welcome-auth-layout { grid-template-columns: minmax(0, 1fr) 400px; gap: 32px; } .lp-welcome-introduction h1 { font-size: 34px; } }

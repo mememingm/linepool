@@ -1,0 +1,96 @@
+/* Agent center additions on top of admin.css. Only lp-agent-* selectors; admin and vendor styles stay untouched. */
+.lp-agent-header-leading { flex: 1; overflow: hidden; }
+.lp-agent-breadcrumb { min-width: 0; overflow: hidden; }
+.lp-agent-breadcrumb > [aria-current] { overflow: hidden; text-overflow: ellipsis; }
+.lp-agent-header-actions { flex-shrink: 0; }
+.lp-agent-identity { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted-foreground); font-size: 13px; white-space: nowrap; }
+.lp-agent-identity strong { color: var(--foreground); font-weight: 600; }
+.lp-agent-identity small { max-width: 140px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.lp-admin .lp-agent-back { display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 8px; font-size: 13px; white-space: nowrap; }
+.lp-admin .lp-agent-back:hover { background: var(--muted); }
+
+.lp-agent-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.lp-agent-metric-body { display: block; height: 100%; padding: 20px; }
+.lp-agent-metric-body > span { display: block; min-height: 39px; padding-right: 20px; color: var(--muted-foreground); font-size: 13px; }
+.lp-agent-metric-body > small { display: block; margin-top: 6px; color: var(--muted-foreground); font-size: 13px; }
+.lp-agent-metrics .lp-admin-metric strong[data-pending] { color: var(--muted-foreground); font-size: 20px; font-weight: 500; }
+
+.lp-agent-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+.lp-agent-chart.is-wide { grid-column: 1 / -1; }
+.lp-agent-chart .lp-admin-section-heading h2 + .lp-admin-context { margin: 4px 0 0; }
+.lp-agent-period { display: inline-flex; gap: 4px; }
+.lp-agent-chart-pending { min-height: 180px; }
+
+.lp-agent-placeholder ul { display: grid; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.lp-agent-placeholder li::before { content: '· '; }
+
+.lp-agent-inventory-toolbar { align-items: end; margin-bottom: 20px; }
+.lp-agent-inventory-tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--muted); }
+.lp-agent-inventory-tabs button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--muted-foreground); font: inherit; font-size: 13px; cursor: pointer; }
+.lp-agent-inventory-tabs button:hover { color: var(--foreground); }
+.lp-agent-inventory-tabs button.active { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / 8%); }
+.lp-agent-inventory-filter { display: grid; gap: 4px; color: var(--muted-foreground); font-size: 12px; }
+.lp-agent-inventory-filter select, .lp-agent-inventory-filter input { min-width: 136px; height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--foreground); font: inherit; font-size: 13px; }
+.lp-agent-inventory-search input { min-width: 220px; }
+.lp-agent-inventory-toolbar + .lp-admin-context { margin-top: 0; }
+.lp-agent-inventory-table { min-width: 0; margin-top: 16px; }
+.lp-agent-inventory-table table { min-width: 900px; }
+.lp-agent-inventory-table :is(th, td):first-child { position: sticky; left: 0; z-index: 1; width: 220px; background: var(--card); box-shadow: 1px 0 0 var(--border); }
+.lp-agent-inventory-table th:first-child { z-index: 2; background: var(--background); }
+.lp-agent-inventory-table td:first-child strong { white-space: nowrap; }
+.lp-agent-inventory-table td small { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
+.lp-agent-pager.subagent-pagination { box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px 18px; width: 100%; margin: 0; padding: 18px 24px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 13px; }
+.lp-agent-pager > span:first-child { margin-right: auto; }
+.lp-agent-pager > label { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.lp-agent-pager select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--foreground); background: var(--card); font: inherit; }
+.lp-agent-pager select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.lp-admin-dialog-body .lp-agent-pager { padding: 16px 0; }
+.lp-agent-customer-numbers { display: grid; gap: 12px; margin: 12px 0 20px; padding: 0; list-style: none; }
+.lp-agent-customer-numbers li { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.lp-agent-customer-numbers li > div { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.lp-agent-customer-numbers li > span { color: var(--muted-foreground); font-size: 12px; line-height: 1.8; }
+.lp-agent-price-empty { display: grid; justify-items: center; gap: 14px; padding: 40px 24px; color: var(--muted-foreground); text-align: center; font-size: 14px; }
+.lp-agent-inventory-toolbar .lp-agent-inventory-filter select:focus-visible, .lp-agent-inventory-toolbar .lp-agent-inventory-filter input:focus-visible, .lp-agent-inventory-tabs button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.lp-agent-number-select { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.lp-agent-batch-toolbar, .lp-agent-batch-receipt { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin: 16px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 9px; background: var(--card); font-size: 13px; }
+.lp-agent-batch-toolbar > span { margin-right: auto; }
+.lp-agent-batch-toolbar small { flex-basis: 100%; color: var(--muted-foreground); }
+.lp-agent-batch-receipt { border-color: var(--primary); }
+.lp-agent-batch-receipt > span { color: var(--muted-foreground); margin-right: auto; }
+.lp-agent-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.lp-agent-account-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; padding: 20px 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.lp-agent-account-summary > div { display: grid; gap: 8px; min-width: 0; }
+.lp-agent-account-summary span { color: var(--muted-foreground); font-size: 13px; }
+.lp-agent-account-summary strong { font-size: 22px; overflow-wrap: anywhere; }
+.lp-agent-credit { color: var(--admin-success); }
+.lp-agent-settings { display: grid; gap: 32px; max-width: 940px; }
+.lp-agent-settings > section + section { padding-top: 24px; border-top: 1px solid var(--border); }
+.lp-agent-settings form { max-width: 480px; }
+.lp-agent-settings fieldset { min-inline-size: 0; margin: 0 0 16px; padding: 0; border: 0; }
+.lp-agent-settings label { display: grid; gap: 8px; color: var(--muted-foreground); font-size: 13px; }
+.lp-agent-settings input, .lp-agent-settings select, .lp-agent-form select { width: 100%; min-width: 0; min-height: 40px; padding: 8px 11px; border: 1px solid var(--input); border-radius: 8px; color: var(--foreground); background: var(--card); font: inherit; font-size: 15px; }
+.lp-agent-settings input:focus-visible, .lp-agent-settings select:focus-visible, .lp-agent-form select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.lp-agent-settings-preference { max-width: 240px; }
+.lp-agent-settings-link { display: inline-block; margin: 4px 0; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 1279px) {
+  .lp-agent-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-agent-chart-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1599px) {
+  .lp-agent-identity small { display: none; }
+}
+@media (max-width: 1439px) {
+  .lp-agent-identity { display: none; }
+}
+/* Narrow headers: the account menu already carries the role label and 返回普通工作台. */
+@media (max-width: 1023px) {
+  .lp-agent-identity, .lp-admin .lp-agent-back { display: none; }
+}
+@media (max-width: 767px) {
+  .lp-agent-metrics { gap: 12px; }
+  .lp-agent-pager.subagent-pagination { justify-content: flex-start; padding: 16px; }
+  .lp-agent-pager > span:first-child { width: 100%; }
+}
+@media (max-width: 359px) { .lp-agent-metrics { grid-template-columns: minmax(0, 1fr); } }

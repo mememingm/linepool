@@ -96,6 +96,10 @@
 .lp-shell-nav-item.is-active::before { content: ''; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: #2876fa; }
 .lp-shell-nav-item, .lp-shell-region-heading { transition-duration: 200ms; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 .lp-shell-nav-badge { min-width: 22px; margin-left: auto; padding: 2px 6px; border-radius: 7px; background: #eef0f2; color: #858b91; font-size: 11px; line-height: 17px; text-align: center; }
+.lp-shell-nav-label { min-width: 0; }
+.lp-shell-nav-note { margin-left: auto; color: var(--shell-muted); font-size: 10px; white-space: nowrap; }
+.lp-shell-nav-item:hover .lp-shell-nav-note { color: var(--shell-ink); }
+
 .lp-shell-nav-group { margin-top: 25px; }
 .lp-shell-nav-group > p { margin: 0 0 9px; color: #8a8f96; font-size: 11px; }
 .lp-shell-nav-group .lp-shell-nav-item { min-height: 36px; }
@@ -149,7 +153,7 @@
   .is-sidebar-collapsed .lp-shell-sidebar-tools button > span, .is-sidebar-collapsed .lp-shell-tool-recharge > span, .is-sidebar-collapsed .lp-shell-tool-recharge > svg:last-child { display: none; }
   .is-sidebar-collapsed .lp-shell-account { justify-content: center; padding-inline: 0; }
   .is-sidebar-collapsed .lp-shell-account .lp-user-avatar { --lp-user-avatar-size: 36px; }
-  .is-sidebar-collapsed .lp-shell-account > span, .is-sidebar-collapsed .lp-shell-account > svg, .is-sidebar-collapsed .lp-shell-nav-label, .is-sidebar-collapsed .lp-shell-nav-group > p, .is-sidebar-collapsed .lp-shell-region-heading > span, .is-sidebar-collapsed .lp-shell-expiry-alert { display: none; }
+  .is-sidebar-collapsed .lp-shell-account > span, .is-sidebar-collapsed .lp-shell-account > svg, .is-sidebar-collapsed .lp-shell-nav-label, .is-sidebar-collapsed .lp-shell-nav-note, .is-sidebar-collapsed .lp-shell-nav-group > p, .is-sidebar-collapsed .lp-shell-region-heading > span, .is-sidebar-collapsed .lp-shell-expiry-alert { display: none; }
   .is-sidebar-collapsed .lp-shell-nav-item, .is-sidebar-collapsed .lp-shell-region-heading { position: relative; justify-content: center; width: 44px; min-height: 40px; padding: 0; }
   .is-sidebar-collapsed .lp-shell-nav-icon { margin-right: 0; }
   .is-sidebar-collapsed .lp-shell-nav-badge { position: absolute; top: 2px; right: 1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 5px; color: #64686e; font-size: 9px; line-height: 15px; }

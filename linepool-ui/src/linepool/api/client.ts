@@ -1,18 +1,25 @@
 import { z } from 'zod';
 import { adminQuerySchema, adminSummarySchema, adminUserSchema, adminNumberSchema, adminOrderSchema,
+  adminPasswordResetInputSchema, type AdminPasswordResetInput,
   allocationSchema, productInputSchema, numberActionInputSchema, userStatusInputSchema,
+  adminUpstreamStatusSchema, adminWebhookRetryInputSchema, adminWebhookRetryResultSchema,
+  productOptionSchema, productSyncInputSchema, productSyncResultSchema, type ProductSyncInput,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import {
   accountProfileInputSchema, accountSchema, apiErrorSchema, catalogSchema, createOrderInputSchema, dashboardSchema,
   dataResponseSchema, inboxQuerySchema, listQuerySchema, loginInputSchema, markReadInputSchema,
   numberSchema, numbersQuerySchema, orderDetailSchema, orderSchema, paginatedResponseSchema,
   pointsQuerySchema, pointsResponseSchema, preferencesInputSchema, preferencesSchema,
+  forgotPasswordInputSchema, resetPasswordInputSchema, type ForgotPasswordInput, type ResetPasswordInput,
   registerInputSchema, smsSchema, userSchema, uuidSchema, rechargeOverviewSchema,
   rechargeRecordSchema, rechargeQuerySchema, rechargeSettingsSchema, rechargeSettingsInputSchema,
   type RechargeSettingsInput, type RechargeQuery, upsertPriceRuleInputSchema, transferBalanceInputSchema,
   createRenewalInputSchema, renewalOptionsSchema, renewalRecordSchema, numberUsageSchema, usageQuerySchema, paginationQuerySchema, paginationSchema,
-  agentInventoryQuerySchema, agentNumberImportInputSchema, agentNumberStockSchema, agentSchema, agentStockQuerySchema, balanceAccountSchema, claimAgentNumberInputSchema, claimAgentNumbersInputSchema, customerSchema, numberHoldingSchema, priceRuleSchema, releaseHoldingInputSchema, resellHoldingInputSchema, txOrderSchema,
+  agentInventoryQuerySchema, agentNumberImportInputSchema, agentNumberStockSchema, agentSchema, agentStockCountsSchema, agentStockQuerySchema, balanceAccountSchema, assignHoldingInputSchema, claimAgentNumberInputSchema, claimAgentNumbersInputSchema, customerSchema, numberHoldingSchema, priceRuleSchema, releaseHoldingInputSchema, resellHoldingInputSchema, txOrderSchema,
+  holdingBatchInputSchema, holdingBatchPreviewInputSchema, holdingBatchPreviewSchema, holdingBatchResultSchema,
   createAgentInputSchema, createCustomerInputSchema, createHoldingInputSchema, adjustBalanceInputSchema,
+  agentContextSchema, agentDashboardSchema, agentMetricPeriodSchema, subagentSchema, subagentsQuerySchema, createSubagentInputSchema, updateAgentNameInputSchema,
+  subagentStatusInputSchema, holdingTransferSchema, transferableHoldingSchema, agentTransactionsQuerySchema, updateCustomerInputSchema,
   type OwnerRef, type UpsertPriceRuleInput, type TransferBalanceInput,
   type CreateRenewalInput, type UsageQuery, type PaginationQuery,
   type AccountProfileInput, type CreateOrderInput, type LoginInput, type RegisterInput,
@@ -30,11 +37,11 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
   const baseUrl = (configuration.baseUrl ?? import.meta.env.VITE_LINEPOOL_API_URL ?? '/api').replace(/\/$/, '');
   const timeoutMs = configuration.timeoutMs ?? 15000;
   async function request<T extends z.ZodType>(
-    path: string, schema: T, options: ApiRequestOptions & { method?: 'GET' | 'POST' | 'PATCH'; body?: unknown } = {},
+    path: string, schema: T, options: ApiRequestOptions & { method?: 'GET' | 'POST' | 'PATCH'; body?: unknown; timeoutMs?: number } = {},
   ): Promise<z.infer<T>> {
     const controller = new AbortController();
     const relayAbort = () => controller.abort(options.signal?.reason);
-    const timeout = setTimeout(() => controller.abort(new DOMException('Request timeout', 'TimeoutError')), timeoutMs);
+    const timeout = setTimeout(() => controller.abort(new DOMException('Request timeout', 'TimeoutError')), options.timeoutMs ?? timeoutMs);
     if (options.signal?.aborted) relayAbort();
     options.signal?.addEventListener('abort', relayAbort, { once: true });
     try {
@@ -74,6 +81,14 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     sandboxInbound(input:{id:string;numberId:string;allocationId?:string;outcome:'SUCCESS'|'FAILED'|'UNKNOWN';resolve?:boolean}) { return request('/sandbox/inbound',dataResponseSchema(z.object({status:z.string()})),{method:'POST',body:input}); },
     adminSession(options?: ApiRequestOptions) { return request('/admin/session', dataResponseSchema(userSchema), options); },
     adminSummary(options?: ApiRequestOptions) { return request('/admin/summary', dataResponseSchema(adminSummarySchema), options); },
+    adminUpstreamStatus(options?: ApiRequestOptions) {
+      return request('/admin/integrations/pingcode', dataResponseSchema(adminUpstreamStatusSchema), options);
+    },
+    adminRetryWebhook(input: z.input<typeof adminWebhookRetryInputSchema>) {
+      return request('/admin/integrations/pingcode/retry', dataResponseSchema(adminWebhookRetryResultSchema), {
+        method: 'POST', body: adminWebhookRetryInputSchema.parse(input),
+      });
+    },
     adminRechargeSettings(options?: ApiRequestOptions) { return request('/admin/recharge-settings', dataResponseSchema(rechargeSettingsSchema), options); },
     adminSaveRechargeSettings(input: RechargeSettingsInput) {
       return request('/admin/recharge-settings', dataResponseSchema(rechargeSettingsSchema), { method: 'PATCH', body: rechargeSettingsInputSchema.parse(input) });
@@ -81,17 +96,56 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     adminList<T extends z.ZodType>(section: string, schema: T, input: Partial<AdminQuery>, options?: ApiRequestOptions) {
       return request(`/admin/${section}${query(adminQuerySchema.parse(input))}`, paginatedResponseSchema(schema), options);
     },
+    agentContext(options?: ApiRequestOptions) {
+      return request('/agent-inventory/context', dataResponseSchema(agentContextSchema), options);
+    },
+    agentUpdateProfile(input: z.input<typeof updateAgentNameInputSchema>) {
+      return request('/agent-inventory/profile', dataResponseSchema(agentSchema), { method: 'PATCH', body: updateAgentNameInputSchema.parse(input) });
+    },
+    agentUpdateCustomer(id: string, input: z.input<typeof updateCustomerInputSchema>) {
+      return request(`/agent-inventory/customers/${uuidSchema.parse(id)}`, dataResponseSchema(customerSchema), { method: 'PATCH', body: updateCustomerInputSchema.parse(input) });
+    },
+    agentDashboard(period: z.input<typeof agentMetricPeriodSchema> = '7d', options?: ApiRequestOptions) {
+      return request(`/agent-inventory/dashboard${query({ period: agentMetricPeriodSchema.parse(period) })}`, dataResponseSchema(agentDashboardSchema), options);
+    },
+    agentSubagents(input: z.input<typeof subagentsQuerySchema> = {}, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/subagents${query(subagentsQuerySchema.parse(input))}`, paginatedResponseSchema(subagentSchema), options);
+    },
+    agentSubagent(id: string, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/subagents/${uuidSchema.parse(id)}`, dataResponseSchema(subagentSchema), options);
+    },
+    agentCreateSubagent(input: z.input<typeof createSubagentInputSchema>) {
+      return request('/agent-inventory/subagents', dataResponseSchema(subagentSchema), { method: 'POST', body: createSubagentInputSchema.parse(input) });
+    },
+    agentRenameSubagent(id: string, input: z.input<typeof updateAgentNameInputSchema>) {
+      return request(`/agent-inventory/subagents/${uuidSchema.parse(id)}/name`, dataResponseSchema(subagentSchema), { method: 'PATCH', body: updateAgentNameInputSchema.parse(input) });
+    },
+    agentSubagentStatus(id: string, input: z.input<typeof subagentStatusInputSchema>) {
+      return request(`/agent-inventory/subagents/${uuidSchema.parse(id)}/status`, dataResponseSchema(z.object({ changed: z.boolean(), agentId: uuidSchema, status: z.string() })), { method: 'PATCH', body: subagentStatusInputSchema.parse(input) });
+    },
+    agentSubagentHoldings(id: string, input: z.input<typeof paginationQuerySchema> = {}, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/subagents/${uuidSchema.parse(id)}/holdings${query(paginationQuerySchema.parse(input))}`, paginatedResponseSchema(holdingTransferSchema), options);
+    },
+    agentSubagentTransactions(id: string, input: z.input<typeof paginationQuerySchema> = {}, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/subagents/${uuidSchema.parse(id)}/transactions${query(paginationQuerySchema.parse(input))}`, paginatedResponseSchema(txOrderSchema), options);
+    },
+    agentTransferableHoldings(input: z.input<typeof agentInventoryQuerySchema> = {}, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/transferable-holdings${query(agentInventoryQuerySchema.parse(input))}`, dataResponseSchema(z.array(transferableHoldingSchema)), options);
+    },
     agentAgents(options?: ApiRequestOptions) {
       return request('/agent-inventory/agents', dataResponseSchema(z.array(agentSchema)), options);
     },
     agentCustomers(options?: ApiRequestOptions) {
       return request('/agent-inventory/customers', dataResponseSchema(z.array(customerSchema)), options);
     },
+    agentCustomerHoldings(customerId: string, input: z.input<typeof paginationQuerySchema> = {}, options?: ApiRequestOptions) {
+      return request(`/agent-inventory/customers/${uuidSchema.parse(customerId)}/holdings${query(paginationQuerySchema.parse(input))}`, paginatedResponseSchema(numberHoldingSchema), options);
+    },
     agentHoldings(input: z.input<typeof agentInventoryQuerySchema> = {}, options?: ApiRequestOptions) {
-      return request(`/agent-inventory/holdings${query(agentInventoryQuerySchema.parse(input))}`, dataResponseSchema(z.array(numberHoldingSchema)), options);
+      return request(`/agent-inventory/holdings${query(agentInventoryQuerySchema.parse(input))}`, paginatedResponseSchema(numberHoldingSchema), options);
     },
     agentStock(input: z.input<typeof agentStockQuerySchema> = {}, options?: ApiRequestOptions) {
-      return request(`/agent-inventory/stock${query(agentStockQuerySchema.parse(input))}`, dataResponseSchema(z.array(agentNumberStockSchema)), options);
+      return request(`/agent-inventory/stock${query(agentStockQuerySchema.parse(input))}`, paginatedResponseSchema(agentNumberStockSchema).extend({ counts: agentStockCountsSchema }), options);
     },
     agentImportStock(input: z.input<typeof agentNumberImportInputSchema>) {
       return request('/agent-inventory/stock/import', dataResponseSchema(z.object({ idempotencyKey: uuidSchema, importedCount: z.number().int().nonnegative(), replayed: z.boolean(), items: z.array(agentNumberStockSchema) })), { method: 'POST', body: agentNumberImportInputSchema.parse(input) });
@@ -105,6 +159,15 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     agentReleaseHolding(id: string, input: z.input<typeof releaseHoldingInputSchema>) {
       return request(`/agent-inventory/holdings/${uuidSchema.parse(id)}/release`, dataResponseSchema(z.object({ stock: agentNumberStockSchema, releasedHoldingId: uuidSchema })), { method: 'POST', body: releaseHoldingInputSchema.parse(input) });
     },
+    agentHoldingBatchPreview(input: z.input<typeof holdingBatchPreviewInputSchema>) {
+      return request('/agent-inventory/holdings/batch-preview', dataResponseSchema(holdingBatchPreviewSchema), { method: 'POST', body: holdingBatchPreviewInputSchema.parse(input), timeoutMs: 120000 });
+    },
+    agentTransferHoldingBatch(input: z.input<typeof holdingBatchInputSchema>) {
+      return request('/agent-inventory/holdings/batch-transfer', dataResponseSchema(holdingBatchResultSchema), { method: 'POST', body: holdingBatchInputSchema.parse(input), timeoutMs: 120000 });
+    },
+    agentAssignHoldingToCustomer(input: z.input<typeof assignHoldingInputSchema>) {
+      return request('/agent-inventory/holdings/assign-customer', dataResponseSchema(z.object({ holding: numberHoldingSchema, orderId: uuidSchema, replayed: z.boolean() })), { method: 'POST', body: assignHoldingInputSchema.parse(input) });
+    },
     agentResellHolding(input: z.input<typeof resellHoldingInputSchema>) {
       return request('/agent-inventory/holdings/resell', dataResponseSchema(z.object({ holding: numberHoldingSchema, orderId: uuidSchema, replayed: z.boolean() })), { method: 'POST', body: resellHoldingInputSchema.parse(input) });
     },
@@ -114,12 +177,12 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     agentPrices(options?: ApiRequestOptions) {
       return request('/agent-inventory/prices', dataResponseSchema(z.array(priceRuleSchema)), options);
     },
-    agentTransactions(page: number, pageSize: number, options?: ApiRequestOptions) {
-      return request(`/agent-inventory/transactions${query({ page, pageSize })}`, paginatedResponseSchema(txOrderSchema), options);
+    agentTransactions(page: number, pageSize: number, options?: ApiRequestOptions, filters: Pick<z.input<typeof agentTransactionsQuerySchema>, 'status' | 'kind' | 'search'> = {}) {
+      return request(`/agent-inventory/transactions${query(agentTransactionsQuerySchema.parse({ page, pageSize, ...filters }))}`, paginatedResponseSchema(txOrderSchema), options);
     },
-    agentLedger(owner: OwnerRef, page: number, pageSize: number, options?: ApiRequestOptions) {
+    agentLedger(owner: OwnerRef, page: number, pageSize: number, options?: ApiRequestOptions, currency = 'USD') {
       const [ownerType, ownerId] = owner.ownerType === 'AGENT' ? ['agent', owner.agentId] : ['customer', owner.customerId];
-      return request(`/agent-inventory/ledger/${ownerType}/${ownerId}${query({ page, pageSize })}`,
+      return request(`/agent-inventory/ledger/${ownerType}/${ownerId}${query({ page, pageSize, currency })}`,
         z.object({
           data: z.object({
             currency: z.string(), balanceMinor: z.number(),
@@ -158,11 +221,20 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     adminOrder(id: string, options?: ApiRequestOptions) {
       return request(`/admin/orders/${uuidSchema.parse(id)}`, dataResponseSchema(z.object({ order: adminOrderSchema.extend({ product_snapshot: z.unknown() }), allocations: z.array(allocationSchema) })), options);
     },
+    adminResetPassword(id: string, input: AdminPasswordResetInput) {
+      return request(`/admin/users/${uuidSchema.parse(id)}/reset-password`, dataResponseSchema(z.object({ changed: z.literal(true) })), { method: 'POST', body: adminPasswordResetInputSchema.parse(input) });
+    },
     adminUserStatus(id: string, input: UserStatusInput) {
       return request(`/admin/users/${uuidSchema.parse(id)}/status`, dataResponseSchema(z.object({ changed: z.boolean() })), { method: 'PATCH', body: userStatusInputSchema.parse(input) });
     },
     adminNumberAction(id: string, input: NumberActionInput) {
       return request(`/admin/numbers/${uuidSchema.parse(id)}/actions`, dataResponseSchema(z.object({ changed: z.boolean() })), { method: 'POST', body: numberActionInputSchema.parse(input) });
+    },
+    adminProductOptions(options?: ApiRequestOptions) {
+      return request('/admin/product-options', dataResponseSchema(z.array(productOptionSchema)), options);
+    },
+    adminSyncProducts(input: ProductSyncInput) {
+      return request('/admin/products/sync', dataResponseSchema(productSyncResultSchema), { method: 'POST', body: productSyncInputSchema.parse(input) });
     },
     adminSaveProduct(input: ProductInput, create: boolean) {
       return request('/admin/products', dataResponseSchema(z.object({ changed: z.boolean() })), { method: create ? 'POST' : 'PATCH', body: productInputSchema.parse(input) });
@@ -172,6 +244,12 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     },
     register(input: RegisterInput, options?: ApiRequestOptions) {
       return request('/auth/register', dataResponseSchema(userSchema), { ...options, method: 'POST', body: registerInputSchema.parse(input) });
+    },
+    forgotPassword(input: ForgotPasswordInput) {
+      return request('/auth/forgot-password', dataResponseSchema(z.object({ accepted: z.literal(true) })), { method: 'POST', body: forgotPasswordInputSchema.parse(input) });
+    },
+    resetPassword(input: ResetPasswordInput) {
+      return request('/auth/reset-password', dataResponseSchema(z.object({ changed: z.literal(true) })), { method: 'POST', body: resetPasswordInputSchema.parse(input) });
     },
     me(options?: ApiRequestOptions) { return request('/auth/me', dataResponseSchema(userSchema), options); },
     logout(options?: ApiRequestOptions) {

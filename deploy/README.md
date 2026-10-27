@@ -75,7 +75,7 @@ Nginx 静态根目录只能指向 `web-dist/`，不能指向仓库或 `linepool-
 
 ## API 对接
 
-当前网站接口、会话方式、响应格式和真实业务缺口统一见 [应用 README](../linepool-ui/README.md#api-对接边界)，字段以 `linepool-ui/packages/contracts/src/index.ts` 为准。生产环境不要公开数据库端口或把供应商密钥写进 `VITE_*`。现有接口没有 API Key / Bearer 鉴权或供应商回调能力，不能当作已完成的开放 API 服务发布。
+当前网站接口、会话方式、响应格式和真实业务缺口统一见 [应用 README](../linepool-ui/README.md#api-对接边界)，字段以 `linepool-ui/packages/contracts/src/index.ts` 为准。生产环境不要公开数据库端口或把供应商密钥写进 `VITE_*`。代码已有独立验签的 PingCode Webhook 接收入口，见 [API / Webhook 接入指南](../linepool-ui/docs/api-webhook-integration-guide.md)，真实上游链路仍待联调；网站会话 API 也不能直接当作已完成的第三方开放 API 服务发布。
 
 ## 发布核对与回退
 

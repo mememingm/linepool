@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { uuidSchema, timestampSchema, regionIdSchema, serviceSchema, planIdSchema, paginationQuerySchema } from './primitives.js';
+import { uuidSchema, timestampSchema, regionIdSchema, serviceSchema, planIdSchema, paginationQuerySchema, passwordSchema } from './primitives.js';
 export * from './primitives.js';
 export * from './number-services.js';
 export * from './platform-catalog.js';
@@ -41,12 +41,18 @@ export const apiErrorSchema = z.object({ error: z.object({
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
 export const loginInputSchema = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.union([emailSchema, z.literal('admin')])),
-  password: z.string().min(8).max(72).refine(value => new TextEncoder().encode(value).length <= 72, 'Password must not exceed 72 UTF-8 bytes'),
+  password: passwordSchema,
 });
 export const registerInputSchema = loginInputSchema.extend({
   email: emailSchema,
   displayName: z.string().trim().min(1).max(80),
 });
+export const forgotPasswordInputSchema = z.strictObject({ email: emailSchema });
+export const resetPasswordInputSchema = z.strictObject({
+  token: z.string().regex(/^[a-f0-9]{64}$/), newPassword: passwordSchema,
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordInputSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
 export const userSchema = z.object({
   id: uuidSchema, email: z.string().email(), displayName: z.string(),
   isDemo: z.boolean(), pointsBalance: z.number().int().nonnegative(), createdAt: timestamp,

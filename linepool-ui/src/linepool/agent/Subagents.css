@@ -1,0 +1,63 @@
+.subagents-page { --subagent-accent: #167451; }
+.subagent-kicker { margin: 0 0 8px !important; color: #167451 !important; font-size: 11px !important; font-weight: 700; letter-spacing: .1em; }
+.subagent-primary { background: var(--primary, #2563eb); color: var(--primary-foreground, #fff); border-color: var(--primary, #2563eb); }
+.subagent-primary:hover { background: color-mix(in srgb, var(--primary, #2563eb) 90%, #000); }
+.subagent-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px 0 22px; border-bottom: 1px solid #e6ece7; margin-bottom: 6px; }
+.subagent-search { display: flex; align-items: center; flex: 1; max-width: 400px; gap: 9px; border: 1px solid #cbd7ce; border-radius: 6px; background: #fff; padding: 0 11px; color: #68766e; }
+.subagent-search input { width: 100%; padding: 10px 0; border: 0; background: transparent; color: #17201d; outline: none; font: inherit; font-size: 14px; }
+.subagent-search:focus-within { outline: 2px solid #167451; outline-offset: 2px; }
+.subagent-filters select, .subagent-pagination select { padding: 9px 11px; border: 1px solid #cbd7ce; border-radius: 6px; background: #fff; color: #44524a; font: inherit; font-size: 14px; }
+.subagent-name, .subagent-id, .subagent-row-actions, .subagent-title, .subagent-detail-actions { display: flex; align-items: center; gap: 10px; }
+.subagent-name strong { max-width: 250px; overflow: hidden; text-overflow: ellipsis; }
+.subagent-avatar { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border: 1px solid #d6e9de; border-radius: 7px; background: #edf6f0; color: #167451; font-size: 13px; font-weight: 700; }
+.subagent-id code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #536258; user-select: all; }
+.subagent-status { gap: 6px; border-radius: 5px; font-weight: 500; }
+.subagent-status span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.subagent-status.status-active { color: #167451; border-color: #c6ded1; background: #f1f9f4; }
+.subagent-status.status-suspended { color: #89601b; border-color: #ead8ad; background: #fff9eb; }
+.subagent-status.status-terminated { color: #68766e; border-color: #d9e2da; background: #f5f7f3; }
+.subagent-date { color: #68766e; font-size: 13px; }
+.subagent-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 240px; padding: 32px; color: #68766e; text-align: center; }
+.subagent-state h3, .subagent-state p { margin: 0; }
+.subagent-state h3 { color: #17201d; font-size: 16px; }
+.subagent-state p { font-size: 14px; line-height: 1.7; }
+.subagent-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 20px; color: #68766e; font-size: 12px; }
+.subagent-pagination > span:first-child { margin-right: auto; }
+.subagent-pagination button { padding: 7px 10px; font-size: 12px; }
+.subagent-pagination select { padding: 5px; }
+.subagent-back { margin: -5px 0 24px -10px; color: #536258; }
+.subagent-title { flex-wrap: wrap; }
+.subagent-detail-actions { flex-wrap: wrap; }
+.subagent-detail-tabs { display: flex; gap: 24px; border-bottom: 1px solid #d9e2da; margin: 22px 0; }
+.subagent-detail-tabs button { padding: 12px 2px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #68766e; font: inherit; font-size: 14px; cursor: pointer; }
+.subagent-detail-tabs button.active { border-bottom-color: #167451; color: #167451; font-weight: 700; }
+.subagent-profile, .subagent-transfer-confirm dl { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 22px 16px; margin: 30px 0; font-size: 14px; }
+.subagent-profile dt, .subagent-transfer-confirm dt { color: #68766e; }
+.subagent-profile dd, .subagent-transfer-confirm dd { margin: 0; overflow-wrap: anywhere; }
+.subagent-history-note { margin-bottom: 20px; color: #68766e; line-height: 1.7; font-size: 13px; }
+.subagent-dialog { max-height: 90dvh; overflow-y: auto; color: #17201d; border-color: #d9e2da; background: #fff; }
+.subagent-form { display: grid; gap: 18px; }
+.subagent-form label { display: grid; gap: 8px; color: #44524a; font-size: 13px; font-weight: 600; }
+.subagent-form input, .subagent-form textarea, .subagent-form select { width: 100%; min-width: 0; border: 1px solid #cbd7ce; border-radius: 6px; padding: 10px 11px; background: #fff; color: #17201d; font: inherit; }
+.subagent-form textarea { min-height: 90px; resize: vertical; }
+.subagent-form input:focus-visible, .subagent-form textarea:focus-visible, .subagent-form select:focus-visible, .subagent-filters select:focus-visible, .subagent-pagination select:focus-visible, .subagent-detail-tabs button:focus-visible { outline: 2px solid #167451; outline-offset: 2px; }
+.subagent-form input:disabled { opacity: .6; }
+.subagent-form p { margin: 0; font-size: 13px; line-height: 1.7; }
+.subagent-form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 6px; }
+.subagent-inline-error { border: 1px solid #ead8ad; border-radius: 6px; padding: 12px; color: #795a12; background: #fff8e6; font-size: 13px; line-height: 1.7; }
+.subagent-target { display: grid; gap: 4px; padding: 12px; border-radius: 6px; background: #f5f7f3; overflow-wrap: anywhere; }
+.subagent-target code { color: #68766e; font-size: 11px; }
+.subagent-transfer-confirm { padding: 16px; border: 1px solid #c6ded1; border-radius: 6px; background: #f1f9f4; }
+.subagent-transfer-confirm dl { grid-template-columns: 80px minmax(0, 1fr); gap: 12px; margin: 18px 0; }
+@media (max-width: 760px) {
+  .subagents-page { padding: 18px 14px; }
+  .subagent-filters { align-items: stretch; }
+  .subagent-search { flex-basis: 100%; max-width: none; }
+  .subagent-detail-actions { gap: 7px; }
+  .subagent-profile { grid-template-columns: 76px minmax(0, 1fr); gap: 20px 8px; }
+  .subagent-profile .subagent-id { align-items: flex-start; }
+  .subagent-profile code { word-break: break-all; }
+  .subagent-pagination { gap: 9px; }
+  .subagent-pagination > span:first-child { width: 100%; }
+  .subagent-dialog { max-width: calc(100% - 24px); padding: 20px; }
+}

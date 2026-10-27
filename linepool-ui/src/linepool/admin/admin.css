@@ -48,7 +48,7 @@
 .lp-admin-brand-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 8px; color: var(--primary); background: var(--accent); font-size: 18px; }
 .lp-admin-brand-text { display: flex; align-items: center; gap: 7px; }
 .lp-admin-brand-text small { display: inline; margin: 0; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted-foreground); font-size: 9px; font-weight: 600; letter-spacing: .04em; }
-.lp-admin-sidebar-label { margin: 36px 12px 10px; color: var(--admin-faint); font-size: 13px; }
+.lp-admin-sidebar-label { margin: 24px 12px 6px; color: var(--admin-faint); font-size: 12px; font-weight: 500; letter-spacing: .02em; }
 .lp-admin-sidebar ul { padding: 0; margin: 0; list-style: none; gap: 5px; }
 .lp-admin-sidebar nav a { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border-radius: 8px; color: var(--secondary-foreground); transition: background-color 150ms ease, color 150ms ease; white-space: nowrap; }
 .lp-admin-sidebar nav svg { flex-shrink: 0; }
@@ -89,7 +89,7 @@
 .lp-admin-refresh-label { display: inline-block; min-width: 5em; text-align: left; }
 .lp-admin-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; margin-bottom: 28px; }
 .lp-admin-page-heading h1 { margin: 0; color: var(--foreground); font-size: 32px; line-height: 1.25; font-weight: 600; letter-spacing: -.025em; }
-.lp-admin-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+.lp-admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .lp-admin-metric, .lp-admin-metric-skeleton { position: relative; display: block; min-width: 0; min-height: 124px; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: none; transition: border-color 150ms ease; }
 .lp-admin-metric:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
 .lp-admin .lp-admin-metric a { display: block; height: 100%; padding: 20px; color: var(--foreground); border-radius: inherit; }
@@ -135,23 +135,6 @@
 .lp-admin-mono { font-family: 'Switzer', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
 .lp-admin-identifier { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .lp-admin-numeric { text-align: right; font-variant-numeric: tabular-nums; }
-.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(3) { text-align: right; }
-.lp-admin-table-scroll[aria-label="订单列表"] table { min-width: 880px; }
-.lp-admin-table-scroll[aria-label="订单列表"] th:first-child { width: 23%; }
-.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(2) { width: 20%; }
-.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(3) { width: 8%; }
-.lp-admin-table-scroll[aria-label="订单列表"] th:last-child:nth-child(7) { width: 72px; }
-.lp-admin-table-scroll[aria-label="号码管理"] table { min-width: 1120px; }
-.lp-admin-table-scroll[aria-label="号码管理"] th:first-child { width: 194px; }
-.lp-admin-table-scroll[aria-label="号码管理"] th:nth-last-child(2) { width: 156px; }
-.lp-admin-table-scroll[aria-label="号码管理"] th:last-child { width: 186px; }
-.lp-admin-table-scroll[aria-label="用户管理"] table { min-width: 1040px; }
-.lp-admin-table-scroll[aria-label="用户管理"] th:first-child { width: 236px; }
-.lp-admin-table-scroll[aria-label="用户管理"] th:last-child { width: 142px; }
-.lp-admin-table-scroll[aria-label="用户管理"] th:nth-last-child(2) { width: 156px; }
-.lp-admin-table-scroll[aria-label="商品管理"] table { min-width: 980px; }
-.lp-admin-table-scroll[aria-label="商品管理"] th:first-child { width: 22%; }
-.lp-admin-table-scroll[aria-label="商品管理"] th:last-child { width: 72px; }
 .lp-admin-table-scroll[aria-label="管理审计"] table { min-width: 760px; }
 .lp-admin-table-scroll[aria-label="管理审计"] th:first-child { width: 168px; }
 .lp-admin-table-scroll[aria-label="管理审计"] th:nth-child(2) { width: 110px; }
@@ -161,12 +144,6 @@
 .lp-admin-table-scroll[aria-label="平台项目"] table { min-width: 900px; }
 .lp-admin-table-scroll[aria-label="平台项目"] th:first-child { width: 22%; }
 .lp-admin-table-scroll[aria-label="平台项目"] th:nth-child(2) { width: 80px; }
-.lp-admin-table-scroll[aria-label="收信记录"] table { min-width: 1100px; }
-.lp-admin-table-scroll[aria-label="收信记录"] th:first-child { width: 164px; }
-.lp-admin-table-scroll[aria-label="收信记录"] th:nth-child(2) { width: 200px; }
-.lp-admin-table-scroll[aria-label="收信记录"] th:nth-child(3) { width: 90px; }
-.lp-admin-table-scroll[aria-label="收信记录"] th:nth-child(4) { width: 24%; }
-.lp-admin-table-scroll[aria-label="收信记录"] th:last-child { width: 72px; }
 .lp-admin-table-scroll[aria-label="用户号码"] table { min-width: 440px; }
 .lp-admin-reason { white-space: normal; }
 .lp-admin-theme .lp-shell-record-pagination { flex-wrap: wrap; gap: 12px; padding: 16px 24px; color: var(--muted-foreground); font-size: 13px; border-top: 1px solid var(--border); }
@@ -242,11 +219,119 @@
 .lp-admin-access h1 { margin-top: 16px; font-size: 24px; font-weight: 600; }
 .lp-admin-toaster { font-family: 'Switzer', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
 .lp-admin-toast { border-radius: 12px; }
+/* Grouped navigation: the technical group is collapsible and visually quieter. */
+.lp-admin-sidebar nav { display: grid; gap: 2px; }
+.lp-admin-nav-group:first-child .lp-admin-sidebar-label { margin-top: 28px; }
+.lp-admin-sidebar nav a { height: 38px; }
+.lp-admin-nav-toggle { display: flex; align-items: center; justify-content: space-between; width: calc(100% - 24px); padding: 0; border: 0; background: none; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.lp-admin-nav-toggle:disabled { cursor: default; }
+.lp-admin-nav-toggle svg { transition: transform 150ms ease; }
+.lp-admin-nav-toggle[aria-expanded="false"] svg { transform: rotate(-90deg); }
+.lp-admin-nav-group[data-advanced] { margin-top: 12px; padding-top: 4px; border-top: 1px dashed var(--border); }
+.lp-admin-sidebar[data-collapsible="icon"] .lp-admin-nav-toggle { visibility: hidden; height: 12px; }
+
+/* Page intro and dashboard */
+.lp-admin-page-heading { align-items: flex-end; margin-bottom: 24px; }
+.lp-admin-page-description { margin: 6px 0 0; color: var(--muted-foreground); font-size: 14px; }
+.lp-admin-todo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; padding: 20px 24px; border: 1px solid color-mix(in srgb, var(--admin-success) 25%, var(--border)); border-radius: 12px; background: var(--admin-success-bg); }
+.lp-admin-todo[data-attention="true"] { border-color: color-mix(in srgb, var(--admin-warning-ink) 30%, var(--border)); background: var(--admin-warning-bg); }
+.lp-admin-todo-title { display: flex; align-items: flex-start; gap: 12px; }
+.lp-admin-todo-title > svg { flex-shrink: 0; margin-top: 3px; color: var(--admin-success); }
+.lp-admin-todo[data-attention="true"] .lp-admin-todo-title > svg { color: var(--admin-warning-ink); }
+.lp-admin-todo h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.lp-admin-todo p { margin: 2px 0 0; color: var(--muted-foreground); font-size: 13px; }
+.lp-admin-todo-items { display: flex; flex-wrap: wrap; gap: 10px; }
+.lp-admin .lp-admin-todo-item { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted-foreground); background: var(--card); font-size: 14px; }
+.lp-admin .lp-admin-todo-item[data-attention="true"] { color: var(--foreground); border-color: color-mix(in srgb, var(--admin-warning-ink) 35%, var(--border)); }
+.lp-admin-todo-item[data-attention="true"] > svg:first-child, .lp-admin-todo-item strong { color: var(--admin-warning-ink); }
+.lp-admin .lp-admin-todo-item:hover { border-color: var(--primary); }
+.lp-admin-quick { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.lp-admin-quick > span { margin-right: 4px; color: var(--muted-foreground); font-size: 13px; }
+.lp-admin .lp-admin-quick a { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); background: var(--card); font-size: 14px; transition: border-color 150ms ease, color 150ms ease; }
+.lp-admin .lp-admin-quick a:hover { border-color: var(--primary); color: var(--primary); }
+.lp-admin-quick a svg { color: var(--primary); }
+
+/* Compact tables: one-line rows, clickable to open details, actions grouped. */
+.lp-admin-table-scroll td { height: 56px; }
+.lp-admin-table-scroll td time { white-space: nowrap; }
+.lp-admin-clickable { cursor: pointer; }
+.lp-admin-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.lp-admin-theme .lp-admin-row-actions .lp-admin-button[data-size="sm"] { height: 32px; padding: 0 12px; font-size: 13px; }
+.lp-admin-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.lp-admin-short-id { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; font-size: 13px; color: var(--foreground); white-space: nowrap; }
+.lp-admin-faint { color: var(--admin-faint); }
+.lp-admin-inline-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--primary); font-size: 12px; font-weight: 500; vertical-align: 1px; }
+.lp-admin-low-stock { color: var(--destructive); }
+.lp-admin-table-scroll tr.lp-admin-group-row th { height: 40px; padding: 8px 16px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--accent) 60%, var(--card)); color: var(--foreground); font-size: 14px; font-weight: 600; text-align: left; }
+.lp-admin-group-row small { display: inline; margin-left: 8px; font-weight: 400; }
+.lp-admin-table-scroll th:last-child:empty { width: 96px; }
+.lp-admin-table-scroll[aria-label="用户管理"] table { min-width: 820px; }
+.lp-admin-table-scroll[aria-label="用户管理"] th:first-child { width: 30%; }
+.lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(3), th:nth-child(4)) { width: 72px; }
+.lp-admin-table-scroll:is([aria-label="用户管理"], [aria-label="号码管理"], [aria-label="订单列表"], [aria-label="收信记录"]) th:nth-child(6) { width: 156px; }
+.lp-admin-table-scroll[aria-label="收信记录"] th:first-child { width: 156px; }
+.lp-admin-table-scroll td:has(> time:only-child) { text-align: left; }
+.lp-admin-table-scroll[aria-label="号码管理"] table { min-width: 860px; }
+.lp-admin-table-scroll[aria-label="号码管理"] th:first-child { width: 20%; }
+.lp-admin-table-scroll[aria-label="号码管理"] th:last-child { width: 132px; }
+.lp-admin-table-scroll[aria-label="商品管理"] table { min-width: 720px; }
+.lp-admin-table-scroll[aria-label="商品管理"] th:first-child { width: 18%; }
+.lp-admin-table-scroll[aria-label="商品管理"] th:last-child { width: 72px; }
+.lp-admin-table-scroll[aria-label="订单列表"] table { min-width: 760px; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(3) { width: 24%; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:nth-child(4) { width: 8%; text-align: right; }
+.lp-admin-table-scroll[aria-label="订单列表"] th:last-child:empty { width: 64px; }
+.lp-admin-table-scroll[aria-label="收信记录"] table { min-width: 760px; }
+.lp-admin-table-scroll[aria-label="收信记录"] th:last-child { width: 64px; }
+.lp-admin-table-scroll[aria-label="待分配号码库存"] th:first-child { width: 48px; }
+.lp-admin-table-scroll[aria-label="待分配号码库存"] table, .lp-admin-table-scroll[aria-label="号码库存"] table { min-width: 760px; }
+.lp-admin-table-scroll[aria-label="待分配号码库存"] th:last-child, .lp-admin-table-scroll[aria-label="号码库存"] th:last-child { width: 170px; }
+.lp-admin-row-menu { width: auto; min-width: 180px; }
+.lp-admin-row-menu [data-danger] { color: var(--destructive); }
+
+/* Inventory tabs */
+.lp-admin-tabs { display: flex; align-items: flex-end; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--border); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.lp-admin-tabs::-webkit-scrollbar { display: none; }
+.lp-admin-tab { position: relative; height: 48px; padding: 0 14px; border: 0; background: none; color: var(--muted-foreground); font: inherit; font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.lp-admin-tab:hover { color: var(--foreground); }
+.lp-admin-tab[aria-selected="true"] { color: var(--primary); }
+.lp-admin-tab[aria-selected="true"]::after { content: ""; position: absolute; inset: auto 10px 0; height: 2px; border-radius: 2px; background: var(--primary); }
+.lp-admin-tabs-refresh { margin-left: auto; align-self: center; }
+.lp-admin-tab-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px 24px 0; }
+.lp-admin-tab-toolbar .lp-admin-context { margin: 0; }
+.lp-admin-tab-search { margin: 16px 24px; }
+.lp-admin-status-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 24px 0; }
+.lp-admin-status-chips button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--muted-foreground); font: inherit; font-size: 14px; cursor: pointer; }
+.lp-admin-status-chips button span { min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--muted); color: var(--foreground); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
+.lp-admin-status-chips button[aria-pressed="true"] { border-color: var(--primary); background: var(--accent); color: var(--primary); }
+.lp-admin-status-chips button[aria-pressed="true"] span { background: var(--primary); color: var(--primary-foreground); }
+.lp-admin-selection-bar { position: sticky; top: 72px; z-index: 5; display: flex; align-items: center; gap: 8px; margin: 0 24px 12px; padding: 8px 8px 8px 16px; border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); border-radius: 10px; background: var(--accent); font-size: 14px; }
+.lp-admin-selection-bar > span { flex: 1; }
+
+/* Detail drawers and forms */
+.lp-admin-detail-hero { display: grid; gap: 4px; margin-bottom: 24px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
+.lp-admin-detail-hero > strong { font-size: 20px; font-weight: 600; }
+.lp-admin-detail-hero > span { color: var(--muted-foreground); font-size: 14px; }
+.lp-admin-detail-hero > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.lp-admin-big-number { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-admin-dialog .lp-admin-first-heading { margin-top: 0; }
+.lp-admin-tech { margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; }
+.lp-admin-tech > summary { padding: 12px 16px; color: var(--muted-foreground); font-size: 13px; cursor: pointer; }
+.lp-admin-tech[open] > summary { border-bottom: 1px solid var(--border); }
+.lp-admin-tech > :not(summary) { margin: 16px; }
+.lp-admin-dialog label > small { margin-top: 0; color: var(--admin-faint); font-size: 12px; }
+.lp-admin-switch-row > span { display: grid; color: var(--foreground); font-size: 14px; }
+.lp-admin-reason-field { display: grid; gap: 8px; margin-top: 16px; }
+.lp-admin-reason-field > label { margin: 0; }
+.lp-admin-reason-field textarea { min-height: 64px; }
+.lp-admin-reason-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lp-admin-reason-chips button { height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--muted-foreground); font: inherit; font-size: 12px; cursor: pointer; }
+.lp-admin-reason-chips button:hover, .lp-admin-reason-chips button[data-active] { border-color: var(--primary); color: var(--primary); background: var(--accent); }
 @media (min-width: 1280px) and (max-width: 1535px) { .lp-admin-metric a { padding-inline: 16px; } .lp-admin-metric-icon { right: 12px; } }
 @media (max-width: 1279px) {
   .lp-admin-content { padding: 24px; }
   .lp-admin-header { padding-inline: 24px; }
-  .lp-admin-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lp-admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lp-admin-two-column { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
 @media (max-width: 1023px) {

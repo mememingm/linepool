@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ComponentProps, ty
 import { Dialog as Sheet, Slot } from 'radix-ui';
 import { PanelLeft, X } from 'lucide-react';
 import { Button } from './button';
+import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
 import { cn } from './utils';
 
 const SidebarContext = createContext({ open: true, openMobile: false, isMobile: false, toggleSidebar: () => {}, setOpenMobile: (_open: boolean) => {} });
@@ -28,20 +29,22 @@ export function SidebarProvider({ children, className, ...props }: ComponentProp
   </SidebarContext.Provider>;
 }
 export function Sidebar({ children, className, theme }: { children: ReactNode; className?: string; theme: string }) {
+  const p = useDisplayPreferences();
   const { isMobile, openMobile, setOpenMobile, open } = useSidebar();
   if (isMobile) return <Sheet.Root open={openMobile} onOpenChange={setOpenMobile}><Sheet.Portal>
     <Sheet.Overlay className="lp-admin-overlay" />
     <Sheet.Content className={cn('lp-admin-sidebar-panel', className)} data-theme={theme} data-mobile="true" aria-describedby={undefined}>
-      <Sheet.Title className="sr-only">后台导航</Sheet.Title>
-      <Sheet.Close asChild><Button className="lp-admin-sidebar-close" variant="ghost" size="icon" aria-label="关闭后台导航"><X size={18} /></Button></Sheet.Close>
+      <Sheet.Title className="sr-only">{p.t("后台导航")}</Sheet.Title>
+      <Sheet.Close asChild><Button className="lp-admin-sidebar-close" variant="ghost" size="icon" aria-label={p.t("关闭后台导航")}><X size={18} /></Button></Sheet.Close>
       {children}
     </Sheet.Content>
   </Sheet.Portal></Sheet.Root>;
   return <aside data-slot="sidebar" data-theme={theme} data-state={open ? 'expanded' : 'collapsed'} data-collapsible={open ? '' : 'icon'} className={className}>{children}</aside>;
 }
 export function SidebarTrigger({ onClick, ...props }: ComponentProps<typeof Button>) {
+  const p = useDisplayPreferences();
   const { toggleSidebar, isMobile, open, openMobile } = useSidebar();
-  return <Button variant="ghost" size="icon" {...props} aria-expanded={isMobile ? openMobile : open} onClick={event => { onClick?.(event); toggleSidebar(); }}><PanelLeft size={18} /><span className="sr-only">切换侧栏</span></Button>;
+  return <Button variant="ghost" size="icon" {...props} aria-expanded={isMobile ? openMobile : open} onClick={event => { onClick?.(event); toggleSidebar(); }}><PanelLeft size={18} /><span className="sr-only">{p.t("切换侧栏")}</span></Button>;
 }
 export function SidebarMenu({ className, ...props }: ComponentProps<'ul'>) { return <ul data-slot="sidebar-menu" className={cn('flex min-w-0 flex-col gap-1', className)} {...props} />; }
 export function SidebarMenuItem(props: ComponentProps<'li'>) { return <li data-slot="sidebar-menu-item" {...props} />; }

@@ -25,7 +25,7 @@ export function normalizeAddress() {
 }
 
 function isAppPage(path: string) {
-  return path === '/' || path === '/ascii-sharks' || path === '/login' || path === '/register' || isShellPath(path) || isAdminPath(path) || isAgentPath(path);
+  return path === '/' || path === '/ascii-sharks' || path === '/login' || path === '/register' || path === '/forgot-password' || path === '/reset-password' || isShellPath(path) || isAdminPath(path) || isAgentPath(path);
 }
 
 // Use composedPath so links inside the homepage's Shadow DOM work too.

@@ -51,12 +51,24 @@ export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   /** Route by trusted project + number + original reception time, including delayed redelivery. */
-  async route(messageId: string) {
+  async route(messageId: string, retry?: { actorId: string; reason: string }) {
     return this.db.transaction(async client => {
+      if (retry) {
+        const actor = await client.query("SELECT id FROM users WHERE id=$1 AND role='ADMIN' AND account_status='ACTIVE' FOR SHARE", [retry.actorId]);
+        if (!actor.rowCount) throw new ApiFailure(403, 'ADMIN_REQUIRED', 'Platform administrator access is required');
+      }
       const { rows: [receipt] } = await client.query<{ processing_status: string; raw_payload: unknown }>(
         "SELECT processing_status,raw_payload FROM provider_message_receipts WHERE provider='pingcode' AND external_message_id=$1 FOR UPDATE", [messageId]);
       if (!receipt) throw new ApiFailure(404, 'RECEIPT_NOT_FOUND', 'Receipt not found');
-      if (receipt.processing_status === 'IMPORTED') return { status: 'IMPORTED' as const };
+      // Keep manual routing and its audit entry in the same transaction; existing imports remain idempotent.
+      const finish = async (status: 'IMPORTED' | 'UNMATCHED') => {
+        if (retry) await client.query(
+          'INSERT INTO admin_audit(actor_id,action,target_id,reason,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6)',
+          [retry.actorId,'WEBHOOK_RETRY',`pingcode:${messageId}`,retry.reason,
+            JSON.stringify({ status: receipt.processing_status }),JSON.stringify({ status })]);
+        return { status };
+      };
+      if (receipt.processing_status === 'IMPORTED') return finish('IMPORTED');
       const item = inbound.parse(receipt.raw_payload);
       const { rows } = await client.query<{ id: string; number_id: string; user_id: string; platform_id: string }>(
         `SELECT a.id,a.number_id,a.user_id,a.platform_id FROM provider_projects p
@@ -73,7 +85,7 @@ export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
         await client.query(`UPDATE provider_message_receipts SET processing_status='UNMATCHED',
           failure_reason='No unique number/platform service at original reception time',processed_at=now()
           WHERE provider='pingcode' AND external_message_id=$1`, [messageId]);
-        return { status: 'UNMATCHED' as const };
+        return finish('UNMATCHED');
       }
       const service = rows[0]!;
       const { rows: [message] } = await client.query<{ id: string }>(
@@ -84,7 +96,7 @@ export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
       await client.query(`UPDATE provider_message_receipts SET message_id=$2,allocation_id=$3,
         processing_status='IMPORTED',failure_reason=NULL,processed_at=now()
         WHERE provider='pingcode' AND external_message_id=$1`, [messageId,message!.id,service.id]);
-      return { status: 'IMPORTED' as const };
+      return finish('IMPORTED');
     });
   }
 

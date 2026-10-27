@@ -34,13 +34,21 @@ export class Authentication {
     response.clearCookie(cookieName, { ...this.cookieOptions(), path: '/api' });
     response.cookie(cookieName, token, { ...this.cookieOptions(), expires: expiresAt });
   }
-  async issueSession(user: User, response: Response): Promise<User> {
+  async issueSession(user: User, response: Response, expectedPasswordHash?: string): Promise<User> {
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + this.environment.sessionMaxAge);
-    await this.db.query('DELETE FROM sessions WHERE expires_at <= now()');
-    await this.db.query('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES($1,$2,$3)', [
-      digest(token), user.id, expiresAt,
-    ]);
+    await this.db.transaction(async client => {
+      const { rows: [account] } = await client.query<{ account_status: string; role: string; password_hash: string }>(
+        'SELECT account_status,role,password_hash FROM users WHERE id=$1 FOR SHARE', [user.id]);
+      if (!account || account.account_status !== 'ACTIVE') throw new ApiFailure(403, 'ACCOUNT_DISABLED', 'Account is disabled');
+      if (expectedPasswordHash && account.password_hash !== expectedPasswordHash) {
+        throw new ApiFailure(401, 'INVALID_CREDENTIALS', 'Invalid account or password');
+      }
+      const { rows: [agent] } = await client.query<{ status: string }>('SELECT status FROM agents WHERE user_id=$1 FOR SHARE', [user.id]);
+      if (account.role !== 'ADMIN' && agent && agent.status !== 'ACTIVE') throw new ApiFailure(403, 'AGENT_NOT_ACTIVE', 'Agent account is suspended or terminated');
+      await client.query('DELETE FROM sessions WHERE expires_at <= now()');
+      await client.query('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES($1,$2,$3)', [digest(token), user.id, expiresAt]);
+    });
     this.setSessionCookie(token, expiresAt, response);
     return user;
   }
@@ -55,7 +63,7 @@ export class Authentication {
     const valid = await compare(input.password, row?.password_hash ?? dummyHash);
     if (!row || !valid) throw new ApiFailure(401, 'INVALID_CREDENTIALS', 'Invalid account or password');
     if (row.account_status !== 'ACTIVE') throw new ApiFailure(403, 'ACCOUNT_DISABLED', 'Account is disabled');
-    return this.issueSession(toUser(row), response);
+    return this.issueSession(toUser(row), response, row.password_hash);
   }
   async register(input: RegisterInput, response: Response) {
     const passwordHash = await hash(input.password, 12);
@@ -64,7 +72,7 @@ export class Authentication {
       [input.email, passwordHash, input.displayName],
     );
     if (!row) throw new ApiFailure(409, 'EMAIL_EXISTS', 'Email is already registered');
-    return this.issueSession(toUser(row), response);
+    return this.issueSession(toUser(row), response, row.password_hash);
   }
   async updateProfile(userId: string, sessionToken: string, input: AccountProfileInput): Promise<Account> {
     const tokenHash = digest(sessionToken);
@@ -90,6 +98,7 @@ export class Authentication {
         if (!updated) throw new ApiFailure(401, 'UNAUTHENTICATED', 'Login is required');
         if (input.field === 'password' || (input.field === 'email' && input.email !== row.email)) {
           await client.query('DELETE FROM sessions WHERE user_id=$1 AND token_hash<>$2', [userId, tokenHash]);
+          await client.query('DELETE FROM password_reset_tokens WHERE user_id=$1', [userId]);
         }
         return { ...toUser(updated), phoneNumber: updated.phone_number,
           preferences: { expiryNotice: updated.expiry_notice, language: 'zh-CN' } };
@@ -108,7 +117,9 @@ export class Authentication {
     const token = cookies[cookieName];
     if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return null;
     const { rows: [row] } = await this.db.query<UserRow & { session_expires_at: Date }>(
-      "SELECT u.*,s.expires_at AS session_expires_at FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.account_status='ACTIVE'", [digest(token)],
+      `SELECT u.*,s.expires_at AS session_expires_at FROM users u JOIN sessions s ON s.user_id=u.id
+       WHERE s.token_hash=$1 AND s.expires_at>now() AND u.account_status='ACTIVE'
+       AND (u.role='ADMIN' OR NOT EXISTS(SELECT 1 FROM agents a WHERE a.user_id=u.id AND a.status<>'ACTIVE'))`, [digest(token)],
     );
     return row ? { user: toUser(row), token, expiresAt: row.session_expires_at } : null;
   }

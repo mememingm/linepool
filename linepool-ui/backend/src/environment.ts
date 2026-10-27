@@ -14,6 +14,12 @@ const schema = z.object({
   DATABASE_URL: z.string().url().refine(value => ['postgres:', 'postgresql:'].includes(new URL(value).protocol)),
   DEMO_EMAIL: z.string().trim().toLowerCase().email().optional(),
   WEB_ORIGIN: z.string().url().default('http://127.0.0.1:5178').refine(value => new URL(value).origin === value),
+  SMTP_HOST: z.string().trim().default(''),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASSWORD: z.string().default(''),
+  SMTP_FROM: z.union([z.literal(''), z.string().email()]).default(''),
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(24),
   PINGCODE_WEBHOOK_SECRET: z.string().default('').refine(value => value === ''
     || (Buffer.byteLength(value, 'utf8') >= 32 && Buffer.byteLength(value, 'utf8') <= 512),
@@ -33,6 +39,9 @@ export class Environment {
   readonly testSchema = this.values.NODE_ENV === 'test' ? validateTestSchema(process.env.TEST_DATABASE_SCHEMA) : undefined;
   readonly sessionMaxAge = this.values.SESSION_TTL_HOURS * 3600000;
   constructor() {
+    if (Boolean(this.values.SMTP_USER) !== Boolean(this.values.SMTP_PASSWORD)) {
+      throw new Error('SMTP_USER and SMTP_PASSWORD must be configured together');
+    }
     if (this.values.LOCAL_SANDBOX) {
       const database = new URL(this.values.DATABASE_URL);
       if (this.values.NODE_ENV === 'production' || this.values.API_HOST !== '127.0.0.1'

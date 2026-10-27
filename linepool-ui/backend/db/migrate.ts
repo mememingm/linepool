@@ -13,12 +13,15 @@ export async function migrateDatabase(client: pg.Client, directory: URL) {
     const files = (await readdir(directory)).filter(file => /^\d+_[a-z0-9_]+\.sql$/.test(file)).sort();
     for (const file of files) {
       const sql = await readFile(new URL(file, directory), 'utf8');
-      const checksum = createHash('sha256').update(sql).digest('hex');
+      // Git may check SQL out with CRLF on Windows; preserve content checks across either line ending.
+      const normalizedSql = sql.replace(/\r\n/g, '\n');
+      const checksum = createHash('sha256').update(normalizedSql).digest('hex');
+      const legacyCrlfChecksum = createHash('sha256').update(normalizedSql.replace(/\n/g, '\r\n')).digest('hex');
       const { rows: [applied] } = await client.query<{ checksum: string }>(
         'SELECT checksum FROM schema_migrations WHERE version=$1', [file],
       );
       if (applied) {
-        if (applied.checksum !== checksum) throw new Error(`Applied migration changed: ${file}`);
+        if (applied.checksum !== checksum && applied.checksum !== legacyCrlfChecksum) throw new Error(`Applied migration changed: ${file}`);
         continue;
       }
       await client.query(sql);

@@ -11,8 +11,8 @@ export class BusinessThrottlerGuard extends ThrottlerGuard {
     @InjectThrottlerStorage() storage: ThrottlerStorage, reflector: Reflector,
     private readonly auth: Authentication) { super(options, storage, reflector); }
   protected override async getTracker(request: Request): Promise<string> {
-    // Login/registration always use the verified client IP, even with a valid cookie.
-    if (!/^\/api\/auth\/(?:login|register)\/*$/i.test(request.route?.path ?? request.path)) {
+    // Public authentication endpoints always use the verified client IP, even with a valid cookie.
+    if (!/^\/api\/auth\/(?:login|register|forgot-password|reset-password)\/*$/i.test(request.route?.path ?? request.path)) {
       const session = await this.auth.getSession(request);
       if (session) return `account:${session.user.id}`;
     }

@@ -1,11 +1,12 @@
 import type { Locale } from '../preferences/store';
 import { englishMessages } from '../welcome/reference/messages';
 import { workspaceMessages } from './messages';
+import { translateAdminText } from './admin-messages';
 export type Values = Record<string, string | number>;
 export function translate(source: string, locale: Locale, values: Values = {}): string {
   const trimmed = source.trim();
   const translated = locale === 'en-US'
-    ? Object.hasOwn(workspaceMessages, trimmed) ? workspaceMessages[trimmed] : Object.hasOwn(englishMessages, trimmed) ? englishMessages[trimmed] : undefined
+    ? Object.hasOwn(workspaceMessages, trimmed) ? workspaceMessages[trimmed] : Object.hasOwn(englishMessages, trimmed) ? englishMessages[trimmed] : translateAdminText(trimmed)
     : undefined;
   const template = translated ? source.replace(trimmed, translated) : source;
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (match, key: string) => Object.hasOwn(values, key) ? String(values[key]) : match);

@@ -2,7 +2,7 @@ import { navigate } from '../../app/router';
 import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import gsap from 'gsap';
-import { ArrowRight, ChevronsLeft, ChevronsRight, CircleUserRound, Clock3, LayoutDashboard, Menu, MessageCircle, Settings2, ShoppingBag, WalletCards, X } from 'lucide-react';
+import { ArrowRight, ChevronsLeft, ChevronsRight, CircleUserRound, Clock3, LayoutDashboard, Menu, MessageCircle, Network, Settings2, ShoppingBag, WalletCards, X } from 'lucide-react';
 import UserAvatar from '../UserAvatar';
 import SidebarTools from './SidebarTools';
 import { RechargeProvider, SidebarRechargeButton } from '../wallet/Recharge';
@@ -13,6 +13,8 @@ import { readShellRoute, shellHref, shellPageTitle, shellRouteKey, shellSidebarP
 import { catalogDetailTitle, regionPageTitle } from './detail-data';
 import PageContainer from './PageContainer';
 import WorkspacePages from './WorkspacePages';
+import { useAgentEntry } from '../agent/access';
+import { agentHref } from '../agent/navigation';
 import './WorkspaceReferenceShell.css';
 import './WorkspaceVisual.css';
 
@@ -22,9 +24,9 @@ function WorkspaceLoading({ error, retry }: { error: string; retry: () => void }
   return <main className="lp-shell-page lp-shell-loading" role={error ? 'alert' : 'status'} aria-label={error ? '工作台加载失败' : '正在加载工作台'}><aside><i /><i /><i /><i /></aside><section><header><i /><i /></header><div className="lp-shell-loading-cards"><i /><i /><i /></div>{error && <div className="lp-shell-loading-error"><p>{error}</p><button type="button" onClick={retry}>重试</button></div>}</section></main>;
 }
 
-function SidebarItem({ label, icon, href, active = false, badge }: { label: string; icon: ReactNode; href: string; active?: boolean; badge?: string }) {
+function SidebarItem({ label, icon, href, active = false, badge, note }: { label: string; icon: ReactNode; href: string; active?: boolean; badge?: string; note?: string }) {
   const p = useDisplayPreferences();
-  return <a className={`lp-shell-nav-item${active ? ' is-active' : ''}`} href={href} aria-label={badge ? p.t("{label}，{count} 条未读", { label, count: badge }) : label} title={badge ? p.t("{label}，{count} 条未读", { label, count: badge }) : label} aria-current={active ? 'page' : undefined}><span className="lp-shell-nav-icon">{icon}</span><span className="lp-shell-nav-label">{label}</span>{badge && <span className="lp-shell-nav-badge" aria-hidden="true">{badge}</span>}</a>;
+  return <a className={`lp-shell-nav-item${active ? ' is-active' : ''}`} href={href} aria-label={badge ? p.t("{label}，{count} 条未读", { label, count: badge }) : note ? `${label}，${note}` : label} title={badge ? p.t("{label}，{count} 条未读", { label, count: badge }) : note ? `${label} · ${note}` : label} aria-current={active ? 'page' : undefined}><span className="lp-shell-nav-icon">{icon}</span><span className="lp-shell-nav-label">{label}</span>{note && <small className="lp-shell-nav-note">{note}</small>}{badge && <span className="lp-shell-nav-badge" aria-hidden="true">{badge}</span>}</a>;
 }
 
 export default function WorkspaceReferenceShell() {
@@ -35,6 +37,7 @@ export default function WorkspaceReferenceShell() {
   const [alertVisible, setAlertVisible] = useState(true);
   const workspace = useWorkspaceApi(route.page);
   const { data } = workspace;
+  const agentEntry = useAgentEntry(data?.account.id);
   const liveReference = useMemo(() => data ? referenceData(data, p.locale) : undefined, [data, p.locale]);
   const shellRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLElement>(null);
@@ -164,6 +167,7 @@ export default function WorkspaceReferenceShell() {
           <SidebarItem label={p.t("账户设置")} active={route.page === 'settings'} href={shellHref('settings')} icon={<Settings2 size={17} strokeWidth={1.45} />} />
         </nav>
         <nav className="lp-shell-nav-group" aria-label={p.t("号码与订单")}><p>{p.t("号码与订单")}</p><SidebarItem label={p.t("我的号码")} active={route.page === 'numbers'} href={shellHref('numbers')} icon={<CircleUserRound size={17} strokeWidth={1.35} />} /><SidebarItem label={p.t("我的订单")} active={sidebarPage === 'orders'} href={shellHref('orders')} icon={<Clock3 size={17} strokeWidth={1.35} />} /><SidebarItem label={p.t("积分明细")} active={route.page === 'points'} href={shellHref('points')} icon={<WalletCards size={17} strokeWidth={1.35} />} /></nav>
+        {agentEntry.visible && <nav className="lp-shell-nav-group" aria-label={p.t("代理中心")}><SidebarItem label={p.t("代理中心")} href={agentHref()} note={agentEntry.disabledReason ? p.t(agentEntry.disabledReason) : p.t("管理库存与客户")} icon={<Network size={17} strokeWidth={1.35} />} /></nav>}
         <div className="lp-shell-recharge-entry"><SidebarRechargeButton onOpen={() => { if (sidebarOpen) closeSidebar(false); }} /></div>
 
         {alertVisible && expiryNotice && expiringCount > 0 && <section className="lp-shell-expiry-alert"><header><h2>{p.t("{count} 个号码即将到期", { count: p.n(expiring.length) })}</h2><button type="button" aria-label={p.t("关闭到期提醒")} onClick={() => setAlertVisible(false)}><X size={14} /></button></header>{expiring.length > 0 && <p>{p.t("最近到期：{days} 天后", { days: p.n(Math.min(...expiring.map(number => number.remainingDays))) })}</p>}<div className="lp-shell-expiry-segments" aria-hidden="true">{['#35b66c', '#65c372', '#a9c752', '#edbf25', '#f7a51b', '#f27c19', '#ee4f2b', '', ''].map((color, index) => <i key={index} style={color ? { background: color } : undefined} />)}</div><a className="lp-shell-alert-link" href={shellHref('numbers')}>{p.t("查看号码")}<ArrowRight size={13} /></a></section>}

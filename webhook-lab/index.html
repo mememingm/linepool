@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PC 联调测试 · LINEPOOL</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script></head>
+<body>
+<header><strong>LINEPOOL</strong><span>PC 联调测试</span><span id="connection" class="connection" role="status">正在连接…</span></header>
+<main>
+  <h1>查询 PC，检查短信回调</h1>
+  <p class="intro">用你的 API Key 查询项目和账号号码，再查看 PC 实际推送的短信。</p>
+  <section class="setup" aria-label="PC 查询">
+    <div class="section-heading"><h2>1. 查询项目和号码</h2><a id="pc-docs" href="http://120.55.75.51/pingcode/personal-api/docs" target="_blank" rel="noopener noreferrer">PC 对接说明 ↗</a></div>
+    <form id="pc-form" class="section-body">
+      <label for="pc-key">PC API Key</label>
+      <input id="pc-key" type="password" autocomplete="off" placeholder="粘贴你的 PC API Key">
+      <div class="query-actions"><button id="query-projects" class="primary" type="button">查询项目</button><button id="query-numbers" class="secondary" type="button">查询账号号码</button><span id="pc-key-status" class="note">查询会实际请求 PC。</span></div>
+      <p id="pc-error" class="error" role="alert" hidden></p>
+      <p id="project-note" class="note attention">当前 PC 说明未列出接码项目查询接口，请在下方填写上司提供的真实路径。</p>
+      <details id="pc-endpoints"><summary>接口地址</summary><div class="endpoint-fields">
+        <label for="pc-root">PC API 根地址</label><input id="pc-root" type="url" value="http://120.55.75.51/pingcode/api/open/v1" required>
+        <label for="pc-project-path">项目查询接口</label><input id="pc-project-path" type="text" placeholder="粘贴 PC 最新说明里的路径或完整地址">
+        <label for="pc-numbers-path">账号号码查询接口</label><input id="pc-numbers-path" type="text" value="/numbers?limit=50" required>
+      </div></details>
+    </form>
+    <div id="query-results" class="query-results" hidden>
+      <article id="projects-result" class="query-result" hidden><div class="query-heading"><h3>项目查询结果</h3><span id="projects-status"></span></div><p id="projects-message" class="note"></p><div id="projects-table" class="table-wrap"></div><details><summary>原始返回与请求地址</summary><pre id="projects-raw"></pre></details></article>
+      <article id="numbers-result" class="query-result" hidden><div class="query-heading"><h3>账号号码查询结果</h3><span id="numbers-status"></span></div><p id="numbers-message" class="note"></p><div id="numbers-table" class="table-wrap"></div><details><summary>原始返回与请求地址</summary><pre id="numbers-raw"></pre></details></article>
+    </div>
+  </section>
+  <section class="setup" aria-label="接收设置">
+    <div class="section-heading"><h2>2. 配置 PC 短信回调</h2></div>
+    <form id="settings-form" class="section-body">
+      <label for="callback-url">LP 公网接收地址</label>
+      <div class="address-row"><input id="callback-url" type="url" required placeholder="https://你的域名/api/webhooks/pingcode"><button id="copy-address" class="secondary" type="button">复制地址</button></div>
+      <p id="address-note" class="note">将公网接收地址填到 PC 的「接收 Webhook」配置中。</p>
+      <div class="secret-row"><div><label for="secret">PC 回调签名密钥（不是 API Key）</label><input id="secret" type="password" autocomplete="off" placeholder="粘贴 PC 显示的 Webhook secret"></div><button id="save-settings" class="primary" type="submit">保存回调设置</button></div>
+      <p id="settings-status" class="note" role="status">保存密钥后，在 PC 发送测试推送或触发真实短信。</p>
+      <p id="settings-error" class="error" role="alert" hidden></p>
+    </form>
+  </section>
+  <section class="received" aria-label="收到的推送">
+    <div class="section-heading"><h2>3. 查看收到的回调</h2><span id="count">0 条</span></div>
+    <div id="empty" class="empty"><span class="waiting-dot"></span><h3>等待 PC 推送</h3><p>收到后自动显示内容、验签结果，并与上方已查询的号码对照。</p></div>
+    <div id="records" class="records" hidden></div>
+    <div id="detail" class="detail" hidden><div class="result-row"><strong id="result"></strong><span id="received-at"></span></div><p id="reason" class="note"></p><p id="comparison" class="note"></p><pre id="body"></pre><details><summary>查看请求头和返回结果</summary><pre id="headers"></pre></details></div>
+  </section>
+  <p class="scope-note">回调保存在这个联调工具中。正式 LP 的订单、平台归属及用户收件箱需另外联调。</p>
+</main><div id="toast" class="toast" role="status" hidden></div>
+</body></html>

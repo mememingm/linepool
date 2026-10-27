@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 // Leaf module with shared primitives. Must not import from './index.js'
 // to avoid circular-import TDZ errors in the compiled output.
+export const passwordSchema = z.string().min(8).max(72).refine(value => new TextEncoder().encode(value).length <= 72, 'Password must not exceed 72 UTF-8 bytes');
 export const uuidSchema = z.string().uuid();
 export const timestampSchema = z.string().datetime({ offset: true });
 export const regionIdSchema = z.enum(['us', 'gb', 'ca', 'sg', 'de', 'nl']);

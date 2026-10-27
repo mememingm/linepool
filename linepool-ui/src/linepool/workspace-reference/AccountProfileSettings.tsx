@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { CheckCircle2, KeyRound, Mail, Pencil, Smartphone, UserRound } from 'lucide-react';
+import { CheckCircle2, Copy, KeyRound, Mail, Pencil, Smartphone, UserRound } from 'lucide-react';
 import { accountProfileInputSchema, type Account, type AccountProfileInput } from '../api/contracts';
 import { LinepoolApiError } from '../api/client';
 import { ActionButton } from '../components';
@@ -94,6 +94,12 @@ export default function AccountProfileSettings({ account, updateProfile, disable
   return <section className="lp-shell-view-settings-group lp-account-profile" aria-labelledby={`${id}-title`}>
     <div className="lp-shell-view-settings-heading"><h2 id={`${id}-title`}>{p.t('账户资料')}</h2><span className="lp-shell-view-meta">{p.t('管理名称与联系方式')}</span></div>
     <div className="lp-account-profile-rows">
+      <div className="lp-account-profile-item"><div className="lp-account-profile-row">
+        <UserRound size={18} aria-hidden="true" /><div><strong>{p.t('用户 ID')}</strong><span>{account.id}</span></div>
+        <div className="lp-account-profile-trigger"><ActionButton size="sm" onClick={() => {
+          void navigator.clipboard.writeText(account.id).then(() => setSaved('用户 ID 已复制')).catch(() => setSaved('复制失败，请选中完整用户 ID 手动复制'));
+        }}><Copy size={13} aria-hidden="true" />{p.t('复制用户 ID')}</ActionButton></div>
+      </div><p className="lp-shell-view-meta">{p.t('绑定代理或客户身份时，将此用户 ID 提供给你的代理。')}</p></div>
       {fields.map(item => <div className="lp-account-profile-item" key={item.field}>
         <div className="lp-account-profile-row">
           <item.icon size={18} aria-hidden="true" />

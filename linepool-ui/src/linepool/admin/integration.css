@@ -1,0 +1,103 @@
+.lp-integration-page { display: grid; gap: 24px; min-width: 0; }
+.lp-integration-intro { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.lp-integration-intro p { margin: 0; color: var(--muted-foreground); }
+.lp-integration-intro a { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.lp-integration-note { display: flex; align-items: flex-start; gap: 10px; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--admin-warning-bg); color: var(--admin-warning-ink); }
+.lp-integration-note svg { flex-shrink: 0; margin-top: 3px; }
+.lp-integration-note p { margin: 0; font-size: 13px; line-height: 1.8; }
+.lp-integration-note strong { margin-right: 10px; font-weight: 600; }
+.lp-integration-eyebrow { display: block; color: var(--muted-foreground); font-size: 10px; font-weight: 600; letter-spacing: .1em; }
+.lp-integration-caption { color: var(--muted-foreground); font-size: 13px; line-height: 1.7; }
+.lp-integration-method { display: inline-flex; align-items: center; justify-content: center; padding: 3px 8px; border: 1px solid color-mix(in srgb, var(--admin-success) 22%, var(--border)); border-radius: 5px; background: var(--admin-success-bg); color: var(--admin-success); font: 600 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.lp-webhook-card { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-width: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); }
+.lp-webhook-card-label { padding: 28px; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--admin-success-bg) 40%, var(--card)); }
+.lp-webhook-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 24px; border: 1px solid color-mix(in srgb, var(--admin-success) 25%, var(--border)); border-radius: 12px; background: var(--admin-success-bg); color: var(--admin-success); }
+.lp-webhook-card-label h2 { margin: 7px 0 12px; font-size: 20px; font-weight: 600; }
+.lp-webhook-card-label p { margin: 0 0 22px; color: var(--muted-foreground); font-size: 13px; line-height: 1.8; }
+.lp-webhook-card-body { min-width: 0; padding: 28px 32px; }
+.lp-webhook-address-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; }
+.lp-webhook-address { display: flex; align-items: stretch; gap: 8px; }
+.lp-webhook-address input { min-width: 0; width: 100%; height: 40px; color: var(--foreground); border-color: var(--border); background: var(--background); font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
+.lp-webhook-address button { flex-shrink: 0; }
+.lp-webhook-card-body > .lp-integration-caption { margin: 10px 0 22px; }
+.lp-webhook-details { border-top: 1px solid var(--border); }
+.lp-webhook-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; list-style: none; color: var(--muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; }
+.lp-webhook-details > summary::-webkit-details-marker { display: none; }
+.lp-webhook-details > summary:hover { color: var(--foreground); }
+.lp-webhook-details > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
+.lp-webhook-details > summary svg { flex-shrink: 0; }
+.lp-webhook-details[open] > summary svg { transform: rotate(180deg); }
+.lp-webhook-settings { margin: 0; }
+.lp-webhook-settings > div { display: grid; grid-template-columns: 85px minmax(0, 1fr); gap: 12px; padding: 13px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.lp-webhook-settings dt { color: var(--muted-foreground); }
+.lp-webhook-settings dd { margin: 0; overflow-wrap: anywhere; }
+.lp-webhook-settings dd span { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
+.lp-webhook-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.lp-webhook-metrics > div { min-width: 0; padding: 22px 24px; }
+.lp-webhook-metrics > div + div { border-left: 1px solid var(--border); }
+.lp-webhook-metrics span { display: block; font-size: 13px; color: var(--muted-foreground); }
+.lp-webhook-metrics strong { display: block; margin-top: 8px; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-webhook-metrics small { margin-top: 5px; font-size: 12px; }
+.lp-webhook-records { min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.lp-webhook-records > .lp-admin-context { margin: 0 24px 18px; font-size: 13px; }
+.lp-webhook-records .lp-admin-toolbar { padding: 0 24px; }
+.lp-webhook-records .lp-admin-toolbar > .lp-admin-search { max-width: none; }
+.lp-webhook-retry { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.lp-webhook-retry label { display: grid; gap: 8px; font-size: 13px; }
+.lp-webhook-retry textarea { width: 100%; margin-bottom: 12px; }
+.lp-webhook-retry p { margin: 12px 0; font-size: 13px; }
+.lp-api-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 32px; align-items: start; }
+.lp-api-toc { position: sticky; top: 88px; display: grid; gap: 4px; padding: 18px 0; }
+.lp-api-toc > span { margin-bottom: 10px; padding-left: 12px; color: var(--muted-foreground); font-size: 12px; }
+.lp-admin .lp-api-toc a { padding: 9px 12px; border-left: 2px solid var(--border); color: var(--muted-foreground); font-size: 13px; }
+.lp-admin .lp-api-toc a:hover { border-left-color: var(--primary); background: var(--accent); color: var(--primary); }
+.lp-api-document { min-width: 0; padding: 12px 0 0; }
+.lp-api-document section { min-width: 0; padding: 0 0 32px; scroll-margin-top: 88px; }
+.lp-api-document section + section { padding-top: 30px; border-top: 1px solid var(--border); }
+.lp-api-document h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 18px; font-size: 22px; font-weight: 600; line-height: 1.4; }
+.lp-api-document section:first-child h2 { margin-top: 10px; font-size: 30px; }
+.lp-api-document p { margin: 14px 0; font-size: 14px; line-height: 1.9; }
+.lp-api-document code, .lp-webhook-settings code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
+.lp-api-document p code, .lp-api-document li code { padding: 2px 5px; border-radius: 4px; background: var(--muted); color: var(--foreground); }
+.lp-api-document :is(ul, ol) { margin: 14px 0; padding-left: 22px; font-size: 14px; line-height: 1.9; }
+.lp-api-document ul { list-style-type: disc; }
+.lp-api-document ol { list-style-type: decimal; }
+.lp-api-document li + li { margin-top: 8px; }
+.lp-api-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px; margin: 20px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--card); font-size: 13px; }
+.lp-api-flow svg { color: var(--muted-foreground); }
+.lp-api-endpoint { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+.lp-api-endpoint code { flex: 1; min-width: 120px; font-size: 12px; }
+.lp-api-code { min-width: 0; margin: 18px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--card); }
+.lp-api-code > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); font-size: 12px; }
+.lp-api-code .lp-admin-button { height: 28px; min-height: 28px; padding: 0 8px; font-size: 12px; }
+.lp-api-code pre { max-width: 100%; margin: 0; padding: 20px; overflow-x: auto; font: 12px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.lp-api-code pre code { font: inherit; overflow-wrap: normal; }
+.lp-api-reference-table { min-width: 0; margin: 18px 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+.lp-api-reference-table table { width: 100%; min-width: 550px; border-collapse: collapse; text-align: left; font-size: 12px; line-height: 1.7; }
+.lp-api-reference-table th { padding: 11px 14px; background: var(--muted); color: var(--muted-foreground); font-weight: 500; }
+.lp-api-reference-table td { padding: 12px 14px; border-top: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+.lp-api-reference-table td:first-child { min-width: 75px; }
+.lp-api-document .lp-api-next { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; }
+@media (max-width: 1100px) {
+  .lp-webhook-card { grid-template-columns: 210px minmax(0, 1fr); }
+  .lp-webhook-card-label { padding: 24px; }
+  .lp-webhook-card-body { padding: 24px; }
+  .lp-api-layout { grid-template-columns: 155px minmax(0, 1fr); gap: 24px; }
+  .lp-webhook-metrics > div { padding: 18px; }
+}
+@media (max-width: 760px) {
+  .lp-webhook-card { grid-template-columns: minmax(0, 1fr); }
+  .lp-webhook-card-label { border-right: 0; border-bottom: 1px solid var(--border); }
+  .lp-webhook-card-label p { margin-bottom: 14px; }
+  .lp-webhook-icon { margin-bottom: 16px; }
+  .lp-webhook-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-webhook-metrics > div:nth-child(3) { border-left: 0; }
+  .lp-webhook-metrics > div:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .lp-webhook-address { flex-wrap: wrap; }
+  .lp-webhook-records .lp-admin-toolbar { padding: 0 16px; }
+  .lp-webhook-records .lp-admin-toolbar > .lp-admin-search { min-width: 0; flex-basis: 100%; }
+  .lp-api-layout { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .lp-api-toc { position: static; display: flex; flex-wrap: wrap; gap: 4px; padding: 0; }
+  .lp-api-toc > span { flex-basis: 100%; padding-left: 0; }
+  .lp-admin .lp-api-toc a { padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
+}

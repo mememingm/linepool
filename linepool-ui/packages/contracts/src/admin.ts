@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { paginationQuerySchema, regionIdSchema, serviceSchema, uuidSchema, planIdSchema, fulfillmentStatusSchema } from './primitives.js';
+import { paginationQuerySchema, regionIdSchema, serviceSchema, uuidSchema, planIdSchema, fulfillmentStatusSchema, passwordSchema } from './primitives.js';
 
 export const adminQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(200).default(''),
@@ -10,6 +10,8 @@ export const adminQuerySchema = paginationQuerySchema.extend({
 });
 export const serviceDurationSchema = z.union([z.literal(7), z.literal(30)]);
 export const reasonSchema = z.string().trim().min(3).max(500);
+export const adminPasswordResetInputSchema = z.strictObject({ newPassword: passwordSchema, reason: reasonSchema });
+export type AdminPasswordResetInput = z.infer<typeof adminPasswordResetInputSchema>;
 export const userStatusInputSchema = z.strictObject({ status: z.enum(['ACTIVE', 'DISABLED']), reason: reasonSchema });
 export const numberActionInputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('assign'), userId: uuidSchema, durationDays: serviceDurationSchema, reason: reasonSchema }),
@@ -74,6 +76,27 @@ export const adminReceiptSchema = z.object({
   processing_status: z.enum(['PENDING', 'IMPORTED', 'UNMATCHED']), failure_reason: z.string().nullable(),
   event_id: z.string().nullable(), delivery_count: z.number(),
 });
+export const adminWebhookRetryInputSchema = z.strictObject({
+  messageId: z.string().trim().min(1).max(200), reason: reasonSchema,
+});
+export const adminWebhookRetryResultSchema = z.object({ status: z.enum(['IMPORTED', 'UNMATCHED']) });
+export const adminUpstreamStatusSchema = z.object({
+  environment: z.enum(['development', 'production', 'test']),
+  providerTransport: z.literal('mock'),
+  webhook: z.object({
+    path: z.literal('/api/webhooks/pingcode'), secretConfigured: z.boolean(),
+    replayWindowSeconds: z.number().int().positive(), retryIntervalSeconds: z.number().int().positive(),
+  }),
+  receipts: z.object({
+    total: z.number().int().nonnegative(), imported: z.number().int().nonnegative(),
+    pending: z.number().int().nonnegative(), unmatched: z.number().int().nonnegative(),
+    lastReceivedAt: date.nullable(), lastProcessedAt: date.nullable(),
+    eventCount: z.number().int().nonnegative(), deliveryCount: z.number().int().nonnegative(),
+    redeliveryCount: z.number().int().nonnegative(),
+  }),
+});
+export type AdminUpstreamStatus = z.infer<typeof adminUpstreamStatusSchema>;
+export type AdminWebhookRetryInput = z.infer<typeof adminWebhookRetryInputSchema>;
 export const adminSummarySchema = z.object({
   users: z.number(), activeNumbers: z.number(), saleNumbers: z.number(), expiringNumbers: z.number(),
   pcSaleNumbers: z.number(), demoSaleNumbers: z.number(),
@@ -81,6 +104,18 @@ export const adminSummarySchema = z.object({
   recentOrders: z.array(adminOrderSchema), expiring: z.array(adminNumberSchema),
   recentAudit: z.array(auditSchema), exceptionOrders: z.number(),
 });
+/** A country × platform combination that upstream projects actually provide numbers for. */
+export const productOptionSchema = z.object({
+  region: regionIdSchema, country: z.string(), service: serviceSchema,
+  numberCount: z.number().int().nonnegative(), availableCount: z.number().int().nonnegative(), productCount: z.number().int().nonnegative(),
+});
+export const productSyncInputSchema = z.strictObject({ reason: reasonSchema });
+export const productSyncResultSchema = z.object({
+  optionCount: z.number().int().nonnegative(), createdCount: z.number().int().nonnegative(),
+  created: z.array(z.object({ region: regionIdSchema, service: serviceSchema, plan: planIdSchema, name: z.string() })),
+});
+export type ProductOption = z.infer<typeof productOptionSchema>;
+export type ProductSyncInput = z.infer<typeof productSyncInputSchema>;
 export type AdminQuery = z.infer<typeof adminQuerySchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminNumber = z.infer<typeof adminNumberSchema>;

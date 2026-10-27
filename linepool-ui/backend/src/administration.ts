@@ -1,6 +1,7 @@
 import { Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
 import type { PoolClient } from 'pg';
-import type { AdminQuery, NumberActionInput, ProductInput, UserStatusInput } from '@linepool/contracts/admin';
+import { hash } from 'bcryptjs';
+import type { AdminQuery, NumberActionInput, ProductInput, UserStatusInput, AdminPasswordResetInput } from '@linepool/contracts/admin';
 import { type SessionRequest } from './authentication.js';
 import { Database } from './database.js';
 import { ApiFailure } from './http.js';
@@ -190,6 +191,21 @@ export class Administration {
     await client.query('INSERT INTO admin_audit(actor_id,action,target_id,reason,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6)',
       [actorId, action, target, reason, JSON.stringify(before), JSON.stringify(after)]);
   }
+  async resetPassword(actorId: string, id: string, input: AdminPasswordResetInput) {
+    const passwordHash = await hash(input.newPassword, 12);
+    return this.db.transaction(async client => {
+      await this.actor(client, actorId);
+      const { rows: [user] } = await client.query<{ id: string; role: string }>(
+        'SELECT id,role FROM users WHERE id=$1 FOR UPDATE', [id]);
+      if (!user) throw new ApiFailure(404, 'NOT_FOUND', 'User not found');
+      if (user.role === 'ADMIN') throw new ApiFailure(409, 'ADMIN_PASSWORD_PROTECTED', 'Use email recovery to reset an administrator password');
+      await client.query('UPDATE users SET password_hash=$2 WHERE id=$1', [id, passwordHash]);
+      await client.query('DELETE FROM sessions WHERE user_id=$1', [id]);
+      await client.query('DELETE FROM password_reset_tokens WHERE user_id=$1', [id]);
+      await this.audit(client, actorId, 'USER_PASSWORD_RESET', id, input.reason, null, { id, sessionsRevoked: true });
+      return { changed: true };
+    });
+  }
   async userStatus(actorId: string, id: string, input: UserStatusInput) {
     return this.db.transaction(async client => {
       await this.actor(client, actorId);
@@ -198,7 +214,10 @@ export class Administration {
       if (before.role === 'ADMIN') throw new ApiFailure(409, 'ADMIN_PROTECTED', 'Administrator accounts cannot be disabled here');
       if (before.account_status === input.status) return { changed: false };
       await client.query('UPDATE users SET account_status=$2 WHERE id=$1', [id, input.status]);
-      if (input.status === 'DISABLED') await client.query('DELETE FROM sessions WHERE user_id=$1', [id]);
+      if (input.status === 'DISABLED') {
+        await client.query('DELETE FROM sessions WHERE user_id=$1', [id]);
+        await client.query('DELETE FROM password_reset_tokens WHERE user_id=$1', [id]);
+      }
       await this.audit(client, actorId, 'USER_STATUS', id, input.reason, before, { id, account_status: input.status });
       return { changed: true };
     });
@@ -246,9 +265,45 @@ export class Administration {
       return { changed: true };
     });
   }
+  /** Country × platform combinations backed by numbers from an active upstream project. */
+  private async upstreamOptions(client: PoolClient) {
+    const { rows } = await client.query<{ region: string; country: string; service: string; numberCount: number; availableCount: number; productCount: number }>(
+      `SELECT n.region_id AS region,r.name AS country,s.platform_id AS service,count(*)::int AS "numberCount",
+        (count(*) FILTER (WHERE s.is_available AND s.sale_enabled AND n.resource_status IN ('LOCAL','ONLINE')))::int AS "availableCount",
+        (SELECT count(*)::int FROM offers o WHERE o.region_id=n.region_id AND o.service=s.platform_id) AS "productCount"
+       FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id JOIN regions r ON r.id=n.region_id
+       JOIN provider_projects p ON p.provider=s.provider AND p.external_project_id=s.external_project_id AND p.platform_id=s.platform_id
+       WHERE p.is_active GROUP BY n.region_id,r.name,r.sort_order,s.platform_id ORDER BY r.sort_order,n.region_id,s.platform_id`);
+    return rows;
+  }
+  async productOptions() {
+    return this.db.transaction(client => this.upstreamOptions(client));
+  }
+  /** Creates unlisted 7/30-day drafts for upstream combinations that have no product yet; operators then set prices and list them. */
+  async syncProducts(actorId: string, reason: string) {
+    return this.db.transaction(async client => {
+      await this.actor(client, actorId);
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended('admin-product-sync',0))");
+      const options = await this.upstreamOptions(client);
+      const created: { region: string; service: string; plan: string; name: string }[] = [];
+      for (const option of options) for (const [plan, days, fallback] of [['week', 7, 10], ['month', 30, 20]] as const) {
+        const name = `${days} 天短期服务`;
+        // Reuse the platform's current price for the same duration so drafts start close to the live price list.
+        const { rows: [after] } = await client.query(`INSERT INTO offers(region_id,service,plan,name,duration_days,unit_points,is_active,area_prefix,capability)
+          SELECT $1,$2,$3,$4,$5,COALESCE((SELECT unit_points FROM offers WHERE service=$2 AND duration_days=$5 ORDER BY is_active DESC,unit_points DESC LIMIT 1),$6),false,'','RECEIVE'
+          WHERE NOT EXISTS (SELECT 1 FROM offers WHERE region_id=$1 AND service=$2 AND duration_days=$5)
+          ON CONFLICT(region_id,service,plan) DO NOTHING RETURNING *`, [option.region, option.service, plan, name, days, fallback]);
+        if (after) { created.push({ region: option.region, service: option.service, plan, name }); await this.audit(client, actorId, 'PRODUCT_CREATE', `${option.region}/${option.service}/${plan}`, reason, null, after); }
+      }
+      return { optionCount: options.length, createdCount: created.length, created };
+    });
+  }
   async saveProduct(actorId: string, input: ProductInput, create: boolean) {
     return this.db.transaction(async client => {
       await this.actor(client, actorId);
+      if (create && !(await this.upstreamOptions(client)).some(option => option.region === input.region && option.service === input.service)) {
+        throw new ApiFailure(422, 'PRODUCT_NOT_OFFERED_UPSTREAM', 'Upstream provides no numbers for this region and platform');
+      }
       const key = [input.region, input.service, input.plan];
       const { rows: [before] } = await client.query('SELECT * FROM offers WHERE region_id=$1 AND service=$2 AND plan=$3 FOR UPDATE', key);
       if (create && before) throw new ApiFailure(409, 'PRODUCT_EXISTS', 'Product key already exists');
