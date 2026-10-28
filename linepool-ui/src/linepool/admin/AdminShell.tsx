@@ -359,7 +359,7 @@ function RechargesList({ input, revision, update }: Pick<ListProps, 'input' | 'r
 const filters: Record<AdminPage, { value: string; label: string }[]> = {
   'api-docs': [], webhooks: [],
   dashboard: [], users: [{ value: 'ACTIVE', label: '正常' }, { value: 'DISABLED', label: '已禁用' }],
-  numbers: [{ value: 'AVAILABLE', label: '可售' }, { value: 'ASSIGNED', label: '已分配' }, { value: 'UNSELLABLE', label: '不可售' }, { value: 'expiring', label: '3 天内到期' }, { value: 'ACTIVE', label: '服务有效' }, { value: 'ERROR', label: '号码异常' }, { value: 'OFFLINE', label: '号码离线' }],
+  numbers: [{ value: 'AVAILABLE', label: '可售' }, { value: 'ASSIGNED', label: '已分配' }, { value: 'UNSELLABLE', label: '不可售' }, { value: 'expiring', label: '3 天内到期' }],
   products: [{ value: 'ACTIVE', label: '已上架' }, { value: 'INACTIVE', label: '已下架' }],
   projects: [{ value: 'ACTIVE', label: '已启用' }, { value: 'INACTIVE', label: '已停用' }],
   receipts: [{ value: 'IMPORTED', label: '已分发' }, { value: 'UNMATCHED', label: '未匹配用户' }, { value: 'PENDING', label: '待处理' }],

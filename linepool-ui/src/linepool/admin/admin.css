@@ -267,7 +267,9 @@
 .lp-admin-table-scroll th:last-child:empty { width: 96px; }
 .lp-admin-table-scroll[aria-label="用户管理"] table { min-width: 820px; }
 .lp-admin-table-scroll[aria-label="用户管理"] th:first-child { width: 30%; }
+.lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(2), th:nth-child(3), th:nth-child(4)) { text-align: right; }
 .lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(3), th:nth-child(4)) { width: 72px; }
+.lp-admin-table-scroll[aria-label="代理管理"] :is(th:nth-child(4), th:nth-child(5)) { text-align: right; }
 .lp-admin-table-scroll:is([aria-label="用户管理"], [aria-label="号码管理"], [aria-label="订单列表"], [aria-label="收信记录"]) th:nth-child(6) { width: 156px; }
 .lp-admin-table-scroll[aria-label="收信记录"] th:first-child { width: 156px; }
 .lp-admin-table-scroll td:has(> time:only-child) { text-align: left; }
