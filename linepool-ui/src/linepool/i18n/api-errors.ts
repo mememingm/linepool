@@ -107,6 +107,7 @@ export const apiErrorMessages: Record<string, readonly [string, string]> = {
   STOCK_UNAVAILABLE: ['库存号码不可用，请重新选择', 'The stock number is unavailable. Please choose another.'],
   STOCK_RESOURCE_UNAVAILABLE: ['库存号码的资源状态不可用，请重新选择', 'The stock number resource is unavailable. Please choose another.'],
   STOCK_RESOURCE_EXPIRES: ['库存号码的有效期不足，请调整使用期限', 'The stock number expires too soon. Please change the service period.'],
+  USE_SHARED_NUMBER_INVENTORY: ['代理号码请从总库存选择并分配，不能手工录入', 'Agent numbers must be selected from shared stock and allocated; manual entry is not supported.'],
   DUPLICATE_STOCK: ['该号码已在库存中，请勿重复导入', 'This number is already in stock. Do not import it again.'],
   TRANSACTION_NOT_FOUND: ['交易记录不存在或无权查看', 'The transaction was not found or is not accessible.'],
   RECHARGE_NOT_CONFIGURED: ['在线充值暂未开通，请联系客服', 'Online top-up is unavailable. Please contact support.'],
