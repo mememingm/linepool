@@ -37,3 +37,13 @@
 ## 缺陷 / 后续
 
 未将阻塞误报为产品缺陷。请统筹提供/准备一组明确许可且归属 QA root 的额外 ACTIVE 可转移号码（或明确允许按顺序执行并由统筹恢复的夹具），再继续三类写接口验收；执行前应记录每条 holding 的原状态、归属、期限及对应 stock 状态。
+
+## 受控快照循环（blocked）
+
+统筹提供了快照 `D:/llinepool/linepool-ui/backend/.local/backups/before-wp1-write-cycles-2026-10-28T07-20-40-974Z.dump`，并明确许可只使用 `+16475562011` 对应 holding `828e2774-ea88-4d51-935f-4377f31bd6e3` / stock `099f7cb5-4460-4cdf-a86c-f4bf368d4d15`。开始前通过 root/admin session 记录：该 holding 为 root ACTIVE、`transferable=true`，stock 为 ALLOCATED 且指向该 holding；root 另有 `+65815562004` 一条 ACTIVE 可转移记录。完整逐请求回执：`C:/Users/27792/.rove/worktrees/llinepool-5e751a034ad2/nuthatch/linepool-ui/.local/wp1-api-20261028/write-cycle-receipts.json`。
+
+首个实际写请求：
+
+- `POST /api/agent-inventory/holdings/resell`（root → 小李，`+16475562011`，新 UUID idempotencyKey）返回 **409 `PRICE_NOT_SET`**，提示 `WhatsApp / ca` 未设置价格。
+- 按要求立即停止；未执行 release、claim、assign-customer、batch-preview、batch-transfer，也未产生任何数据库变化。快照无需本次恢复。
+- 因为没有设置价格依据，不能安全猜测价格或追加价格写入；本循环标记 **blocked**，不是通过。
