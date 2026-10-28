@@ -134,7 +134,7 @@
 .lp-admin-theme small { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; }
 .lp-admin-mono { font-family: 'Switzer', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
 .lp-admin-identifier { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.lp-admin-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.lp-admin-numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lp-admin-table-scroll[aria-label="管理审计"] table { min-width: 760px; }
 .lp-admin-table-scroll[aria-label="管理审计"] th:first-child { width: 168px; }
 .lp-admin-table-scroll[aria-label="管理审计"] th:nth-child(2) { width: 110px; }
@@ -268,7 +268,7 @@
 .lp-admin-table-scroll[aria-label="用户管理"] table { min-width: 820px; }
 .lp-admin-table-scroll[aria-label="用户管理"] th:first-child { width: 30%; }
 .lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(2), th:nth-child(3), th:nth-child(4)) { text-align: right; }
-.lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(3), th:nth-child(4)) { width: 72px; }
+.lp-admin-table-scroll[aria-label="用户管理"] :is(th:nth-child(3), th:nth-child(4)) { width: 88px; }
 .lp-admin-table-scroll[aria-label="代理管理"] :is(th:nth-child(4), th:nth-child(5)) { text-align: right; }
 .lp-admin-table-scroll:is([aria-label="用户管理"], [aria-label="号码管理"], [aria-label="订单列表"], [aria-label="收信记录"]) th:nth-child(6) { width: 156px; }
 .lp-admin-table-scroll[aria-label="收信记录"] th:first-child { width: 156px; }
