@@ -6,7 +6,15 @@ export const sharedAgentStockSql = `(
   SELECT COALESCE(link.id,p.id) AS id,p.id AS inventory_id,p.provider,p.platform_id,p.external_project_id,
     binding.external_number_id,n.phone_number,n.region_id,n.resource_status,n.resource_expires_at,
     CASE WHEN allocation.id IS NOT NULL THEN 'ALLOCATED'
+      -- Storefront/F1 availability remains limited to US resources.
       WHEN n.region_id='us' AND p.is_available AND p.sale_enabled AND n.sale_enabled
+        AND p.reserved_order_id IS NULL AND n.resource_status IN ('LOCAL','ONLINE')
+        AND project.is_active AND platform.is_active
+        AND (n.resource_expires_at IS NULL OR n.resource_expires_at>now())
+        AND (p.provider<>'pingcode' OR (n.resource_status='ONLINE' AND n.resource_expires_at IS NOT NULL))
+        THEN 'AVAILABLE'
+      -- Linked agent stock is a separate distribution path and may include non-US resources.
+      WHEN link.id IS NOT NULL AND link.status='AVAILABLE' AND p.is_available
         AND p.reserved_order_id IS NULL AND n.resource_status IN ('LOCAL','ONLINE')
         AND project.is_active AND platform.is_active
         AND (n.resource_expires_at IS NULL OR n.resource_expires_at>now())
