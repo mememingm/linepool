@@ -12,7 +12,10 @@ import {
 import { Database } from './database.js';
 import { ApiFailure } from './http.js';
 import { pagination } from './workspace.js';
+import { quoteSettlement, assertQuote, saveSettlement, settleBalances } from './agent-settlement.js';
+import type { SettlementQuoteInput } from '@linepool/contracts';
 import { HoldingBatch, transferableHoldingSql } from './holding-batch.js';
+import { sharedAgentStockSql, sharedStockRows, ensureStockLinks } from './unified-agent-stock.js';
 
 // Design v1.1 agent & inventory behavior. All balance changes run inside one transaction with
 // row-level locks (FOR UPDATE on balance_accounts), ownership checks and balance_ledger writes.
@@ -40,9 +43,8 @@ function reportDate(value: Date, hourly = false) {
 // Retired holdings remain valid historical evidence up to the recorded transfer time.
 const AGENT_SMS_EVIDENCE = `s.received_at>=c.created_at AND EXISTS (
   SELECT 1 FROM number_allocations allocation
-  JOIN phone_numbers phone ON phone.id=allocation.number_id
-  JOIN number_holdings holding ON holding.phone_number=phone.phone_number
-  JOIN service_entitlements entitlement ON entitlement.holding_id=holding.id AND entitlement.service=phone.service
+  JOIN service_entitlements entitlement ON entitlement.id=allocation.agent_entitlement_id
+  JOIN number_holdings holding ON holding.id=entitlement.holding_id
   WHERE allocation.id=s.allocation_id AND allocation.number_id=s.number_id AND allocation.user_id=s.user_id
     AND s.received_at>=allocation.assigned_at
     AND s.received_at<LEAST(allocation.expires_at,COALESCE(allocation.released_at,allocation.expires_at))
@@ -305,12 +307,41 @@ export class AgentInventory {
           (SELECT count(*)::int FROM sms_messages s JOIN customers c ON c.user_id=s.user_id WHERE c.agent_id=a.id AND s.received_at >= $2 AND s.received_at < $3 AND ${AGENT_SMS_EVIDENCE}) AS code_count,
           (SELECT max(s.received_at) FROM sms_messages s JOIN customers c ON c.user_id=s.user_id WHERE c.agent_id=a.id AND ${AGENT_SMS_EVIDENCE}) AS last_active_at
          FROM agents a WHERE a.parent_agent_id=$1 ORDER BY a.created_at DESC`, [actor.agentId, from, until]);
-      const trendMap = new Map(trend.map(row => [row.date, row.codes]));
+      const { rows: moneyRows } = await client.query<{
+        date: string; purchase: string; downstream: string; customer: string; sold_cost: string; sales_count: number;
+      }>(`SELECT to_char(date_trunc('${hourly ? 'hour' : 'day'}', completed_at AT TIME ZONE '${REPORT_TIME_ZONE}'),'${hourly ? 'YYYY-MM-DD HH24:00' : 'YYYY-MM-DD'}') AS date,
+          COALESCE(sum(amount_minor) FILTER (WHERE buyer_type='AGENT' AND buyer_agent_id=$1),0)::text AS purchase,
+          COALESCE(sum(amount_minor) FILTER (WHERE seller_type='AGENT' AND seller_agent_id=$1 AND buyer_type='AGENT'),0)::text AS downstream,
+          COALESCE(sum(book_amount_minor) FILTER (WHERE seller_type='AGENT' AND seller_agent_id=$1 AND buyer_type='CUSTOMER'),0)::text AS customer,
+          COALESCE(sum(cost_minor) FILTER (WHERE seller_type='AGENT' AND seller_agent_id=$1),0)::text AS sold_cost,
+          count(*) FILTER (WHERE seller_type='AGENT' AND seller_agent_id=$1)::int AS sales_count
+        FROM tx_orders WHERE status='COMPLETED' AND currency='USD' AND completed_at >= $2 AND completed_at < $3
+          AND (buyer_agent_id=$1 OR seller_agent_id=$1) AND EXISTS(SELECT 1 FROM tx_order_items i WHERE i.tx_order_id=tx_orders.id)
+        GROUP BY 1 ORDER BY 1`, [actor.agentId, from, until]);
+      const { rows: [value] } = await client.query<{ total: string }>(`SELECT COALESCE(sum(cost_minor),0)::text AS total FROM number_holdings
+        WHERE owner_type='AGENT' AND agent_id=$1 AND status='ACTIVE' AND (expires_at IS NULL OR expires_at>now())`, [actor.agentId]);
+      const { rows: ranking } = await client.query<{ service: string; quantity: number; sales: string; profit: string }>(
+        `SELECT i.service,count(*)::int AS quantity,sum(i.amount_minor+i.book_amount_minor)::text AS sales,
+          sum(i.amount_minor+i.book_amount_minor-i.cost_minor)::text AS profit
+         FROM tx_order_items i JOIN tx_orders t ON t.id=i.tx_order_id
+         WHERE t.seller_type='AGENT' AND t.seller_agent_id=$1 AND t.status='COMPLETED' AND t.currency='USD'
+           AND t.completed_at >= $2 AND t.completed_at < $3 GROUP BY i.service ORDER BY sum(i.amount_minor+i.book_amount_minor) DESC,i.service`, [actor.agentId, from, until]);
+      const { rows: childSales } = await client.query<{ id: string; sales: string; profit: string }>(
+        `SELECT buyer_agent_id AS id,sum(amount_minor)::text AS sales,sum(amount_minor-cost_minor)::text AS profit
+         FROM tx_orders WHERE seller_type='AGENT' AND seller_agent_id=$1 AND buyer_type='AGENT' AND status='COMPLETED' AND currency='USD'
+           AND completed_at >= $2 AND completed_at < $3 AND EXISTS(SELECT 1 FROM tx_order_items i WHERE i.tx_order_id=tx_orders.id) GROUP BY buyer_agent_id`, [actor.agentId, from, until]);
+      const childMoney = new Map(childSales.map(row => [row.id, row]));
+      const moneyMap = new Map(moneyRows.map(row => [row.date, row]));
+      const sales = (row: typeof moneyRows[number]) => Number(row.downstream) + Number(row.customer);
+      const sumMoney = (rows: typeof moneyRows, field: 'purchase' | 'downstream' | 'customer' | 'sold_cost') => rows.reduce((total, row) => total + Number(row[field]), 0);
+      const todayMoney = moneyRows.filter(row => row.date.startsWith(reportDate(todayStart, false)));
+      const codeMap = new Map(trend.map(row => [row.date, row.codes]));
       const trendRows = Array.from({ length: hourly ? 24 : dayCount }, (_, index) => {
         const date = reportDate(new Date(from.getTime() + index * (hourly ? REPORT_DAY_MS / 24 : REPORT_DAY_MS)), hourly);
-        return { date, salesMinor: null, costMinor: null, profitMinor: null };
+        const row = moneyMap.get(date);
+        return { date, salesMinor: row ? sales(row) : 0, costMinor: Number(row?.sold_cost ?? 0), profitMinor: row ? sales(row) - Number(row.sold_cost) : 0 };
       });
-      const codeVolume = trendRows.map(row => ({ bucket: row.date, count: trendMap.get(row.date) ?? 0, platform: null }));
+      const codeVolume = trendRows.map(row => ({ bucket: row.date, count: codeMap.get(row.date) ?? 0, platform: null }));
       const kpis = {
         balance: account ? Number(account.balance_minor) : 0,
         availableInventory: Number(inventory?.available ?? 0),
@@ -318,20 +349,25 @@ export class AgentInventory {
         currentInventory: Number(counts?.current ?? 0),
         subagentCount: children.length,
         customerCount: Number(counts?.customers ?? 0),
-        todaySales: null,
-        todayProfit: null,
-        todayOrders: Number(counts?.orders ?? 0),
+        todaySales: todayMoney.reduce((total, row) => total + sales(row), 0),
+        todayProfit: todayMoney.reduce((total, row) => total + sales(row) - Number(row.sold_cost), 0),
+        todayOrders: todayMoney.reduce((total, row) => total + row.sales_count, 0),
         todayCodes: Number(counts?.codes ?? 0),
       };
       return { data: {
-        currency: 'USD', costStatus: 'UNAVAILABLE' as const, kpis, trend: trendRows, codeVolume,
+        currency: 'USD', costStatus: 'SYNCED' as const, kpis, trend: trendRows, codeVolume,
+        settlement: {
+          purchaseCostMinor: sumMoney(moneyRows, 'purchase'), downstreamSalesMinor: sumMoney(moneyRows, 'downstream'),
+          customerSalesMinor: sumMoney(moneyRows, 'customer'), soldCostMinor: sumMoney(moneyRows, 'sold_cost'),
+          profitMinor: moneyRows.reduce((total, row) => total + sales(row) - Number(row.sold_cost), 0), inventoryValueMinor: Number(value?.total ?? 0),
+        },
         inventoryStatus: {
           AVAILABLE: Number(inventory?.available ?? 0), SELF_ASSIGNED: Number(inventory?.self_assigned ?? 0),
           SUBAGENT_ASSIGNED: Number(inventory?.subagent_assigned ?? 0), USED: Number(inventory?.used ?? 0),
           EXPIRED: Number(inventory?.expired ?? 0), ERROR: Number(inventory?.error ?? 0),
         },
-        serviceRanking: [],
-        subagents: children.map(row => ({ agentId: row.id, name: row.name, salesMinor: null, codeCount: row.code_count, inventoryCount: row.inventory_count, profitMinor: null, lastActiveAt: row.last_active_at?.toISOString() ?? null })),
+        serviceRanking: ranking.map(row => ({ service: row.service, quantity: row.quantity, salesMinor: Number(row.sales), profitMinor: Number(row.profit) })),
+        subagents: children.map(row => ({ agentId: row.id, name: row.name, salesMinor: Number(childMoney.get(row.id)?.sales ?? 0), codeCount: row.code_count, inventoryCount: row.inventory_count, profitMinor: Number(childMoney.get(row.id)?.profit ?? 0), lastActiveAt: row.last_active_at?.toISOString() ?? null })),
       } };
     });
   }
@@ -371,7 +407,12 @@ export class AgentInventory {
 
   async subagent(actorId: string, agentId: string) {
     const actor = await this.subagentManager(actorId);
-    return this.db.transaction(async client => ({ data: mapSubagent(await this.directSubagent(client, actor.agentId, agentId)) }));
+    return this.db.transaction(async client => {
+      const target = await this.directSubagent(client, actor.agentId, agentId);
+      const { rows: [account] } = await client.query<{ balance_minor: string }>(
+        "SELECT balance_minor FROM balance_accounts WHERE owner_type='AGENT' AND agent_id=$1 AND currency='USD'", [agentId]);
+      return { data: { ...mapSubagent(target), balanceMinor: Number(account?.balance_minor ?? 0) } };
+    });
   }
 
   async renameSubagent(actorId: string, agentId: string, input: UpdateAgentNameInput) {
@@ -421,7 +462,7 @@ export class AgentInventory {
       const { rows: [count] } = await client.query<{ total: number }>(`SELECT count(*)::int AS total FROM tx_orders WHERE ${where}`, [actor.agentId, agentId]);
       const { rows } = await client.query(`SELECT * FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4`,
         [actor.agentId, agentId, query.pageSize, (query.page - 1) * query.pageSize]);
-      return { data: rows.map(mapTxOrder), pagination: pagination(query, count!.total) };
+      return { data: rows.map(row => mapVisibleTxOrder(row, actor)), pagination: pagination(query, count!.total) };
     });
   }
 
@@ -506,6 +547,7 @@ export class AgentInventory {
           : { clause: "h.owner_type='CUSTOMER' AND h.customer_id=$1", values: [actor.customerId] };
       const values = [...scope.values];
       let where = scope.clause;
+      if (query.agentId) { values.push(query.agentId); where += ` AND h.owner_type='AGENT' AND h.agent_id=$${values.length}`; }
       if (query.status) { values.push(query.status); where += ` AND h.status=$${values.length}`; }
       if (query.search) {
         values.push(`%${query.search.replace(/[\\%_]/g, '\\$&')}%`);
@@ -552,7 +594,7 @@ export class AgentInventory {
       }
       if (query.platform) { values.push(query.platform); where += ` AND s.platform_id=$${values.length}`; }
       if (query.region) { values.push(query.region); where += ` AND s.region_id=$${values.length}`; }
-      const from = 'FROM agent_number_stock s LEFT JOIN number_holdings h ON h.id=s.holding_id';
+      const from = `FROM ${sharedAgentStockSql} s LEFT JOIN number_holdings h ON h.id=s.holding_id`;
       // Status counts ignore the status filter so tab badges stay meaningful while one status is selected.
       const { rows: [counts] } = await client.query<{ AVAILABLE: number; ALLOCATED: number; RELEASED: number }>(`SELECT
         (count(*) FILTER (WHERE s.status='AVAILABLE'))::int AS "AVAILABLE",(count(*) FILTER (WHERE s.status='ALLOCATED'))::int AS "ALLOCATED",
@@ -567,46 +609,44 @@ export class AgentInventory {
     });
   }
 
-  async importNumbers(actorId: string, input: AgentNumberImportInput) {
+  async importNumbers(actorId: string, _input: AgentNumberImportInput) {
     const actor = await this.resolveActor(actorId);
-    if (!actor || actor.kind !== 'ADMIN') throw new ApiFailure(403, 'ADMIN_REQUIRED', 'Only platform administrators can import number stock');
+    if (actor?.kind !== 'ADMIN') throw new ApiFailure(403, 'ADMIN_REQUIRED', '仅管理员可管理库存来源');
+    throw new ApiFailure(409, 'USE_SHARED_NUMBER_INVENTORY', '代理号码统一从总库存选择；演示数据请使用本地 sandbox 脚本生成');
+  }
+
+  async settlementPreview(actorId: string, input: SettlementQuoteInput) {
+    const actor = await this.resolveActor(actorId);
+    if (!actor || actor.kind === 'CUSTOMER' || actor.status !== 'ACTIVE') throw new ApiFailure(403, 'AGENT_REQUIRED', '需要有效代理或管理员身份');
     return this.db.transaction(async client => {
-      const { rows: [existingImport] } = await client.query<{ imported_count: number; created_at: Date }>(
-        'SELECT imported_count,created_at FROM agent_number_imports WHERE idempotency_key=$1 FOR UPDATE', [input.idempotencyKey]);
-      if (existingImport) {
-        const { rows } = await client.query('SELECT * FROM agent_number_stock WHERE import_idempotency_key=$1 ORDER BY imported_at,id', [input.idempotencyKey]);
-        return { data: { idempotencyKey: input.idempotencyKey, importedCount: Number(existingImport.imported_count), replayed: true, items: rows.map(mapStock) } };
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      if (input.operation === 'CLAIM') {
+        if (actor.kind !== 'ADMIN' || !input.agentId || !input.stockIds) throw new ApiFailure(403, 'ADMIN_REQUIRED', '请选择库存和一级代理');
+        const { rows: [agent] } = await client.query('SELECT id FROM agents WHERE id=$1 AND level=1 AND status=\'ACTIVE\'', [input.agentId]);
+        if (!agent) throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', '请选择有效的一级代理');
+        const rows = await sharedStockRows(client, input.stockIds);
+        if (rows.length !== input.stockIds.length || rows.some(row => row.status !== 'AVAILABLE' || !['LOCAL','ONLINE'].includes(row.resource_status)
+          || (row.resource_expires_at && Date.parse(input.expiresAt) > row.resource_expires_at.getTime()))) throw new ApiFailure(409, 'STOCK_UNAVAILABLE', '号码不可用或超过资源期限');
+        const settlement = await quoteSettlement(client, null, input.agentId, false, rows.map(row => ({ key: row.id,
+          phoneNumber: row.phone_number, regionId: row.region_id, service: row.platform_id,
+          startsAt: input.startsAt, expiresAt: input.expiresAt, costMinor: 0 })));
+        return { data: settlement.quote };
       }
-      const phones = input.rows.map(row => row.phoneNumber);
-      if (new Set(phones).size !== phones.length) throw new ApiFailure(409, 'DUPLICATE_STOCK', 'The import contains duplicate phone numbers');
-      const externalKeys = input.rows.filter(row => row.externalNumberId).map(row => `${row.platformId}\\u0000${row.externalProjectId}\\u0000${row.externalNumberId}`);
-      if (new Set(externalKeys).size !== externalKeys.length) throw new ApiFailure(409, 'DUPLICATE_STOCK', 'The import contains duplicate external number IDs');
-      const { rows: existingPhones } = await client.query<{ phone_number: string }>(
-        'SELECT phone_number FROM agent_number_stock WHERE phone_number=ANY($1::text[])', [phones]);
-      if (existingPhones.length) throw new ApiFailure(409, 'DUPLICATE_STOCK', `Number already exists in stock: ${existingPhones[0]!.phone_number}`);
-      if (externalKeys.length) {
-        const projectIds = input.rows.filter(row => row.externalNumberId).map(row => row.externalProjectId);
-        const externalIds = input.rows.filter(row => row.externalNumberId).map(row => row.externalNumberId);
-        const { rows: conflicts } = await client.query(
-          `SELECT 1 FROM agent_number_stock WHERE external_project_id=ANY($1::text[]) AND external_number_id=ANY($2::text[]) LIMIT 1`,
-          [projectIds, externalIds]);
-        if (conflicts.length) throw new ApiFailure(409, 'DUPLICATE_STOCK', 'An external number ID already exists in stock');
-      }
-      await client.query(
-        'INSERT INTO agent_number_imports(idempotency_key,reason,imported_count,created_by) VALUES($1,$2,$3,$4)',
-        [input.idempotencyKey, input.reason, input.rows.length, actorId]);
-      const items: Record<string, unknown>[] = [];
-      for (const row of input.rows) {
-        const { rows: [stock] } = await client.query(
-          `INSERT INTO agent_number_stock(provider,platform_id,external_project_id,external_number_id,phone_number,region_id,resource_status,resource_expires_at,import_idempotency_key)
-           VALUES('pingcode-mock',$1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-          [row.platformId, row.externalProjectId, row.externalNumberId || null, row.phoneNumber, row.regionId, row.resourceStatus, row.resourceExpiresAt ? new Date(row.resourceExpiresAt) : null, input.idempotencyKey]);
-        await client.query(
-          `INSERT INTO agent_number_stock_events(stock_id,action,reason,actor_user_id,metadata)
-           VALUES($1,'IMPORT',$2,$3,$4)`, [stock!.id, input.reason, actorId, JSON.stringify({ provider: 'pingcode-mock' })]);
-        items.push(stock!);
-      }
-      return { data: { idempotencyKey: input.idempotencyKey, importedCount: items.length, replayed: false, items: items.map(mapStock) } };
+      const { rows: [source] } = await client.query(`SELECT h.*,s.platform_id,s.resource_expires_at,
+        (${transferableHoldingSql('s')}) AS transferable FROM number_holdings h JOIN agent_number_stock s ON s.holding_id=h.id WHERE h.id=$1`, [input.holdingId]);
+      if (!source || (actor.kind === 'AGENT' && source.agent_id !== actor.agentId)) throw new ApiFailure(404, 'HOLDING_NOT_FOUND', '未找到可用的号码');
+      if (!source.transferable) throw new ApiFailure(409, 'HOLDING_NOT_AVAILABLE', '号码已失效或不可用');
+      const startsAt = new Date(Math.max(Date.parse(input.startsAt), Date.now(), source.starts_at.getTime())).toISOString();
+      if (Date.parse(input.expiresAt) > Math.min(source.expires_at?.getTime() ?? Infinity, source.resource_expires_at?.getTime() ?? Infinity)) throw new ApiFailure(409, 'HOLDING_WINDOW_EXCEEDED', '所选期限超过号码有效期');
+      const retail = input.operation === 'ASSIGN';
+      const { rowCount } = retail
+        ? await client.query("SELECT 1 FROM customers WHERE id=$1 AND agent_id=$2 AND status='ACTIVE'", [input.customerId,source.agent_id])
+        : await client.query("SELECT 1 FROM agents WHERE id=$1 AND parent_agent_id=$2 AND status='ACTIVE'", [input.agentId,source.agent_id]);
+      if (!rowCount) throw new ApiFailure(403, 'OWNER_NOT_VISIBLE', '接收方必须是直属客户或直属下级');
+      const settlement = await quoteSettlement(client, source.agent_id, retail ? null : input.agentId!, retail,
+        [{ key: source.id, phoneNumber: source.phone_number, regionId: source.region_id, service: source.platform_id,
+          startsAt, expiresAt: input.expiresAt, costMinor: Number(source.cost_minor) }], input.bookAmountMinor);
+      return { data: settlement.quote };
     });
   }
 
@@ -634,39 +674,45 @@ export class AgentInventory {
         const { rows: stocks } = await client.query('SELECT * FROM agent_number_stock WHERE holding_id = ANY($1::uuid[]) ORDER BY imported_at,id', [holdings.map(holding => holding.id)]);
         return { data: { holdings: holdings.map(mapHolding), stocks: stocks.map(mapStock), replayed: true } };
       }
-      const { rows: [agent] } = await client.query<{ id: string; status: string }>('SELECT id,status FROM agents WHERE id=$1 FOR UPDATE', [targetAgentId]);
+      const { rows: [agent] } = await client.query<{ id: string; status: string; level: number }>('SELECT id,status,level FROM agents WHERE id=$1 FOR UPDATE', [targetAgentId]);
+      if (agent?.level !== 1) throw new ApiFailure(409, 'AGENT_LEVEL_INVALID', '平台只可分配给一级代理');
       if (!agent) throw new ApiFailure(404, 'AGENT_NOT_FOUND', 'Target agent was not found');
       if (agent.status !== 'ACTIVE') throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', 'Target agent is not active');
-      const stocks: Record<string, unknown>[] = [];
-      for (const stockId of input.stockIds) {
-        const { rows: [stock] } = await client.query<Record<string, unknown>>('SELECT * FROM agent_number_stock WHERE id=$1 FOR UPDATE', [stockId]);
-        if (!stock) throw new ApiFailure(404, 'STOCK_NOT_FOUND', 'Number stock was not found');
+      const stocks = await sharedStockRows(client, input.stockIds, true);
+      for (const stock of stocks) {
         if (stock.status !== 'AVAILABLE') throw new ApiFailure(409, 'STOCK_UNAVAILABLE', 'Number stock is not available');
         if (!['LOCAL', 'ONLINE'].includes(String(stock.resource_status))) throw new ApiFailure(409, 'STOCK_RESOURCE_UNAVAILABLE', 'The number resource is not currently usable');
         if (stock.resource_expires_at && expiresAt > new Date(stock.resource_expires_at as Date)) throw new ApiFailure(409, 'STOCK_RESOURCE_EXPIRES', 'Holding expiry exceeds the resource expiry');
         if (input.service && input.service !== stock.platform_id) throw new ApiFailure(400, 'SERVICE_MISMATCH', 'The requested service does not match the stock platform');
-        stocks.push(stock);
       }
+      await ensureStockLinks(client, stocks);
+      const settlement = await quoteSettlement(client, null, targetAgentId, false, stocks.map(stock => ({
+        key: String(stock.id), phoneNumber: String(stock.phone_number), regionId: String(stock.region_id), service: String(stock.platform_id),
+        startsAt: startsAt.toISOString(), expiresAt: expiresAt.toISOString(), costMinor: 0,
+      })));
+      assertQuote(settlement, input.quoteFingerprint);
       const { rows: [order] } = await client.query(
         `INSERT INTO tx_orders(order_number,kind,buyer_type,buyer_agent_id,seller_type,recipient_type,recipient_agent_id,pricing_kind,currency,amount_minor,status,idempotency_key,idempotency_actor_id,idempotency_payload,completed_at)
          VALUES($1,'ADJUSTMENT','AGENT',$2,'PLATFORM','AGENT',$2,'WHOLESALE','USD',0,'COMPLETED',$3,$4,$5::jsonb,now()) RETURNING id`,
         [`LP-C-${randomUUID().toUpperCase()}`, targetAgentId, input.idempotencyKey, actorId, JSON.stringify({ operation: 'claimStocks', input })]);
+      await settleBalances(client, String(order!.id), settlement);
       const holdings: Record<string, unknown>[] = [];
       for (const stock of stocks) {
         const { rows: [holding] } = await client.query(
-          `INSERT INTO number_holdings(owner_type,agent_id,region_id,phone_number,status,source_tx_order_id,starts_at,expires_at)
-           VALUES('AGENT',$1,$2,$3,'ACTIVE',$4,$5,$6) RETURNING *`,
-          [targetAgentId, stock.region_id, stock.phone_number, order!.id, startsAt, expiresAt]);
+          `INSERT INTO number_holdings(owner_type,agent_id,region_id,phone_number,status,source_tx_order_id,starts_at,expires_at,inventory_id)
+           VALUES('AGENT',$1,$2,$3,'ACTIVE',$4,$5,$6,$7) RETURNING *`,
+          [targetAgentId, stock.region_id, stock.phone_number, order!.id, startsAt, expiresAt, stock.inventory_id]);
         await client.query(
-          `INSERT INTO service_entitlements(holding_id,service,starts_at,expires_at,status,source_tx_order_id)
-           VALUES($1,$2,$3,$4,'ACTIVE',$5)`, [holding!.id, stock.platform_id, startsAt, expiresAt, order!.id]);
+          `INSERT INTO service_entitlements(holding_id,service,inventory_id,starts_at,expires_at,status,source_tx_order_id)
+           VALUES($1,$2,$3,$4,$5,'ACTIVE',$6)`, [holding!.id, stock.platform_id, stock.inventory_id, startsAt, expiresAt, order!.id]);
         const { rows: [updated] } = await client.query('UPDATE agent_number_stock SET status=\'ALLOCATED\',holding_id=$2 WHERE id=$1 RETURNING *', [stock.id, holding!.id]);
         await client.query(
           `INSERT INTO agent_number_stock_events(stock_id,holding_id,action,reason,actor_user_id,metadata)
            VALUES($1,$2,'CLAIM',$3,$4,$5)`, [stock.id, holding!.id, 'Allocated to agent inventory', actorId, JSON.stringify({ agentId: targetAgentId, batch: true })]);
         holdings.push(holding!); stocks[stocks.indexOf(stock)] = updated!;
       }
-      return { data: { holdings: holdings.map(mapHolding), stocks: stocks.map(mapStock), replayed: false } };
+      await saveSettlement(client, String(order!.id), settlement, holdings.map((holding, index) => ({ id: String(holding.id), key: settlement.lines[index]!.key })));
+      return { data: { holdings: holdings.map((holding, index) => mapHolding({ ...holding, cost_minor: settlement.lines[index]!.amountMinor })), stocks: stocks.map(mapStock), replayed: false } };
     });
   }
 
@@ -702,12 +748,25 @@ export class AgentInventory {
     });
   }
 
+  private async holdingBatchContext(actorId: string, input: HoldingBatchPreviewInput) {
+    const actor = await this.resolveActor(actorId);
+    if (actor?.kind !== 'ADMIN') return (await this.context(actorId)).data;
+    if (input.recipient.ownerType !== 'AGENT') throw new ApiFailure(400, 'BATCH_RECIPIENT_INVALID', '管理员批量转交请选择目标代理');
+    const { rows: [target] } = await this.db.query<{ parent_agent_id: string | null }>(
+      'SELECT parent_agent_id FROM agents WHERE id=$1', [input.recipient.agentId]);
+    if (!target) throw new ApiFailure(404, 'AGENT_NOT_FOUND', '目标代理不存在');
+    if (!target.parent_agent_id) throw new ApiFailure(403, 'RESALE_SCOPE_INVALID', '只能转交给持有代理的直属下级');
+    // Administrators use the same sender scope, eligibility, settlement and transaction as an agent.
+    // The batch engine also rechecks the recipient and locks the sender before any write.
+    return { agent: { id: target.parent_agent_id }, capabilities: { transferHoldings: true } };
+  }
+
   async previewHoldingBatch(actorId: string, input: HoldingBatchPreviewInput) {
-    return new HoldingBatch(this.db).preview((await this.context(actorId)).data, input);
+    return new HoldingBatch(this.db).preview(await this.holdingBatchContext(actorId, input), input);
   }
 
   async transferHoldingBatch(actorId: string, input: HoldingBatchInput) {
-    return new HoldingBatch(this.db).execute(actorId, (await this.context(actorId)).data, input);
+    return new HoldingBatch(this.db).execute(actorId, await this.holdingBatchContext(actorId, input), input);
   }
 
   async assignHoldingToCustomer(actorId: string, input: AssignHoldingInput) {
@@ -727,7 +786,7 @@ export class AgentInventory {
       const startsAt = new Date(Math.max(requestedStartsAt.getTime(), Date.now()));
       if (expiresAt <= startsAt) throw new ApiFailure(400, 'INVALID_HOLDING_WINDOW', 'Holding expiry must be later than its start');
       const { rows: [source] } = await client.query<any>(
-        `SELECT h.*,s.id AS stock_id,s.platform_id,s.status AS stock_status,s.resource_status,s.resource_expires_at
+        `SELECT h.*,s.id AS stock_id,s.inventory_id,s.platform_id,s.status AS stock_status,s.resource_status,s.resource_expires_at
          FROM number_holdings h JOIN agent_number_stock s ON s.holding_id=h.id WHERE h.id=$1 FOR UPDATE`, [input.holdingId]);
       if (!source) throw new ApiFailure(404, 'HOLDING_NOT_FOUND', 'Holding was not found');
       if (source.status !== 'ACTIVE' || source.stock_status !== 'ALLOCATED' || !['LOCAL', 'ONLINE'].includes(source.resource_status)) throw new ApiFailure(409, 'HOLDING_NOT_AVAILABLE', 'Holding is expired or unavailable');
@@ -743,6 +802,11 @@ export class AgentInventory {
       const { rows: [customer] } = await client.query<{ id: string; status: string; agent_id: string | null }>(customerSql, customerValues);
       if (!customer) throw new ApiFailure(404, 'CUSTOMER_NOT_FOUND', 'Target customer was not found');
       if (customer.status !== 'ACTIVE') throw new ApiFailure(409, 'CUSTOMER_NOT_ACTIVE', 'Target customer is not active');
+      if (!source.agent_id || customer.agent_id !== source.agent_id) throw new ApiFailure(403, 'OWNER_NOT_VISIBLE', '只能分配给持有代理的直属客户');
+      const settlement = await quoteSettlement(client, source.agent_id, null, true, [{ key: source.id,
+        phoneNumber: source.phone_number, regionId: source.region_id, service: source.platform_id,
+        startsAt: startsAt.toISOString(), expiresAt: expiresAt.toISOString(), costMinor: Number(source.cost_minor) }], input.bookAmountMinor);
+      assertQuote(settlement, input.quoteFingerprint);
       const { rows: [order] } = await client.query(
         `INSERT INTO tx_orders(order_number,kind,buyer_type,buyer_customer_id,seller_type,seller_agent_id,recipient_type,recipient_customer_id,pricing_kind,currency,amount_minor,status,idempotency_key,idempotency_actor_id,idempotency_payload,completed_at)
          VALUES($1,'TRANSFER','CUSTOMER',$2,'AGENT',$3,'CUSTOMER',$2,'RETAIL','USD',0,'COMPLETED',$4,$5,$6::jsonb,now()) RETURNING id`,
@@ -750,16 +814,17 @@ export class AgentInventory {
       await client.query("UPDATE number_holdings SET status='RETIRED',transferred_at=now() WHERE id=$1", [source.id]);
       await client.query("UPDATE service_entitlements SET status='REVOKED' WHERE holding_id=$1 AND status='ACTIVE'", [source.id]);
       const { rows: [holding] } = await client.query(
-        `INSERT INTO number_holdings(owner_type,customer_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at)
-         VALUES('CUSTOMER',$1,$2,$3,'ACTIVE',$4,$5,$6,$7) RETURNING *`,
-        [customer.id, source.region_id, source.phone_number, order!.id, source.id, startsAt, expiresAt]);
+        `INSERT INTO number_holdings(owner_type,customer_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at,inventory_id)
+         VALUES('CUSTOMER',$1,$2,$3,'ACTIVE',$4,$5,$6,$7,$8) RETURNING *`,
+        [customer.id, source.region_id, source.phone_number, order!.id, source.id, startsAt, expiresAt, source.inventory_id]);
       await client.query(
-        `INSERT INTO service_entitlements(holding_id,service,starts_at,expires_at,status,source_tx_order_id)
-         VALUES($1,$2,$3,$4,'ACTIVE',$5)`, [holding!.id, source.platform_id, startsAt, expiresAt, order!.id]);
+        `INSERT INTO service_entitlements(holding_id,service,inventory_id,starts_at,expires_at,status,source_tx_order_id)
+         VALUES($1,$2,$3,$4,$5,'ACTIVE',$6)`, [holding!.id, source.platform_id, source.inventory_id, startsAt, expiresAt, order!.id]);
       await client.query('UPDATE agent_number_stock SET status=\'ALLOCATED\',holding_id=$2 WHERE id=$1', [source.stock_id, holding!.id]);
       await client.query(
         `INSERT INTO agent_number_stock_events(stock_id,holding_id,action,reason,actor_user_id,metadata)
          VALUES($1,$2,'ASSIGN_CUSTOMER',$3,$4,$5)`, [source.stock_id, holding!.id, 'Assigned to end customer', actorId, JSON.stringify({ fromAgentId: source.agent_id, customerId: customer.id, sourceHoldingId: source.id })]);
+      await saveSettlement(client, String(order!.id), settlement, [{ id: String(holding!.id), key: source.id }]);
       return { data: { holding: mapHolding(holding!), orderId: order!.id, replayed: false } };
     });
   }
@@ -781,7 +846,7 @@ export class AgentInventory {
       const startsAt = new Date(Math.max(requestedStartsAt.getTime(), Date.now()));
       if (expiresAt <= startsAt) throw new ApiFailure(400, 'INVALID_HOLDING_WINDOW', 'Holding expiry must be later than its start');
       const { rows: [source] } = await client.query<any>(
-        `SELECT h.*,s.id AS stock_id,s.platform_id,s.phone_number AS stock_phone_number,
+        `SELECT h.*,s.id AS stock_id,s.inventory_id,s.platform_id,s.phone_number AS stock_phone_number,
          s.status AS stock_status,s.resource_status,s.resource_expires_at
          FROM number_holdings h JOIN agent_number_stock s ON s.holding_id=h.id WHERE h.id=$1 FOR UPDATE`, [input.holdingId]);
       if (!source) throw new ApiFailure(404, 'HOLDING_NOT_FOUND', 'Holding was not found');
@@ -799,6 +864,11 @@ export class AgentInventory {
       if (!target) throw new ApiFailure(404, 'AGENT_NOT_FOUND', 'Target agent was not found');
       if (target.status !== 'ACTIVE') throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', 'Target agent is not active');
       if (actor.kind === 'AGENT' && target.parent_agent_id !== actor.agentId) throw new ApiFailure(403, 'RESALE_SCOPE_INVALID', 'Agents can only resell to direct child agents');
+      if (!source.agent_id || target.parent_agent_id !== source.agent_id) throw new ApiFailure(403, 'RESALE_SCOPE_INVALID', '只能转交给持有代理的直属下级');
+      const settlement = await quoteSettlement(client, source.agent_id, input.toAgentId, false, [{ key: source.id,
+        phoneNumber: source.phone_number, regionId: source.region_id, service: source.platform_id,
+        startsAt: startsAt.toISOString(), expiresAt: expiresAt.toISOString(), costMinor: Number(source.cost_minor) }]);
+      assertQuote(settlement, input.quoteFingerprint);
       const { rows: [order] } = await client.query(
         `INSERT INTO tx_orders(order_number,kind,buyer_type,buyer_agent_id,seller_type,seller_agent_id,recipient_type,recipient_agent_id,pricing_kind,currency,amount_minor,status,idempotency_key,idempotency_actor_id,idempotency_payload,completed_at)
          VALUES($1,'TRANSFER','AGENT',$2,'AGENT',$3,'AGENT',$2,'WHOLESALE','USD',0,'COMPLETED',$4,$5,$6::jsonb,now()) RETURNING id`,
@@ -806,17 +876,19 @@ export class AgentInventory {
       await client.query("UPDATE number_holdings SET status='RETIRED',transferred_at=now() WHERE id=$1", [source.id]);
       await client.query("UPDATE service_entitlements SET status='REVOKED' WHERE holding_id=$1 AND status='ACTIVE'", [source.id]);
       const { rows: [newHolding] } = await client.query(
-        `INSERT INTO number_holdings(owner_type,agent_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at)
-         VALUES('AGENT',$1,$2,$3,'ACTIVE',$4,$5,$6,$7) RETURNING *`,
-        [input.toAgentId, source.region_id, source.phone_number, order!.id, source.id, startsAt, expiresAt]);
+        `INSERT INTO number_holdings(owner_type,agent_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at,inventory_id)
+         VALUES('AGENT',$1,$2,$3,'ACTIVE',$4,$5,$6,$7,$8) RETURNING *`,
+        [input.toAgentId, source.region_id, source.phone_number, order!.id, source.id, startsAt, expiresAt, source.inventory_id]);
       await client.query(
-        `INSERT INTO service_entitlements(holding_id,service,starts_at,expires_at,status,source_tx_order_id)
-         VALUES($1,$2,$3,$4,'ACTIVE',$5)`, [newHolding!.id, source.platform_id, startsAt, expiresAt, order!.id]);
+        `INSERT INTO service_entitlements(holding_id,service,inventory_id,starts_at,expires_at,status,source_tx_order_id)
+         VALUES($1,$2,$3,$4,$5,'ACTIVE',$6)`, [newHolding!.id, source.platform_id, source.inventory_id, startsAt, expiresAt, order!.id]);
       await client.query('UPDATE agent_number_stock SET status=\'ALLOCATED\',holding_id=$2 WHERE id=$1', [source.stock_id, newHolding!.id]);
       await client.query(
         `INSERT INTO agent_number_stock_events(stock_id,holding_id,action,reason,actor_user_id,metadata)
          VALUES($1,$2,'RESELL',$3,$4,$5)`, [source.stock_id, newHolding!.id, 'Transferred to child agent', actorId, JSON.stringify({ fromAgentId: source.agent_id, toAgentId: input.toAgentId, sourceHoldingId: source.id })]);
-      return { data: { holding: mapHolding(newHolding!), orderId: order!.id, replayed: false } };
+      await settleBalances(client, String(order!.id), settlement);
+      await saveSettlement(client, String(order!.id), settlement, [{ id: String(newHolding!.id), key: source.id }]);
+      return { data: { holding: mapHolding({ ...newHolding!, cost_minor: settlement.quote.amountMinor }), orderId: order!.id, replayed: false } };
     });
   }
 
@@ -861,8 +933,40 @@ export class AgentInventory {
       const { rows } = await client.query(
         `SELECT * FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, query.pageSize, (query.page - 1) * query.pageSize]);
-      return { data: rows.map(mapTxOrder), pagination: pagination(query, count!.total) };
+      return { data: rows.map(row => mapVisibleTxOrder(row, actor)), pagination: pagination(query, count!.total) };
     });
+  }
+
+  async transactionDetail(actorId: string, id: string, query: PaginationQuery) {
+    const actor = await this.resolveActor(actorId);
+    if (!actor) throw new ApiFailure(403, 'NOT_ENROLLED', '需要代理或客户身份');
+    return this.db.transaction(async client => {
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const { rows: [order] } = await client.query(`SELECT t.* FROM tx_orders t WHERE id=$1 AND (
+        $2='ADMIN' OR ($2='AGENT' AND (buyer_agent_id=$3 OR seller_agent_id=$3 OR recipient_agent_id=$3
+          OR buyer_customer_id IN (SELECT id FROM customers WHERE agent_id=$3)
+          OR recipient_customer_id IN (SELECT id FROM customers WHERE agent_id=$3)))
+        OR ($2='CUSTOMER' AND (buyer_customer_id=$4 OR recipient_customer_id=$4)))`, [id, actor.kind, actor.agentId, actor.customerId]);
+      if (!order) throw new ApiFailure(404, 'TRANSACTION_NOT_FOUND', '交易不存在或不可访问');
+      const { rows: [count] } = await client.query<{ total: number }>('SELECT count(*)::int AS total FROM tx_order_items WHERE tx_order_id=$1', [id]);
+      const { rows: items } = await client.query('SELECT * FROM tx_order_items WHERE tx_order_id=$1 ORDER BY id LIMIT $2 OFFSET $3', [id, query.pageSize, (query.page - 1) * query.pageSize]);
+      return { data: { order: mapVisibleTxOrder(order, actor), items: items.map(item => ({ phoneNumber: item.phone_number,
+        service: item.service, regionId: item.region_id, startsAt: item.starts_at.toISOString(), expiresAt: item.expires_at.toISOString(),
+        unitAmountMinor: item.unit_amount_minor == null ? null : Number(item.unit_amount_minor), billedDays: item.billed_days,
+        amountMinor: Number(item.amount_minor), bookAmountMinor: Number(item.book_amount_minor) })), pagination: pagination(query, count!.total) } };
+    });
+  }
+
+  async platformSettlement(actorId: string, period: AgentMetricPeriod) {
+    const actor = await this.resolveActor(actorId);
+    if (actor?.kind !== 'ADMIN') throw new ApiFailure(403, 'ADMIN_REQUIRED', '仅管理员可查询平台收入');
+    const today = startOfReportDay(new Date());
+    const from = new Date(today.getTime() - (period === '30d' ? 29 : period === '7d' ? 6 : 0) * REPORT_DAY_MS);
+    const { rows: [row] } = await this.db.query(`SELECT COALESCE(sum(t.amount_minor),0)::text AS amount,count(*)::int AS orders,
+      COALESCE(sum((SELECT count(*) FROM tx_order_items i WHERE i.tx_order_id=t.id)),0)::int AS quantity
+      FROM tx_orders t WHERE t.seller_type='PLATFORM' AND t.buyer_type='AGENT' AND t.status='COMPLETED' AND t.currency='USD'
+        AND t.completed_at >= $1 AND t.completed_at < $2 AND EXISTS(SELECT 1 FROM tx_order_items i WHERE i.tx_order_id=t.id)`, [from, new Date(today.getTime() + REPORT_DAY_MS)]);
+    return { data: { currency: 'USD' as const, amountMinor: Number(row?.amount ?? 0), orders: row?.orders ?? 0, quantity: row?.quantity ?? 0 } };
   }
 
   async ledger(actorId: string, owner: OwnerRef, query: LedgerQuery) {
@@ -896,40 +1000,10 @@ export class AgentInventory {
 
   // ---------- local demo inventory and funds ----------
 
-  async createHolding(actorId: string, input: CreateHoldingInput) {
+  async createHolding(actorId: string, _input: CreateHoldingInput) {
     const actor = await this.resolveActor(actorId);
-    if (!actor || actor.kind !== 'ADMIN') throw new ApiFailure(403, 'ADMIN_REQUIRED', 'Only platform administrators can add local inventory');
-    if (input.ownerType !== 'AGENT') throw new ApiFailure(409, 'CUSTOMER_HOLDING_NOT_ALLOWED', 'Customers receive service entitlements, not whole-number inventory');
-    const startsAt = new Date(input.startsAt);
-    const expiresAt = input.expiresAt ? new Date(input.expiresAt) : new Date(startsAt.getTime() + 30 * 86400000);
-    if (!Number.isFinite(startsAt.getTime()) || !Number.isFinite(expiresAt.getTime()) || expiresAt <= startsAt) {
-      throw new ApiFailure(400, 'INVALID_HOLDING_WINDOW', 'Holding expiry must be later than its start');
-    }
-    return this.db.transaction(async client => {
-      const existing = await findIdempotentOrder(client, input.idempotencyKey, actorId, 'createHolding', input);
-      if (existing) {
-        if (existing.status !== 'COMPLETED') throw new ApiFailure(409, 'IDEMPOTENCY_CONFLICT', 'Idempotency key was already used with a different outcome');
-        const { rows: [holding] } = await client.query('SELECT * FROM number_holdings WHERE source_tx_order_id=$1', [existing.id]);
-        if (!holding) throw new ApiFailure(409, 'IDEMPOTENCY_CONFLICT', 'The prior inventory adjustment has no holding record');
-        return { data: mapHolding(holding) };
-      }
-      const { rows: [agent] } = await client.query<{ id: string; status: string }>(
-        'SELECT id,status FROM agents WHERE id=$1 FOR UPDATE', [input.agentId]);
-      if (!agent) throw new ApiFailure(404, 'AGENT_NOT_FOUND', 'Target agent was not found');
-      if (agent.status !== 'ACTIVE') throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', 'Target agent is not active');
-      const { rows: [order] } = await client.query(
-        `INSERT INTO tx_orders(order_number,kind,buyer_type,buyer_agent_id,seller_type,recipient_type,recipient_agent_id,pricing_kind,currency,amount_minor,status,idempotency_key,idempotency_actor_id,idempotency_payload,completed_at)
-         VALUES($1,'ADJUSTMENT','AGENT',$2,'PLATFORM','AGENT',$2,'RETAIL','USD',0,'COMPLETED',$3,$4,$5::jsonb,now()) RETURNING id`,
-        [`LP-I-${randomUUID().toUpperCase()}`, input.agentId, input.idempotencyKey, actorId, JSON.stringify({ operation: 'createHolding', input })]);
-      const { rows: [holding] } = await client.query(
-        `INSERT INTO number_holdings(owner_type,agent_id,region_id,phone_number,status,source_tx_order_id,starts_at,expires_at)
-         VALUES('AGENT',$1,$2,$3,'ACTIVE',$4,$5,$6) RETURNING *`,
-        [input.agentId, input.regionId, input.phoneNumber, order!.id, startsAt, expiresAt]);
-      await client.query(
-        `INSERT INTO service_entitlements(holding_id,service,starts_at,expires_at,status,source_tx_order_id)
-         VALUES($1,$2,$3,$4,'ACTIVE',$5)`, [holding!.id, input.service, startsAt, expiresAt, order!.id]);
-      return { data: mapHolding(holding!) };
-    });
+    if (actor?.kind !== 'ADMIN') throw new ApiFailure(403, 'ADMIN_REQUIRED', '仅管理员可分配总库存');
+    throw new ApiFailure(409, 'USE_SHARED_NUMBER_INVENTORY', '请从总库存选择号码并分配给代理，不能手工录入持有或绕过结算');
   }
 
   async adjustBalance(actorId: string, input: AdjustBalanceInput) {
@@ -972,56 +1046,58 @@ export class AgentInventory {
 
   async setPrice(actorId: string, input: UpsertPriceRuleInput) {
     const actor = await this.resolveActor(actorId);
-    if (!actor || (actor.kind !== 'AGENT' && actor.kind !== 'ADMIN')) throw new ApiFailure(403, 'AGENT_REQUIRED', 'Only administrators and agents can set prices');
-    if (actor.status !== 'ACTIVE') throw new ApiFailure(403, 'AGENT_NOT_ACTIVE', 'Agent account is not active');
-    const sellerAgentId = actor.kind === 'ADMIN' ? input.agentId : actor.agentId;
-    if (input.pricingKind === 'WHOLESALE' && !sellerAgentId) throw new ApiFailure(400, 'AGENT_REQUIRED', 'A target agent is required for wholesale pricing');
-    if (actor.kind === 'AGENT' && input.agentId && input.agentId !== actor.agentId) throw new ApiFailure(403, 'OWNER_NOT_VISIBLE', 'Agents can only set their own prices');
-    if (actor.kind === 'AGENT' && actor.level !== 1 && input.pricingKind === 'WHOLESALE') throw new ApiFailure(403, 'SUBAGENT_MANAGEMENT_REQUIRED', 'Only level 1 agents can set child settlement prices');
-    if (input.pricingKind === 'RETAIL' && input.buyerAgentId) throw new ApiFailure(400, 'PRICE_BUYER_INVALID', 'Retail prices cannot target an agent');
-    if (input.pricingKind === 'WHOLESALE' && input.buyerAgentId === sellerAgentId) throw new ApiFailure(400, 'PRICE_BUYER_INVALID', 'A price recipient must be a child agent');
+    if (!actor || actor.kind === 'CUSTOMER' || actor.status !== 'ACTIVE') throw new ApiFailure(403, 'AGENT_REQUIRED', '需要有效代理或管理员身份');
+    const sellerType = actor.kind === 'ADMIN' ? input.sellerType ?? 'PLATFORM' : 'AGENT';
+    const sellerAgentId = sellerType === 'AGENT' ? actor.kind === 'AGENT' ? actor.agentId : input.sellerAgentId ?? null : null;
+    const buyerAgentId = input.buyerAgentId ?? (actor.kind === 'ADMIN' && sellerType === 'PLATFORM' ? input.agentId : null);
+    if (actor.kind === 'AGENT' && ((input.sellerAgentId && input.sellerAgentId !== actor.agentId) || (input.sellerType && input.sellerType !== 'AGENT'))) throw new ApiFailure(403, 'OWNER_NOT_VISIBLE', '只能设置自己的售价');
+    if (actor.kind === 'AGENT' && actor.level !== 1 && input.pricingKind === 'WHOLESALE') throw new ApiFailure(403, 'SUBAGENT_MANAGEMENT_REQUIRED', '仅一级可设置下级结算价');
+    if ((sellerType === 'AGENT' && !sellerAgentId) || (input.pricingKind === 'RETAIL' && buyerAgentId)) throw new ApiFailure(400, 'PRICE_BUYER_INVALID', '价格适用对象无效');
     return this.db.transaction(async client => {
-      if (actor.kind === 'AGENT' && sellerAgentId) {
-        const visible = await this.visibleAgentIds(client, actor.agentId);
-        if (!visible.includes(sellerAgentId)) throw new ApiFailure(403, 'OWNER_NOT_VISIBLE', 'Target agent is outside your scope');
+      if (sellerAgentId) {
+        const { rows: [seller] } = await client.query('SELECT level FROM agents WHERE id=$1', [sellerAgentId]);
+        if (!seller || (input.pricingKind === 'WHOLESALE' && seller.level !== 1)) throw new ApiFailure(400, 'PRICE_SELLER_INVALID', '下级结算价需要一级代理');
       }
-      if (input.buyerAgentId) {
-        const { rows: [buyer] } = await client.query<{ id: string; parent_agent_id: string | null }>(
-          'SELECT id,parent_agent_id FROM agents WHERE id=$1', [input.buyerAgentId]);
-        if (!buyer || buyer.parent_agent_id !== sellerAgentId) throw new ApiFailure(400, 'PRICE_BUYER_INVALID', 'Price recipient must be a direct child agent');
+      if (buyerAgentId) {
+        const { rows: [buyer] } = await client.query('SELECT level,parent_agent_id FROM agents WHERE id=$1', [buyerAgentId]);
+        if (!buyer || (sellerType === 'PLATFORM' ? buyer.level !== 1 : buyer.parent_agent_id !== sellerAgentId)) throw new ApiFailure(400, 'PRICE_BUYER_INVALID', '买方必须为一级代理或卖方的直属下级');
       }
-      const agentId = input.pricingKind === 'WHOLESALE' ? sellerAgentId : null;
-      const { rows: [rule] } = await client.query(
-        `INSERT INTO price_rules(pricing_kind,agent_id,buyer_agent_id,seller_agent_id,region_id,service,plan,currency,unit_amount_minor,priority,is_active)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT DO NOTHING RETURNING *`,
-        [input.pricingKind, agentId, input.buyerAgentId ?? null, input.pricingKind === 'RETAIL' ? sellerAgentId : null,
-          input.regionId, input.service, input.plan, input.currency, input.unitAmountMinor, input.priority, input.isActive]);
-      if (!rule) {
-        const { rows: [updated] } = await client.query(
-          `UPDATE price_rules SET currency=$8,unit_amount_minor=$9,priority=$10,is_active=$11
-           WHERE pricing_kind=$1 AND agent_id IS NOT DISTINCT FROM $2 AND buyer_agent_id IS NOT DISTINCT FROM $3
-             AND seller_agent_id IS NOT DISTINCT FROM $4 AND region_id IS NOT DISTINCT FROM $5 AND service=$6 AND plan=$7 RETURNING *`,
-          [input.pricingKind, agentId, input.buyerAgentId ?? null, input.pricingKind === 'RETAIL' ? sellerAgentId : null,
-            input.regionId, input.service, input.plan, input.currency, input.unitAmountMinor, input.priority, input.isActive]);
-        return { data: mapPriceRule(updated!) };
+      const { rowCount: serviceExists } = await client.query('SELECT 1 FROM agent_number_stock WHERE platform_id=$1 UNION SELECT 1 FROM phone_numbers WHERE service=$1 LIMIT 1', [input.service]);
+      if (!serviceExists) throw new ApiFailure(400, 'SERVICE_INVALID', '请选择系统已有的平台');
+      if (input.regionId) {
+        const { rowCount } = await client.query('SELECT 1 FROM agent_number_stock WHERE region_id=$1 UNION SELECT 1 FROM phone_numbers WHERE region_id=$1 LIMIT 1', [input.regionId]);
+        if (!rowCount) throw new ApiFailure(400, 'REGION_INVALID', '请选择系统已有的国家');
       }
-      return { data: mapPriceRule(rule) };
+      const args = [input.pricingKind,sellerType,sellerAgentId,buyerAgentId,input.regionId,input.service,input.unitAmountMinor,input.isActive];
+      const { rows: [inserted] } = await client.query(
+        "INSERT INTO price_rules(pricing_kind,seller_type,seller_agent_id,buyer_agent_id,region_id,service,plan,currency,unit_amount_minor,priority,is_active) VALUES($1,$2,$3,$4,$5,$6,'P30D','USD',$7,0,$8) ON CONFLICT DO NOTHING RETURNING *", args);
+      const rule = inserted ?? (await client.query(
+        'UPDATE price_rules SET unit_amount_minor=$7,is_active=$8 WHERE NOT legacy_archived AND pricing_kind=$1 AND seller_type=$2 AND seller_agent_id IS NOT DISTINCT FROM $3 AND buyer_agent_id IS NOT DISTINCT FROM $4 AND region_id IS NOT DISTINCT FROM $5 AND service=$6 RETURNING *', args)).rows[0];
+      return { data: mapPriceRule(rule!) };
     });
   }
 
   async prices(actorId: string) {
     const actor = await this.resolveActor(actorId);
-    if (!actor) throw new ApiFailure(403, 'NOT_ENROLLED', 'This account is not enrolled as agent or customer');
+    if (!actor) throw new ApiFailure(403, 'NOT_ENROLLED', '需要代理或客户身份');
     const { rows } = actor.kind === 'ADMIN'
-      ? await this.db.query('SELECT * FROM price_rules ORDER BY service,plan,region_id NULLS FIRST,priority DESC')
+      ? await this.db.query('SELECT * FROM price_rules WHERE NOT legacy_archived ORDER BY service,region_id NULLS FIRST,created_at DESC')
       : actor.kind === 'AGENT'
-        ? await this.db.query(`SELECT * FROM price_rules WHERE
-          (pricing_kind='WHOLESALE' AND (agent_id=$1 OR (agent_id=$2 AND (buyer_agent_id=$1 OR buyer_agent_id IS NULL))))
-          OR (pricing_kind='RETAIL' AND (seller_agent_id=$1 OR seller_agent_id IS NULL))
-          ORDER BY service,plan,region_id NULLS FIRST,priority DESC`, [actor.agentId, actor.parentAgentId])
-        : await this.db.query("SELECT * FROM price_rules WHERE pricing_kind='RETAIL' AND is_active AND (seller_agent_id=$1 OR seller_agent_id IS NULL) ORDER BY service,plan,region_id NULLS FIRST,priority DESC", [actor.agentId]);
+        ? await this.db.query(
+          `SELECT * FROM price_rules WHERE NOT legacy_archived AND (
+            (seller_type='AGENT' AND seller_agent_id=$1) OR
+            (pricing_kind='WHOLESALE' AND is_active AND (buyer_agent_id=$1 OR buyer_agent_id IS NULL)
+              AND ((seller_type='PLATFORM' AND $2::uuid IS NULL) OR (seller_type='AGENT' AND seller_agent_id=$2))))
+          ORDER BY service,(buyer_agent_id IS NOT NULL) DESC,region_id NULLS LAST`, [actor.agentId,actor.parentAgentId])
+        : await this.db.query("SELECT * FROM price_rules WHERE NOT legacy_archived AND pricing_kind='RETAIL' AND is_active AND seller_type='AGENT' AND seller_agent_id=$1 ORDER BY service,region_id NULLS LAST", [actor.agentId]);
     return { data: rows.map(mapPriceRule) };
+  }
+
+  async priceOptions(actorId: string) {
+    const actor = await this.resolveActor(actorId);
+    if (!actor || actor.kind === 'CUSTOMER') throw new ApiFailure(403, 'AGENT_REQUIRED', '需要代理身份');
+    const { rows } = await this.db.query('SELECT DISTINCT platform_id AS service,region_id FROM agent_number_stock UNION SELECT DISTINCT service,region_id FROM phone_numbers');
+    return { data: { services: [...new Set(rows.map(row => String(row.service)))].sort(), regions: [...new Set(rows.map(row => String(row.region_id)))].sort() } };
   }
 
   // ---------- balance transfer ----------
@@ -1030,6 +1106,9 @@ export class AgentInventory {
     const actor = await this.resolveActor(actorId);
     if (!actor) throw new ApiFailure(403, 'NOT_ENROLLED', 'This account is not enrolled as agent or customer');
     if (actor.status !== 'ACTIVE') throw new ApiFailure(403, 'ACTOR_NOT_ACTIVE', 'Account is not active');
+    if (input.toOwner.ownerType === 'CUSTOMER') {
+      throw new ApiFailure(403, 'TRANSFER_SCOPE_INVALID', '暂不支持向客户转移美元余额，请选择直属下级代理');
+    }
     return this.db.transaction(async client => {
       const existing = await findIdempotentOrder(client, input.idempotencyKey, actorId, 'transfer', input);
       if (existing) {
@@ -1144,7 +1223,7 @@ function mapSubagent(row: AgentRow) {
 
 function mapStock(row: Record<string, unknown>) {
   return {
-    id: row.id,
+    id: row.id, inventoryId: row.inventory_id,
     provider: row.provider,
     platformId: row.platform_id,
     externalProjectId: row.external_project_id,
@@ -1162,7 +1241,7 @@ function mapStock(row: Record<string, unknown>) {
 function mapHolding(row: Record<string, unknown>) {
   return {
     id: row.id, ownerType: row.owner_type, agentId: row.agent_id, customerId: row.customer_id,
-    regionId: row.region_id, phoneNumber: row.phone_number, service: row.service ?? null, status: row.status, sourceTxOrderId: row.source_tx_order_id, sourceHoldingId: row.source_holding_id,
+    regionId: row.region_id, phoneNumber: row.phone_number, costMinor: Number(row.cost_minor ?? 0), service: row.service ?? null, status: row.status, sourceTxOrderId: row.source_tx_order_id, sourceHoldingId: row.source_holding_id,
     startsAt: (row.starts_at as Date).toISOString(), expiresAt: row.expires_at ? (row.expires_at as Date).toISOString() : null,
     transferredAt: row.transferred_at ? (row.transferred_at as Date).toISOString() : null,
     acquiredAt: (row.acquired_at as Date).toISOString(), createdAt: (row.created_at as Date).toISOString(),
@@ -1176,7 +1255,8 @@ function mapTxOrder(row: Record<string, unknown>) {
     sellerType: row.seller_type, sellerAgentId: row.seller_agent_id,
     recipientType: row.recipient_type ?? null, recipientAgentId: row.recipient_agent_id ?? null, recipientCustomerId: row.recipient_customer_id ?? null,
     pricingKind: row.pricing_kind,
-    currency: row.currency, amountMinor: Number(row.amount_minor),
+    currency: row.currency, amountMinor: Number(row.amount_minor), bookAmountMinor: Number(row.book_amount_minor ?? 0), costMinor: Number(row.cost_minor ?? 0),
+    unitAmountMinor: row.unit_amount_minor == null ? null : Number(row.unit_amount_minor), billedDays: row.billed_days ?? null, priceRuleId: row.price_rule_id ?? null,
     quantity: (row.idempotency_payload as { result?: { count?: number } } | null)?.result?.count ?? 1,
     points: row.points ?? null,
     status: row.status, sourceOrderId: row.source_order_id,
@@ -1184,9 +1264,14 @@ function mapTxOrder(row: Record<string, unknown>) {
   };
 }
 
+function mapVisibleTxOrder(row: Record<string, unknown>, actor: { kind: string; agentId: string | null }) {
+  const order = mapTxOrder(row);
+  return { ...order, costMinor: actor.kind === 'ADMIN' || (actor.kind === 'AGENT' && actor.agentId === row.seller_agent_id) ? order.costMinor : null };
+}
+
 function mapPriceRule(row: Record<string, unknown>) {
   return {
-    id: row.id, pricingKind: row.pricing_kind, agentId: row.agent_id, buyerAgentId: row.buyer_agent_id ?? null, sellerAgentId: row.seller_agent_id ?? null, regionId: row.region_id,
+    id: row.id, pricingKind: row.pricing_kind, sellerType: row.seller_type, agentId: row.agent_id, buyerAgentId: row.buyer_agent_id ?? null, sellerAgentId: row.seller_agent_id ?? null, regionId: row.region_id,
     service: row.service, plan: row.plan, currency: row.currency,
     unitAmountMinor: Number(row.unit_amount_minor), priority: row.priority, isActive: row.is_active,
     createdAt: (row.created_at as Date).toISOString(),

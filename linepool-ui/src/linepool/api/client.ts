@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { adminQuerySchema, adminSummarySchema, adminUserSchema, adminNumberSchema, adminOrderSchema,
+import { adminQuerySchema, adminOrdersQuerySchema, adminSummarySchema, adminUserSchema, adminNumberSchema, adminOrderSchema,
   adminPasswordResetInputSchema, type AdminPasswordResetInput,
   allocationSchema, productInputSchema, numberActionInputSchema, userStatusInputSchema,
   adminUpstreamStatusSchema, adminWebhookRetryInputSchema, adminWebhookRetryResultSchema,
@@ -16,7 +16,7 @@ import {
   type RechargeSettingsInput, type RechargeQuery, upsertPriceRuleInputSchema, transferBalanceInputSchema,
   createRenewalInputSchema, renewalOptionsSchema, renewalRecordSchema, numberUsageSchema, usageQuerySchema, paginationQuerySchema, paginationSchema,
   agentInventoryQuerySchema, agentNumberImportInputSchema, agentNumberStockSchema, agentSchema, agentStockCountsSchema, agentStockQuerySchema, balanceAccountSchema, assignHoldingInputSchema, claimAgentNumberInputSchema, claimAgentNumbersInputSchema, customerSchema, numberHoldingSchema, priceRuleSchema, releaseHoldingInputSchema, resellHoldingInputSchema, txOrderSchema,
-  holdingBatchInputSchema, holdingBatchPreviewInputSchema, holdingBatchPreviewSchema, holdingBatchResultSchema,
+  settlementQuoteInputSchema, settlementQuoteSchema, settlementOrderDetailSchema, platformSettlementSchema, holdingBatchInputSchema, holdingBatchPreviewInputSchema, holdingBatchPreviewSchema, holdingBatchResultSchema,
   createAgentInputSchema, createCustomerInputSchema, createHoldingInputSchema, adjustBalanceInputSchema,
   agentContextSchema, agentDashboardSchema, agentMetricPeriodSchema, subagentSchema, subagentsQuerySchema, createSubagentInputSchema, updateAgentNameInputSchema,
   subagentStatusInputSchema, holdingTransferSchema, transferableHoldingSchema, agentTransactionsQuerySchema, updateCustomerInputSchema,
@@ -94,7 +94,7 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
       return request('/admin/recharge-settings', dataResponseSchema(rechargeSettingsSchema), { method: 'PATCH', body: rechargeSettingsInputSchema.parse(input) });
     },
     adminList<T extends z.ZodType>(section: string, schema: T, input: Partial<AdminQuery>, options?: ApiRequestOptions) {
-      return request(`/admin/${section}${query(adminQuerySchema.parse(input))}`, paginatedResponseSchema(schema), options);
+      return request(`/admin/${section}${query((section === 'orders' ? adminOrdersQuerySchema : adminQuerySchema).parse(input))}`, paginatedResponseSchema(schema), options);
     },
     agentContext(options?: ApiRequestOptions) {
       return request('/agent-inventory/context', dataResponseSchema(agentContextSchema), options);
@@ -104,6 +104,9 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     },
     agentUpdateCustomer(id: string, input: z.input<typeof updateCustomerInputSchema>) {
       return request(`/agent-inventory/customers/${uuidSchema.parse(id)}`, dataResponseSchema(customerSchema), { method: 'PATCH', body: updateCustomerInputSchema.parse(input) });
+    },
+    agentPlatformSettlement(period: z.input<typeof agentMetricPeriodSchema> = '7d', options?: ApiRequestOptions) {
+      return request(`/agent-inventory/platform-settlement${query({ period: agentMetricPeriodSchema.parse(period) })}`, dataResponseSchema(platformSettlementSchema), options);
     },
     agentDashboard(period: z.input<typeof agentMetricPeriodSchema> = '7d', options?: ApiRequestOptions) {
       return request(`/agent-inventory/dashboard${query({ period: agentMetricPeriodSchema.parse(period) })}`, dataResponseSchema(agentDashboardSchema), options);
@@ -174,6 +177,11 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     agentBalances(options?: ApiRequestOptions) {
       return request('/agent-inventory/balances', dataResponseSchema(z.array(balanceAccountSchema)), options);
     },
+    agentSettlementPreview(input: z.input<typeof settlementQuoteInputSchema>, options?: ApiRequestOptions) {
+      return request('/agent-inventory/settlement-preview', dataResponseSchema(settlementQuoteSchema), { ...options, method: 'POST', body: settlementQuoteInputSchema.parse(input) });
+    },
+    agentPriceOptions(options?: ApiRequestOptions) { return request('/agent-inventory/price-options', dataResponseSchema(z.object({ services: z.array(z.string()), regions: z.array(z.string()) })), options); },
+    agentSettlementOrder(id: string, page = 1, pageSize = 50, options?: ApiRequestOptions) { return request(`/agent-inventory/transactions/${uuidSchema.parse(id)}${query(paginationQuerySchema.parse({ page, pageSize }))}`, dataResponseSchema(settlementOrderDetailSchema), options); },
     agentPrices(options?: ApiRequestOptions) {
       return request('/agent-inventory/prices', dataResponseSchema(z.array(priceRuleSchema)), options);
     },

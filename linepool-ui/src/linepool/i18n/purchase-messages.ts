@@ -1,6 +1,13 @@
 export const purchaseMessages: Readonly<Record<string, string>> = {
   '购买服务': 'Buy service', '我的订单': 'My orders', '短信中心': 'SMS center',
   '选择平台': 'Choose platform', '选择国家': 'Choose country', '国家与区号': 'Country & area code', '分配方式': 'Allocation method', '服务期限': 'Service term',
+  '可选': 'Available', '暂不可用': 'Unavailable',
+  '收起暂不可用平台': 'Hide unavailable platforms', '更多平台（暂不可用 · {count}）': 'More platforms (unavailable · {count})',
+  '自动分配可用号码': 'An available number will be assigned automatically.',
+  '每次最多 10 个': 'Up to 10 numbers per order',
+  '确认支付 {points} 积分': 'Pay {points} points',
+  '7 天': '7 days', '30 天': '30 days', '7 天 / 30 天': '7 days / 30 days',
+  '服务地区': 'Service region',
   '目前仅支持美国号码': 'Only US numbers are currently supported.', '暂无可用区号': 'No area codes available',
   '服务创建进度': 'Service setup progress', '服务订单已创建': 'Service order created', '确认创建服务': 'Confirm service setup', '确认待处理订单': 'Confirm pending order', '确认模拟服务': 'Confirm demo service', '继续创建服务': 'Create another service',
   '没有找到符合条件的平台': 'No matching platforms', '收起平台': 'Show fewer platforms', '全部平台 ({count})': 'All platforms ({count})',

@@ -6,11 +6,10 @@ import { Checkbox } from '../../ui/checkbox';
 import HoldingBatchForm from './HoldingBatchForm';
 import { queryClient, workspaceApi as api } from '../../api/query-client';
 import { ActionButton, Badge, DateText, Facts, Modal, State, Table, regionName } from '../../admin/primitives';
-import AppCombobox from '../../AppCombobox';
 import { agentQueryKey } from '../access';
 import { AgentPager, agentError } from '../subagent-shared';
-import { ErrorText, Filter, FormFooter, useAgentAction, useChildren, useCustomers } from './shared';
-import { HoldingDurationField, useHoldingDuration, type HoldingWindow } from '../HoldingDurationField';
+import { Filter, useChildren, useCustomers } from './shared';
+import HoldingDistributionForm from './HoldingDistributionForm';
 import type { AgentPageProps } from '../pages';
 
 type View = 'holdings' | 'stock';
@@ -82,58 +81,10 @@ export default function InventoryPage({ access }: AgentPageProps) {
     </tr>)}</Table></div>}
     {result.data && <AgentPager page={page} pageSize={pageSize} totalItems={totalItems} totalPages={totalPages} busy={result.isFetching} onChange={(p, size) => { setPage(p); setPageSize(size); }} />}
     {batch && <HoldingBatchForm access={access} selection={batch} onClose={() => setBatch(null)} onComplete={value => { setReceipt(value); setBatch(null); clearSelection(); }} />}
-    {transfer && <TransferForm holding={transfer} access={access} onClose={() => setTransfer(null)} />}
-    {assign && <AssignCustomerForm holding={assign} access={access} onClose={() => setAssign(null)} />}
+    {transfer && <HoldingDistributionForm holding={transfer} agentId={agentId} onClose={() => setTransfer(null)} />}
+    {assign && <HoldingDistributionForm retail holding={assign} agentId={agentId} onClose={() => setAssign(null)} />}
     {detail && <Modal title="号码持有详情" onClose={() => setDetail(null)} variant="drawer"><div className="lp-admin-dialog-body"><Facts rows={[
       ['号码', detail.phoneNumber], ['国家', regionName(detail.regionId)], ['平台', platformOf(detail) ?? '—'], ['状态', <Badge value={detail.status} />], ['开始时间', <DateText value={detail.startsAt} />], ['到期时间', detail.expiresAt ? <DateText value={detail.expiresAt} /> : '长期'], ['来源', detail.sourceHoldingId ? '上级代理转交' : '平台分配'], ['转交 / 结束时间', <DateText value={detail.transferredAt} />],
     ]} /></div></Modal>}
   </>;
-}
-
-function AssignCustomerForm({ holding, access, onClose }: { holding: NumberHolding; access: AgentPageProps['access']; onClose: () => void }) {
-  const agentId = access.context.agent.id;
-  const customers = useCustomers(agentId);
-  const [target, setTarget] = useState('');
-  const duration = useHoldingDuration(holding);
-  const [confirmed, setConfirmed] = useState<HoldingWindow | null>(null);
-  const action = useAgentAction(agentId);
-  const valid = !!target && (confirmed ? Date.parse(confirmed.expiresAt) > Date.now() : duration.window.valid);
-  return <Modal title="分配号码给客户" onClose={onClose} busy={action.busy}><form className="lp-agent-form" onSubmit={e => {
-    e.preventDefault(); if (!valid) return;
-    if (!confirmed) { const window = duration.resolveWindow(); if (window.valid) setConfirmed(window); return; }
-    const payload = { holdingId: holding.id, customerId: target, startsAt: confirmed.startsAt, expiresAt: confirmed.expiresAt };
-    void action.run(() => api.agentAssignHoldingToCustomer({ ...payload, idempotencyKey: action.requestKey(payload) }), onClose, '号码已分配给客户');
-  }}><div className="lp-admin-dialog-body"><p className="lp-admin-confirm-target">{holding.phoneNumber} · {holding.service ?? regionName(holding.regionId)}</p>
-    <State loading={customers.isFetching} error={customers.error ? agentError(customers.error) : ''} retry={() => void customers.refetch()} data={customers.data} />
-    {confirmed ? <><Facts rows={[
-      ['客户', customers.data?.find(customer => customer.id === target)?.name ?? target], ['开始时间', '确认后立即生效'], ['到期时间', <DateText value={confirmed.expiresAt} />], ['分配方式', '库存划拨（不结算）'],
-    ]} /><p className="lp-admin-context">确认后，号码会转为该客户的服务权益，当前代理不再持有。本次不收款、不扣余额；客户销售价不参与这次划拨。需要收费时，请另行确认与客户的结算。</p></> : <fieldset disabled={action.busy}>
-      <label>客户<AppCombobox aria-label="目标客户" value={target} onValueChange={setTarget} placeholder={customers.isPending ? '正在加载客户…' : '请选择客户'} options={(customers.data?.filter(customer => customer.status === 'ACTIVE') ?? []).map(customer => ({ value: customer.id, label: customer.name }))} searchPlaceholder="搜索客户" emptyMessage="没有匹配的客户" /></label>
-      {!customers.isFetching && customers.data && !customers.data.some(customer => customer.status === 'ACTIVE') && <p className="lp-admin-context">暂无启用的直属客户，请先到客户管理绑定客户。</p>}
-      <HoldingDurationField holding={holding} state={duration} />
-    </fieldset>}<ErrorText error={action.error} /></div><FormFooter busy={action.busy} onClose={onClose} onBack={confirmed ? () => setConfirmed(null) : undefined} disabled={!valid || !!customers.error} label={confirmed ? '确认分配' : '核对分配信息'} /></form></Modal>;
-}
-
-function TransferForm({ holding, access, onClose }: { holding: NumberHolding; access: AgentPageProps['access']; onClose: () => void }) {
-  const agentId = access.context.agent.id;
-  const children = useChildren(agentId, true);
-  const [target, setTarget] = useState('');
-  const duration = useHoldingDuration(holding);
-  const [confirmed, setConfirmed] = useState<HoldingWindow | null>(null);
-  const action = useAgentAction(agentId);
-  const valid = !!target && (confirmed ? Date.parse(confirmed.expiresAt) > Date.now() : duration.window.valid);
-  return <Modal title="转交号码给直属下级" onClose={onClose} busy={action.busy}><form className="lp-agent-form" onSubmit={e => {
-    e.preventDefault(); if (!valid) return;
-    if (!confirmed) { const window = duration.resolveWindow(); if (window.valid) setConfirmed(window); return; }
-    const payload = { holdingId: holding.id, toAgentId: target, startsAt: confirmed.startsAt, expiresAt: confirmed.expiresAt };
-    void action.run(() => api.agentResellHolding({ ...payload, idempotencyKey: action.requestKey(payload) }), onClose, '号码已转交');
-  }}><div className="lp-admin-dialog-body"><p className="lp-admin-confirm-target">{holding.phoneNumber} · {regionName(holding.regionId)}</p>
-    <State loading={children.isFetching} error={children.error ? agentError(children.error) : ''} retry={() => void children.refetch()} data={children.data} />
-    {confirmed ? <><Facts rows={[
-      ['接收代理', children.data?.find(item => item.id === target)?.name ?? target], ['开始时间', '确认后立即生效'], ['到期时间', <DateText value={confirmed.expiresAt} />], ['转交方式', '库存划拨（不结算）'],
-    ]} /><p className="lp-admin-context">确认后，当前持有结束并为接收代理建立新持有记录。转交不扣任何余额。</p></> : <fieldset disabled={action.busy}>
-      <label>接收代理<select required value={target} onChange={e => setTarget(e.target.value)}><option value="">请选择直属下级</option>{children.data?.filter(child => child.status === 'ACTIVE').map(child => <option key={child.id} value={child.id}>{child.name}</option>)}</select></label>
-      {children.data && !children.data.some(child => child.status === 'ACTIVE') && <p className="lp-admin-context">暂无启用的直属下级，请先到代理管理创建或恢复代理。</p>}
-      <HoldingDurationField holding={holding} state={duration} />
-    </fieldset>}<ErrorText error={action.error} /></div><FormFooter busy={action.busy} onClose={onClose} onBack={confirmed ? () => setConfirmed(null) : undefined} disabled={!valid || !!children.error} label={confirmed ? '确认转交' : '核对转交信息'} /></form></Modal>;
 }

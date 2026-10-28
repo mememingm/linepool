@@ -56,6 +56,11 @@ export const agentDashboardSchema = z.object({
     todaySales: nullableAmountMinorSchema, todayProfit: nullableProfitMinorSchema,
     todayOrders: z.number().int().nonnegative().nullable(), todayCodes: z.number().int().nonnegative().nullable(),
   }),
+  settlement: z.object({
+    purchaseCostMinor: amountMinorSchema, downstreamSalesMinor: amountMinorSchema,
+    customerSalesMinor: amountMinorSchema, soldCostMinor: amountMinorSchema,
+    profitMinor: z.number().int(), inventoryValueMinor: amountMinorSchema,
+  }).optional(),
   trend: z.array(z.object({ date: z.string(), salesMinor: nullableAmountMinorSchema, costMinor: nullableAmountMinorSchema, profitMinor: nullableProfitMinorSchema })),
   codeVolume: z.array(z.object({ bucket: z.string(), count: z.number().int().nonnegative(), platform: z.string().nullable() })),
   inventoryStatus: z.record(z.enum(['AVAILABLE', 'SELF_ASSIGNED', 'SUBAGENT_ASSIGNED', 'USED', 'EXPIRED', 'ERROR']), z.number().int().nonnegative()),
@@ -109,6 +114,7 @@ export const numberHoldingSchema = z.object({
   service: serviceSchema.nullable().default(null),
   transferable: z.boolean().optional(),
   status: z.enum(['ACTIVE', 'SUSPENDED', 'RETIRED']),
+  costMinor: amountMinorSchema.default(0),
   sourceTxOrderId: uuidSchema.nullable(),
   sourceHoldingId: uuidSchema.nullable(),
   startsAt: timestamp,
@@ -143,6 +149,7 @@ export type ServiceEntitlement = z.infer<typeof serviceEntitlementSchema>;
 export const priceRuleSchema = z.object({
   id: uuidSchema,
   pricingKind: pricingKindSchema,
+  sellerType: z.enum(['PLATFORM', 'AGENT']).default('PLATFORM'),
   agentId: uuidSchema.nullable(),
   buyerAgentId: uuidSchema.nullable(),
   sellerAgentId: uuidSchema.nullable().default(null),
@@ -150,7 +157,7 @@ export const priceRuleSchema = z.object({
   service: z.string().min(1),
   plan: z.string().min(1),
   currency: currencySchema,
-  unitAmountMinor: z.number().int().positive(),
+  unitAmountMinor: amountMinorSchema,
   priority: z.number().int().nonnegative(),
   isActive: z.boolean(),
   createdAt: timestamp,
@@ -172,6 +179,11 @@ export const txOrderSchema = z.object({
   pricingKind: pricingKindSchema,
   currency: currencySchema,
   amountMinor: amountMinorSchema,
+  unitAmountMinor: amountMinorSchema.nullable().default(null),
+  billedDays: z.number().int().positive().nullable().default(null),
+  priceRuleId: uuidSchema.nullable().default(null),
+  bookAmountMinor: amountMinorSchema.default(0),
+  costMinor: amountMinorSchema.nullable().default(null),
   quantity: z.number().int().positive().default(1),
   points: z.number().int().positive().nullable(),
   status: z.enum(['PENDING', 'COMPLETED', 'FAILED', 'CANCELLED']),
@@ -227,13 +239,15 @@ export type CreateTxOrderInput = z.infer<typeof createTxOrderInputSchema>;
 
 export const upsertPriceRuleInputSchema = z.strictObject({
   pricingKind: pricingKindSchema,
+  sellerType: z.enum(['PLATFORM', 'AGENT']).optional(),
+  sellerAgentId: uuidSchema.nullable().optional(),
   agentId: uuidSchema.nullable().default(null),
   buyerAgentId: uuidSchema.nullable().default(null),
   regionId: z.string().nullable().default(null),
   service: z.string().trim().min(1).max(64),
-  plan: z.string().trim().min(1).max(64),
-  currency: currencySchema,
-  unitAmountMinor: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  plan: z.string().default('P30D').transform(() => 'P30D'),
+  currency: z.literal('USD').default('USD'),
+  unitAmountMinor: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   priority: z.number().int().nonnegative().max(100000).default(0),
   isActive: z.boolean().default(true),
 });
@@ -269,6 +283,7 @@ export const adjustBalanceInputSchema = ownerRefSchema.and(z.strictObject({
 export type AdjustBalanceInput = z.infer<typeof adjustBalanceInputSchema>;
 
 export const agentInventoryQuerySchema = paginationQuerySchema.extend({
+  agentId: uuidSchema.optional(),
   status: z.union([z.literal(''), z.enum(['ACTIVE', 'SUSPENDED', 'RETIRED'])]).default(''),
   search: z.string().max(64).default(''),
   region: z.union([z.literal(''), regionIdSchema]).default(''),
@@ -304,8 +319,8 @@ export type AgentStockQuery = z.infer<typeof agentStockQuerySchema>;
 
 const stockResourceStatusSchema = z.enum(['LOCAL', 'ONLINE', 'OFFLINE', 'ERROR']);
 export const agentNumberStockSchema = z.object({
-  id: uuidSchema,
-  provider: z.literal('pingcode-mock'),
+  id: uuidSchema, inventoryId: uuidSchema,
+  provider: z.enum(['pingcode', 'pingcode-mock']),
   platformId: serviceSchema,
   externalProjectId: z.string().min(1),
   externalNumberId: z.string().nullable(),
@@ -348,6 +363,7 @@ export const claimAgentNumberInputSchema = z.strictObject({
   startsAt: timestamp,
   expiresAt: timestamp,
   service: serviceSchema.optional(),
+  quoteFingerprint: z.string().optional(),
   idempotencyKey: uuidSchema,
 });
 export type ClaimAgentNumberInput = z.infer<typeof claimAgentNumberInputSchema>;
@@ -357,6 +373,7 @@ export const claimAgentNumbersInputSchema = z.strictObject({
   startsAt: timestamp,
   expiresAt: timestamp,
   service: serviceSchema.optional(),
+  quoteFingerprint: z.string().optional(),
   idempotencyKey: uuidSchema,
 });
 export type ClaimAgentNumbersInput = z.infer<typeof claimAgentNumbersInputSchema>;
@@ -370,6 +387,7 @@ export const resellHoldingInputSchema = z.strictObject({
   toAgentId: uuidSchema,
   startsAt: timestamp,
   expiresAt: timestamp,
+  quoteFingerprint: z.string().optional(),
   idempotencyKey: uuidSchema,
 });
 export type ResellHoldingInput = z.infer<typeof resellHoldingInputSchema>;
@@ -378,6 +396,8 @@ export const assignHoldingInputSchema = z.strictObject({
   customerId: uuidSchema,
   startsAt: timestamp,
   expiresAt: timestamp,
+  bookAmountMinor: amountMinorSchema.max(Number.MAX_SAFE_INTEGER).optional(),
+  quoteFingerprint: z.string().optional(),
   idempotencyKey: uuidSchema,
 });
 export type AssignHoldingInput = z.infer<typeof assignHoldingInputSchema>;
@@ -392,13 +412,40 @@ export const holdingBatchSelectionSchema = z.discriminatedUnion('mode', [
 export type HoldingBatchSelection = z.infer<typeof holdingBatchSelectionSchema>;
 export const holdingBatchPreviewInputSchema = z.strictObject({
   selection: holdingBatchSelectionSchema, recipient: ownerRefSchema, expiresAt: timestamp.nullable().default(null),
+  bookAmountMinor: amountMinorSchema.max(Number.MAX_SAFE_INTEGER).optional(),
 });
 export type HoldingBatchPreviewInput = z.infer<typeof holdingBatchPreviewInputSchema>;
 export const holdingBatchInputSchema = holdingBatchPreviewInputSchema.extend({
-  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), idempotencyKey: uuidSchema,
+  fingerprint: z.string().regex(/^[a-f0-9]{64}:[a-f0-9]{64}$/), idempotencyKey: uuidSchema,
 });
 export type HoldingBatchInput = z.infer<typeof holdingBatchInputSchema>;
+export const settlementQuoteSchema = z.object({
+  fingerprint: z.string(), currency: z.literal('USD'), amountMinor: amountMinorSchema,
+  bookAmountMinor: amountMinorSchema, costMinor: amountMinorSchema, profitMinor: z.number().int(),
+  buyerBalanceMinor: amountMinorSchema, sufficient: z.boolean(),
+  unitAmountMinor: amountMinorSchema.nullable(), billedDays: z.number().int().positive().nullable(),
+  count: z.number().int().positive(), missingReference: z.boolean(),
+});
+export type SettlementQuote = z.infer<typeof settlementQuoteSchema>;
+export const settlementQuoteInputSchema = z.strictObject({
+  operation: z.enum(['CLAIM', 'RESELL', 'ASSIGN']),
+  stockIds: z.array(uuidSchema).min(1).max(100).optional(), holdingId: uuidSchema.optional(),
+  agentId: uuidSchema.optional(), customerId: uuidSchema.optional(),
+  startsAt: timestamp, expiresAt: timestamp,
+  bookAmountMinor: amountMinorSchema.max(Number.MAX_SAFE_INTEGER).optional(),
+});
+export type SettlementQuoteInput = z.infer<typeof settlementQuoteInputSchema>;
+export const settlementOrderItemSchema = z.object({
+  phoneNumber: z.string(), service: z.string(), regionId: z.string(),
+  startsAt: timestamp, expiresAt: timestamp, unitAmountMinor: amountMinorSchema.nullable(),
+  billedDays: z.number().int().positive(), amountMinor: amountMinorSchema, bookAmountMinor: amountMinorSchema,
+});
+export const platformSettlementSchema = z.object({ currency: z.literal('USD'), amountMinor: amountMinorSchema, quantity: z.number().int().nonnegative(), orders: z.number().int().nonnegative() });
+export const settlementOrderDetailSchema = z.object({
+  order: txOrderSchema, items: z.array(settlementOrderItemSchema), pagination: z.object({ page: z.number(), pageSize: z.number(), totalItems: z.number(), totalPages: z.number() }),
+});
 export const holdingBatchPreviewSchema = z.object({
+  settlement: settlementQuoteSchema,
   fingerprint: z.string(), count: z.number().int().positive().max(10000),
   sample: z.array(z.string()), earliestExpiresAt: timestamp, latestStartsAt: timestamp,
   regions: z.array(z.object({ value: z.string(), count: z.number().int().positive() })),

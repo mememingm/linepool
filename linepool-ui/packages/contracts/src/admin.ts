@@ -4,10 +4,22 @@ import { paginationQuerySchema, regionIdSchema, serviceSchema, uuidSchema, planI
 export const adminQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(200).default(''),
   status: z.string().max(40).default(''),
+  view: z.enum(['today', 'attention']).optional(),
   region: regionIdSchema.optional(),
   userId: uuidSchema.optional(),
   provider: z.enum(['pingcode', 'pingcode-mock']).optional(),
 });
+export const adminOrderViewSchema = z.enum(['today', 'attention']);
+/** Old dashboard links remain usable; fulfillment status and list view are independent. */
+export const adminOrdersQuerySchema = z.preprocess(value => {
+  if (!value || typeof value !== 'object' || !('status' in value)) return value;
+  const legacy = value.status === 'today' ? 'today' : ['EXCEPTION', 'UNVERIFIED'].includes(String(value.status)) ? 'attention' : undefined;
+  return legacy ? { ...value, status: '', view: 'view' in value && value.view ? value.view : legacy } : value;
+}, adminQuerySchema.extend({
+  status: z.enum(['', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED']).default(''),
+  view: adminOrderViewSchema.optional(),
+}));
+export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
 export const serviceDurationSchema = z.union([z.literal(7), z.literal(30)]);
 export const reasonSchema = z.string().trim().min(3).max(500);
 export const adminPasswordResetInputSchema = z.strictObject({ newPassword: passwordSchema, reason: reasonSchema });

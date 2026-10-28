@@ -1,4 +1,6 @@
+import { isStorefrontRegion } from '@linepool/contracts';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import type { HoldingBatchSelection, NumberHolding } from '@linepool/contracts';
 import { z } from 'zod';
 import { AlertCircle, ArrowUpRight, Check, Clock3, Eye, FolderSync, MessageSquare, PackageCheck, Pencil, Plus, RefreshCw, Search, ShieldCheck, Smartphone, Users, WalletCards, X } from 'lucide-react';
 import { adminUserSchema, adminNumberSchema, adminProductSchema, adminOrderSchema, adminProjectSchema, adminReceiptSchema, auditSchema,
@@ -16,36 +18,32 @@ import { TooltipProvider } from '../ui/tooltip';
 import { Toaster, toast } from 'sonner';
 import { AdminAccountMenu, AdminActivityProvider, AdminSidebar, AdminTooltip, Identifier, useAdminActivity } from './Presentation';
 import { ActionButton, Badge, DateText, Facts, IconAction, Modal, RowMenu, ShortId, State, Table, isRowClick, planLabel, regionName, txKindLabel } from './primitives';
+import { StockClaimModal, BatchStockClaimModal, ResellHoldingModal } from './SettlementModals';
+import SettlementOrderDrawer from '../agent/SettlementOrderDrawer';
+import AdminPriceEditor from '../agent/SettlementPriceEditor';
 import SelectField from '../SelectField';
 import AppSearchInput from '../AppSearchInput';
 import AppCombobox from '../AppCombobox';
 import RecordPagination from '../workspace-reference/RecordPagination';
 import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
 import { languageStore } from '../preferences/store';
+import { apiFailureMessage } from '../i18n/api-errors';
 import { translate } from '../i18n/format';
 import { navigate } from '../../app/router';
 import { adminDescriptions, adminHref, adminTitles, type AdminPage } from './navigation';
 import { ApiDocumentation, WebhookManagement } from './IntegrationPages';
+import AdminHoldingBatchModal from './AdminHoldingBatchModal';
 import './admin.css';
 
 const api = createLinepoolApi();
+const canUseLocalInventoryImport = import.meta.env.DEV;
 const regions = [{ value: 'us', label: '美国' }, { value: 'gb', label: '英国' }, { value: 'ca', label: '加拿大' }, { value: 'sg', label: '新加坡' }, { value: 'de', label: '德国' }, { value: 'nl', label: '荷兰' }];
 function errorMessage(cause: unknown) {
   if (cause instanceof z.ZodError) return translate('请检查必填内容、数值范围和操作原因。', languageStore.getSnapshot());
   if (!(cause instanceof LinepoolApiError)) return translate('操作失败，请重试。', languageStore.getSnapshot());
   if (cause.status === 401) navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, true);
   if (cause.status === 403 && cause.code === 'ADMIN_REQUIRED') window.dispatchEvent(new Event('linepool-admin-access-denied'));
-  const labels: Record<string, string> = { ADMIN_REQUIRED: '当前账号没有平台管理员权限。', ACCOUNT_DISABLED: '账号已被禁用。',
-    NUMBER_ASSIGNED: '号码已被分配，不能重复分配或上架。', OWNERSHIP_CHANGED: '号码归属已变化，请刷新后重试。',
-    RESOURCE_UNAVAILABLE: '号码资源当前不可用。', USER_UNAVAILABLE: '目标用户不存在或已禁用。',
-    RESOURCE_EXPIRES_TOO_SOON: 'PC 号码资源到期时间不足以覆盖所选服务天数。', INVALID_DURATION: '服务天数请选择 7 天或 30 天。',
-    NUMBER_RESERVED: '该号码的平台服务有待完成订单，请先处理订单。',
-    ADMIN_PROTECTED: '不能在此禁用管理员账号。', ADMIN_PASSWORD_PROTECTED: '请通过登录页的找回密码功能重置管理员密码。', PRODUCT_EXISTS: '这个国家和平台已经有相同天数的商品了，请直接编辑原商品。', PRODUCT_NOT_OFFERED_UPSTREAM: '上游没有提供这个国家和平台的号码，不能创建商品。',
-    VALIDATION_ERROR: '提交内容不符合要求。', REQUEST_TIMEOUT: '请求超时，请刷新核对操作结果后再试。',
-    RECHARGE_SETTINGS_CHANGED: '充值配置已被其他管理员修改，请关闭弹窗、刷新后重新填写。',
-    NETWORK_ERROR: '无法连接服务，请重试。', RECEIPT_NOT_FOUND: '接收记录不存在，请刷新后重试。', NOT_FOUND: '记录不存在或已变化。', ORIGIN_REJECTED: '当前访问地址未获服务授权。' };
-  const source = labels[cause.code] ?? (cause.status === 429 ? '请求过于频繁，请稍后重试。' : cause.status >= 500 ? '服务暂时不可用，请重试。' : cause.message);
-  return translate(source, languageStore.getSnapshot());
+  return apiFailureMessage(cause.code, cause.status);
 }
 function quantityLabel(value: number, language: string) {
   return language === 'en' ? `${value} ${value === 1 ? 'number' : 'numbers'}` : `${value} 个号码`;
@@ -84,6 +82,15 @@ function orderStatus(o: AdminOrder) {
   if (o.fulfillment_status !== 'COMPLETED') return o.fulfillment_status;
   return o.payment_status === 'POINTS_DEBITED' ? 'COMPLETED' : o.payment_status;
 }
+/** An allocation's service state comes from its expiry, independently of the selected filter. */
+function NumberStatus({ number: n }: { number: AdminNumber }) {
+  const expiresAt = n.expires_at ? Date.parse(n.expires_at) : Number.NaN;
+  const remaining = expiresAt - Date.now();
+  const status = !n.assigned_user_id || !Number.isFinite(expiresAt) ? n.sale_status
+    : remaining <= 0 ? 'SERVICE_EXPIRED'
+    : remaining <= 3 * 24 * 60 * 60 * 1000 ? 'SERVICE_EXPIRING' : 'SERVICE_ACTIVE';
+  return <div className="lp-admin-badges"><Badge value={status} />{(n.resource_status === 'OFFLINE' || n.resource_status === 'ERROR') && <Badge value={n.resource_status} />}</div>;
+}
 /** Reason is required by the audit log; quick picks save typing for routine operations. */
 function ReasonField({ value, onChange, disabled, suggestions, label = '操作原因' }: { value: string; onChange: (value: string) => void; disabled?: boolean; suggestions: string[]; label?: string }) {
   const p = useDisplayPreferences();
@@ -111,7 +118,7 @@ function NumberDetail({ id }: { id: string }) {
   const result = useResource(id, signal => api.adminNumber(id, { signal }));
   if (!result.data) return <State {...result} />;
   const { number: n, allocations } = result.data.data;
-  return <><div className="lp-admin-detail-hero"><strong className="lp-admin-mono">{n.phone_number}</strong><span>{n.country} · {n.service}</span><div><Badge value={n.sale_status} /></div></div><Facts rows={[
+  return <><div className="lp-admin-detail-hero"><strong className="lp-admin-mono">{n.phone_number}</strong><span>{n.country} · {n.service}</span><NumberStatus number={n} /></div><Facts rows={[
     [p.t("归属用户"), n.owner_name ?? p.t("未分配")], [p.t("服务到期"), <DateText value={n.expires_at} />], [p.t("号码能力"), p.t("仅接收短信")], [p.t("区号"), n.prefix],
   ]} /><h3>{p.t("分配历史 · 最近 50 条")}</h3><AllocationTable items={allocations} />
     <details className="lp-admin-tech"><summary>{p.t("技术信息")}</summary><Facts rows={[
@@ -178,6 +185,7 @@ function ConfirmAction({ target, onClose, onSuccess }: { target: ActionTarget; o
       <label>{p.t("确认新密码")}<Input name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={72} placeholder={p.t("再次输入新密码")} value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy} /></label></>}
     {target.kind === 'reclaim' && <p className="lp-admin-warning">{p.t("仅结束该号码在 ")}{target.number.service}{p.t(" 平台的当前服务，保留历史订单与短信，其他平台不受影响。回收后该平台服务不会自动上架。")}</p>}
     {target.kind === 'user' && target.user.account_status === 'ACTIVE' && <p className="lp-admin-warning">{p.t("禁用后，该用户的登录会话立即失效，号码和订单记录会保留。")}</p>}
+    {target.kind === 'assign' && !isStorefrontRegion(target.number.region_id) && <p className="lp-admin-warning">{p.t('该国家前台未开放，用户无法自行购买同国家号码')}</p>}
     {target.kind === 'assign' && <><p className="lp-admin-context">{p.t("手动分配不会扣用户积分，也不会生成订单。先搜索并选择用户。")}</p><AppSearchInput className="lp-admin-search" aria-label={p.t("搜索分配用户")} placeholder={p.t("用户名、邮箱或用户 ID")} value={userSearch} onValueChange={setUserSearch} disabled={busy} loading={users.loading}><IconAction label={p.t("查找用户")} onClick={() => setUserTerm(userSearch)} disabled={busy}><Search size={16} /></IconAction></AppSearchInput>
       <State loading={users.loading} error={users.error} retry={users.retry} />
       <label>{p.t("目标用户")}<AppCombobox aria-label={p.t("目标用户")} value={userId} disabled={busy || users.loading} onValueChange={setUserId} options={[{ value: '', label: p.t("请选择用户") }, ...(users.data?.data ?? []).map(user => ({ value: user.id, label: `${user.display_name} · ${user.email}` }))]} /></label>
@@ -207,6 +215,7 @@ function ProductEditor({ product, onClose, onSuccess }: { product: AdminProduct 
   const defaultPlan = value.durationDays === 7 ? 'week' : 'month';
   async function submit() { setBusy(true); setError(''); try { await api.adminSaveProduct({ ...value, name: value.name.trim() || defaultName, plan: value.plan || defaultPlan }, !product); onSuccess(); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); } }
   return <Modal title={product ? p.t("编辑商品") : p.t("创建商品")} busy={busy} onClose={onClose}><form onSubmit={e => { e.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body"><fieldset disabled={busy} className="lp-admin-form-grid">
+    {!isStorefrontRegion(value.region) && <p className="lp-admin-warning lp-admin-span">{p.t('该国家前台暂未开放，保存后用户也无法购买')}</p>}
     {product ? <p className="lp-admin-confirm-target lp-admin-span">{product.country} · {product.service}<small>{p.t("国家和平台创建后不能修改")}</small></p>
       : offered.loading && !offered.data ? <p className="lp-admin-context lp-admin-span">{p.t("正在读取上游提供的国家和平台…")}</p>
       : offered.error ? <p className="lp-admin-error lp-admin-span">{offered.error}</p>
@@ -217,7 +226,7 @@ function ProductEditor({ product, onClose, onSuccess }: { product: AdminProduct 
     {product && product.duration_days !== 7 && product.duration_days !== 30 && <p className="lp-admin-context lp-admin-span">{p.t("原商品为 ")}{product.duration_days}{p.t(" 天，保存时使用本次所选的 7/30 天。")}</p>}
     <label>{p.t("价格（积分）")}<Input type="number" required min={1} max={1000000} value={value.unitPoints} onChange={e => set('unitPoints', Number(e.target.value))} /><small>{p.t("每个号码扣多少积分")}</small></label>
     <label className="lp-admin-span">{p.t("商品名称")}<Input maxLength={100} placeholder={defaultName} value={value.name} onChange={e => set('name', e.target.value)} /><small>{p.t("前台展示给用户的名字，留空则使用「")}{defaultName}」</small></label>
-    <label className="lp-admin-checkbox lp-admin-span lp-admin-switch-row"><Checkbox checked={value.isActive} onCheckedChange={checked => set('isActive', checked === true)} /><span>{product ? p.t("上架销售") : p.t("立即上架")}<small>{product ? p.t("取消勾选即下架，用户将看不到这个套餐") : p.t("勾选后用户马上能在前台购买")}</small></span></label>
+    <label className="lp-admin-checkbox lp-admin-span lp-admin-switch-row"><Checkbox checked={value.isActive} onCheckedChange={checked => set('isActive', checked === true)} /><span>{product ? p.t("上架销售") : p.t("立即上架")}<small>{!isStorefrontRegion(value.region) ? p.t('仅保存上架状态，前台开放该国家后才能购买') : product ? p.t("取消勾选即下架，用户将看不到这个套餐") : p.t("勾选后用户马上能在前台购买")}</small></span></label>
     <details className="lp-admin-tech lp-admin-span"><summary>{p.t("高级设置（一般不用改）")}</summary><div className="lp-admin-form-grid">
       <label>{p.t("套餐标识")}<Input pattern="[a-z][a-z0-9_-]{0,31}" maxLength={32} disabled={busy || Boolean(product)} placeholder={defaultPlan} value={value.plan} onChange={e => set('plan', e.target.value)} /><small>{p.t("系统内部编号，小写英文，留空自动生成")}</small></label>
       <label>{p.t("号段前缀")}<Input maxLength={20} pattern="\+?[0-9]*" placeholder={p.t("全部号段")} value={value.areaPrefix} onChange={e => set('areaPrefix', e.target.value)} /><small>{p.t("只卖某个号段时填写，例如 +1959")}</small></label>
@@ -350,15 +359,22 @@ function RechargesList({ input, revision, update }: Pick<ListProps, 'input' | 'r
 const filters: Record<AdminPage, { value: string; label: string }[]> = {
   'api-docs': [], webhooks: [],
   dashboard: [], users: [{ value: 'ACTIVE', label: '正常' }, { value: 'DISABLED', label: '已禁用' }],
-  numbers: [{ value: 'AVAILABLE', label: '可售' }, { value: 'ASSIGNED', label: '已分配' }, { value: 'UNSELLABLE', label: '已下架' }, { value: 'expiring', label: '3 天内到期' }, { value: 'ACTIVE', label: '服务有效' }, { value: 'ERROR', label: '号码异常' }, { value: 'OFFLINE', label: '号码离线' }],
+  numbers: [{ value: 'AVAILABLE', label: '可售' }, { value: 'ASSIGNED', label: '已分配' }, { value: 'UNSELLABLE', label: '不可售' }, { value: 'expiring', label: '3 天内到期' }, { value: 'ACTIVE', label: '服务有效' }, { value: 'ERROR', label: '号码异常' }, { value: 'OFFLINE', label: '号码离线' }],
   products: [{ value: 'ACTIVE', label: '已上架' }, { value: 'INACTIVE', label: '已下架' }],
   projects: [{ value: 'ACTIVE', label: '已启用' }, { value: 'INACTIVE', label: '已停用' }],
   receipts: [{ value: 'IMPORTED', label: '已分发' }, { value: 'UNMATCHED', label: '未匹配用户' }, { value: 'PENDING', label: '待处理' }],
   agents: [{ value: 'ACTIVE', label: '正常' }, { value: 'SUSPENDED', label: '已暂停' }, { value: 'TERMINATED', label: '已终止' }],
   inventory: [{ value: 'ACTIVE', label: '持有中' }, { value: 'SUSPENDED', label: '已暂停' }, { value: 'RETIRED', label: '已退出库存' }],
   recharges: [{ value: 'PENDING', label: '待支付' }, { value: 'SUCCEEDED', label: '已到账' }, { value: 'FAILED', label: '失败' }, { value: 'EXPIRED', label: '已超时' }, { value: 'CANCELLED', label: '已取消' }],
-  orders: [{ value: 'COMPLETED', label: '已完成' }, { value: 'PROCESSING', label: '开通处理中' }, { value: 'FAILED', label: '开通失败' }, { value: 'CANCELLED', label: '已取消' }, { value: 'UNVERIFIED', label: '结算待核对' }, { value: 'EXCEPTION', label: '异常订单' }, { value: 'today', label: '今日订单' }],
+  orders: [{ value: 'PROCESSING', label: '处理中' }, { value: 'COMPLETED', label: '已完成' }, { value: 'FAILED', label: '失败' }, { value: 'CANCELLED', label: '已取消' }],
 };
+function OrderQuickFilters({ input, revision, update }: Pick<ListProps, 'input' | 'revision' | 'update'>) {
+  const p = useDisplayPreferences();
+  const summary = useResource('order-attention-count', signal => api.adminSummary({ signal }), revision);
+  return <div className="lp-admin-status-chips" role="group" aria-label={p.t('快捷筛选')}>
+    {[{ value: '', label: '全部' }, { value: 'today', label: '今天' }, { value: 'attention', label: '需要处理' }].map(item => <button key={item.value} type="button" aria-pressed={(input.view ?? '') === item.value} onClick={() => update('view', item.value)}>{p.t(item.label)}{item.value === 'attention' && summary.data && <span>{p.n(summary.data.data.exceptionOrders)}</span>}</button>)}
+  </div>;
+}
 function translatedFilters(page: AdminPage, t: (source: string) => string) {
   return filters[page].map(option => ({ ...option, label: t(option.label) }));
 }
@@ -378,17 +394,15 @@ type ListProps = { input: Partial<AdminQuery>; revision: number; detail: (value:
 function NumbersList({ input, revision, detail, action, update }: ListProps) {
   const p = useDisplayPreferences();
   const result = useList('numbers', adminNumberSchema, input, revision);
-  // Resource health only matters when it is abnormal; healthy local/online numbers stay quiet.
-  const resourceIssue = (status: string) => status === 'OFFLINE' || status === 'ERROR';
-  return <><State {...result} columns={7} empty={result.data?.data.length === 0} />{result.data && <Table columns={[p.t("号码"), p.t("国家"), p.t("平台"), p.t("状态"), p.t("归属用户"), p.t("服务到期"), '']} label={p.t("号码管理")}>{result.data.data.map(n => <tr key={n.id} className="lp-admin-clickable" onClick={event => { if (isRowClick(event)) detail({ section: 'numbers', id: n.id }); }}><td><strong className="lp-admin-mono">{n.phone_number}</strong>{n.provider === 'pingcode' && <small>{p.t("上游 PC 号码")}</small>}</td><td>{n.country}<small>{n.prefix}</small></td><td>{n.service}</td><td><div className="lp-admin-badges"><Badge value={n.sale_status} />{resourceIssue(n.resource_status) && <Badge value={n.resource_status} />}</div></td><td>{n.owner_name ?? <span className="lp-admin-faint">—</span>}</td><td><DateText value={n.expires_at} /></td><td><div className="lp-admin-row-actions">{n.assigned_user_id ? <ActionButton size="sm" onClick={() => action({ kind: 'reclaim', number: n })}>{p.t("回收")}</ActionButton> : <ActionButton size="sm" disabled={n.sale_status !== 'AVAILABLE'} onClick={() => action({ kind: 'assign', number: n })}>{p.t("分配")}</ActionButton>}<RowMenu label={p.t("更多操作")} items={[{ label: p.t("查看详情和历史"), onSelect: () => detail({ section: 'numbers', id: n.id }) }, ...(n.assigned_user_id ? [] : [{ label: n.sale_enabled ? p.t("下架（暂停售卖）") : p.t("重新上架"), onSelect: () => action({ kind: 'sale', number: n }) }])]} /></div></td></tr>)}</Table>}<Pager result={result} input={input} update={update} /></>;
+  return <><State {...result} columns={7} empty={result.data?.data.length === 0} />{result.data && <Table columns={[p.t("号码"), p.t("国家"), p.t("平台"), p.t("状态"), p.t("归属用户"), p.t("服务到期"), '']} label={p.t("号码管理")}>{result.data.data.map(n => <tr key={n.id} className="lp-admin-clickable" onClick={event => { if (isRowClick(event)) detail({ section: 'numbers', id: n.id }); }}><td><strong className="lp-admin-mono">{n.phone_number}</strong>{n.provider === 'pingcode' && <small>{p.t("上游 PC 号码")}</small>}</td><td>{n.country}<small>{n.prefix}</small></td><td>{n.service}</td><td><NumberStatus number={n} /></td><td>{n.owner_name ?? <span className="lp-admin-faint">—</span>}</td><td><DateText value={n.expires_at} /></td><td><div className="lp-admin-row-actions">{n.assigned_user_id ? <ActionButton size="sm" onClick={() => action({ kind: 'reclaim', number: n })}>{p.t("回收")}</ActionButton> : <ActionButton size="sm" disabled={n.sale_status !== 'AVAILABLE'} onClick={() => action({ kind: 'assign', number: n })}>{p.t("分配")}</ActionButton>}<RowMenu label={p.t("更多操作")} items={[{ label: p.t("查看详情和历史"), onSelect: () => detail({ section: 'numbers', id: n.id }) }, ...(n.assigned_user_id ? [] : [{ label: n.sale_enabled ? p.t("下架（暂停售卖）") : p.t("重新上架"), onSelect: () => action({ kind: 'sale', number: n }) }])]} /></div></td></tr>)}</Table>}<Pager result={result} input={input} update={update} /></>;
 }
 function ProductsList({ input, revision, update, edit }: Pick<ListProps, 'input' | 'revision' | 'update'> & { edit: (product: AdminProduct) => void }) {
   const p = useDisplayPreferences();
   const result = useList('products', adminProductSchema, input, revision);
   const rows = result.data?.data ?? [];
   return <><State {...result} columns={7} empty={result.data?.data.length === 0} />{result.data && <Table columns={[p.t("平台"), p.t("套餐"), p.t("天数"), p.t("价格"), p.t("库存"), p.t("状态"), '']} label={p.t("商品管理")}>{rows.map((o, index) => <Fragment key={`${o.region_id}/${o.service}/${o.plan}`}>
-    {o.region_id !== rows[index - 1]?.region_id && <tr className="lp-admin-group-row"><th colSpan={7} scope="rowgroup">{o.country}<small>{rows.filter(item => item.region_id === o.region_id).length}{p.t(" 个套餐")}</small></th></tr>}
-    <tr className="lp-admin-clickable" onClick={event => { if (isRowClick(event)) edit(o); }}><td><strong>{o.service}</strong></td><td>{o.name}{o.area_prefix && <small>{p.t("号段 ")}{o.area_prefix}</small>}</td><td>{o.duration_days}{p.t(" 天")}</td><td><strong>{o.unit_points}</strong>{p.t(" 积分")}</td><td className={o.available_count + o.pc_available_count === 0 ? 'lp-admin-low-stock' : undefined}>{o.available_count + o.pc_available_count}{p.t(" 个")}{o.available_count + o.pc_available_count === 0 && <small>{p.t("已无库存")}</small>}</td><td><Badge value={o.is_active ? 'PRODUCT_ON' : 'PRODUCT_OFF'} /></td><td><IconAction label={p.t("编辑价格和上下架")} onClick={() => edit(o)}><Pencil size={16} /></IconAction></td></tr>
+    {o.region_id !== rows[index - 1]?.region_id && <tr className="lp-admin-group-row"><th colSpan={7} scope="rowgroup">{o.country}{!isStorefrontRegion(o.region_id) && <Badge value="STOREFRONT_CLOSED" />}<small>{rows.filter(item => item.region_id === o.region_id).length}{p.t(" 个套餐")}</small></th></tr>}
+    <tr className="lp-admin-clickable" onClick={event => { if (isRowClick(event)) edit(o); }}><td><strong>{o.service}</strong></td><td>{o.name}{o.area_prefix && <small>{p.t("号段 ")}{o.area_prefix}</small>}</td><td>{o.duration_days}{p.t(" 天")}</td><td><strong>{o.unit_points}</strong>{p.t(" 积分")}</td><td className={o.available_count + o.pc_available_count === 0 ? 'lp-admin-low-stock' : undefined}>{o.available_count + o.pc_available_count}{p.t(" 个")}{o.available_count + o.pc_available_count === 0 && <small>{p.t("已无库存")}</small>}</td><td><Badge value={!isStorefrontRegion(o.region_id) ? 'STOREFRONT_CLOSED' : o.is_active ? 'PRODUCT_ON' : 'PRODUCT_OFF'} /></td><td><IconAction label={p.t("编辑价格和上下架")} onClick={() => edit(o)}><Pencil size={16} /></IconAction></td></tr>
   </Fragment>)}</Table>}<Pager result={result} input={input} update={update} /></>;
 }
 function OrdersList({ input, revision, update, detail }: Pick<ListProps, 'input' | 'revision' | 'update' | 'detail'>) {
@@ -504,16 +518,18 @@ function AgentEditor({ kind, onClose, onSuccess }: { kind: 'agent' | 'customer';
 function LedgerDrawer({ ownerType, ownerId, title, onClose }: { ownerType: 'AGENT' | 'CUSTOMER'; ownerId: string; title: string; onClose: () => void }) {
   const p = useDisplayPreferences();
   const [page, setPage] = useState(1);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const result = useResource(`ledger:${ownerType}:${ownerId}:${page}`, signal => api.agentLedger(ownerType === 'AGENT' ? { ownerType, agentId: ownerId } : { ownerType, customerId: ownerId }, page, 20, { signal }), 0);
   const d = result.data?.data;
   return <Modal title={title} variant="drawer" onClose={onClose}><div className="lp-admin-dialog-body">
     {d && <Facts rows={[[p.t("当前余额"), <strong className="lp-admin-big-number">{(d.balanceMinor / 100).toLocaleString()} {d.currency}</strong>], [p.t("主体 ID"), <Identifier value={ownerId} />]]} />}
     <State {...result} columns={5} empty={Boolean(d) && d!.entries.length === 0} />
     {d && d.entries.length > 0 && <Table columns={[p.t("时间"), p.t("类型"), p.t("变动"), p.t("变动后余额"), p.t("说明")]} label={p.t("余额流水")}>{d.entries.map(e => <tr key={e.id}>
-      <td><DateText value={e.createdAt} /></td><td>{e.type}</td>
+      <td><DateText value={e.createdAt} /></td><td>{e.description === '下级进货收入' ? p.t('下级进货收入') : e.type === 'ORDER_DEBIT' ? p.t('进货扣款') : e.type}</td>
       <td className="lp-admin-numeric" style={{ color: e.delta < 0 ? 'var(--lp-danger, #c0392b)' : undefined }}>{e.delta > 0 ? '+' : ''}{(e.delta / 100).toFixed(2)}</td>
-      <td className="lp-admin-numeric">{(e.balanceAfter / 100).toFixed(2)}</td><td>{e.description}</td>
+      <td className="lp-admin-numeric">{(e.balanceAfter / 100).toFixed(2)}</td><td>{e.description}{e.txOrderId && <ActionButton size="sm" onClick={() => setOrderId(e.txOrderId)}>{p.t('查看订单')}</ActionButton>}</td>
     </tr>)}</Table>}
+    {orderId && <SettlementOrderDrawer id={orderId} onClose={() => setOrderId(null)} />}
     <RecordPagination busy={result.loading} page={page} pageSize={20} totalPages={result.data?.pagination.totalPages ?? 0} totalItems={result.data?.pagination.totalItems ?? 0} controls="lp-admin-ledger" onPageChange={setPage} onPageSizeChange={() => {}} />
   </div></Modal>;
 }
@@ -546,93 +562,17 @@ function StockImportModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     {error && <p role="alert" className="lp-admin-error">{error}</p>}
   </div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy}><Check size={16} />{p.t("导入库存")}</ActionButton></footer></form></Modal>;
 }
-function StockClaimModal({ stock, onClose, onSuccess }: { stock: { id: string; platformId: 'Telegram' | 'WhatsApp' | 'Google'; phoneNumber: string; resourceExpiresAt: string | null }; onClose: () => void; onSuccess: () => void }) {
-  const p = useDisplayPreferences();
-  const agents = useResource('stock-claim-agents', signal => api.agentAgents({ signal }));
-  const [agentId, setAgentId] = useState('');
-  const [startsAt, setStartsAt] = useState(() => localInput(Date.now()));
-  const [expiresAt, setExpiresAt] = useState(() => localInput(Date.now() + 30 * 86400000));
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  async function submit() { setBusy(true); setError(''); try { await api.agentClaimStock({ stockId: stock.id, agentId, startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(), service: stock.platformId, idempotencyKey: globalThis.crypto.randomUUID() }); onSuccess(); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); } }
-  return <Modal title={p.t("分配号码给代理")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body"><p className="lp-admin-confirm-target">{stock.phoneNumber} · {stock.platformId}</p><label>{p.t("目标代理")}<AppCombobox aria-label={p.t("目标代理")} value={agentId} onValueChange={setAgentId} options={[{ value: '', label: agents.loading ? p.t("正在加载代理…") : p.t("请选择代理") }, ...(agents.data?.data ?? []).filter(agent => agent.status === 'ACTIVE').map(agent => ({ value: agent.id, label: agent.name }))]} /></label><label>{p.t("开始时间")}<Input type="datetime-local" required value={startsAt} onChange={event => setStartsAt(event.target.value)} /></label><label>{p.t("到期时间")}<Input type="datetime-local" required value={expiresAt} onChange={event => setExpiresAt(event.target.value)} /></label><p className="lp-admin-context">{p.t("分配号码不会扣代理余额。")}{stock.resourceExpiresAt && <>{p.t("号码本身到期：")}<DateText value={stock.resourceExpiresAt} /></>}</p>{error && <p role="alert" className="lp-admin-error">{error}</p>}</div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy} disabled={!agentId}><Check size={15} />{p.t("确认分配")}</ActionButton></footer></form></Modal>;
-}
-function BatchStockClaimModal({ stockIds, onClose, onSuccess }: { stockIds: string[]; onClose: () => void; onSuccess: () => void }) {
-  const p = useDisplayPreferences();
-  const agents = useResource('stock-claim-agents', signal => api.agentAgents({ signal }));
-  const [agentId, setAgentId] = useState('');
-  const [startsAt, setStartsAt] = useState(() => localInput(Date.now()));
-  const [expiresAt, setExpiresAt] = useState(() => localInput(Date.now() + 30 * 86400000));
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  async function submit() {
-    setBusy(true); setError('');
-    try { await api.agentClaimStockBatch({ stockIds, agentId, startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(), idempotencyKey: globalThis.crypto.randomUUID() }); onSuccess(); }
-    catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); }
-  }
-  return <Modal title={p.t("批量分配号码给代理")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body">
-    <p className="lp-admin-confirm-target">{p.t("已选择 ")}{quantityLabel(stockIds.length, p.language)}</p><p className="lp-admin-context">{p.t("选中的号码会一起分配：只要有一个号码已经不能分配，这次就全部不分配。分配号码不会扣代理余额。")}</p>
-    <label>{p.t("目标代理")}<AppCombobox aria-label={p.t("批量分配目标代理")} value={agentId} onValueChange={setAgentId} options={[{ value: '', label: agents.loading ? p.t("正在加载代理…") : p.t("请选择代理") }, ...(agents.data?.data ?? []).filter(agent => agent.status === 'ACTIVE').map(agent => ({ value: agent.id, label: agent.name }))]} /></label>
-    <label>{p.t("开始时间")}<Input type="datetime-local" required value={startsAt} onChange={event => setStartsAt(event.target.value)} /></label><label>{p.t("到期时间")}<Input type="datetime-local" required value={expiresAt} onChange={event => setExpiresAt(event.target.value)} /></label>
-    {error && <p role="alert" className="lp-admin-error">{error}</p>}
-  </div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy} disabled={!agentId}><Check size={15} />{p.t("确认批量分配")}</ActionButton></footer></form></Modal>;
-}
 function ReleaseHoldingModal({ holdingId, onClose, onSuccess }: { holdingId: string; onClose: () => void; onSuccess: () => void }) {
   const p = useDisplayPreferences();
   const [reason, setReason] = useState(p.t("号码回收到本地库存")); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   async function submit() { setBusy(true); setError(''); try { await api.agentReleaseHolding(holdingId, { reason, idempotencyKey: globalThis.crypto.randomUUID() }); onSuccess(); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); } }
-  return <Modal title={p.t("释放号码回到库存")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body"><p className="lp-admin-warning">{p.t("释放会结束代理持有记录，并将本地 / Mock 号码重新标记为可分配；不会调用真实 PC。")}</p><label>{p.t("操作原因")}<Textarea required minLength={3} maxLength={200} value={reason} onChange={event => setReason(event.target.value)} /></label>{error && <p role="alert" className="lp-admin-error">{error}</p>}</div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy}><Check size={15} />{p.t("确认释放")}</ActionButton></footer></form></Modal>;
-}
-function ResellHoldingModal({ holding, onClose, onSuccess }: { holding: { id: string; agentId: string | null; phoneNumber: string; startsAt: string; expiresAt: string | null }; onClose: () => void; onSuccess: () => void }) {
-  const p = useDisplayPreferences();
-  const agents = useResource('stock-resell-agents', signal => api.agentAgents({ signal }));
-  const [toAgentId, setToAgentId] = useState('');
-  const [startsAt, setStartsAt] = useState(() => localInput(holding.startsAt));
-  const [expiresAt, setExpiresAt] = useState(() => holding.expiresAt ? localInput(holding.expiresAt) : localInput(Date.now() + 30 * 86400000));
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  async function submit() { setBusy(true); setError(''); try { await api.agentResellHolding({ holdingId: holding.id, toAgentId, startsAt: new Date(startsAt).toISOString(), expiresAt: new Date(expiresAt).toISOString(), idempotencyKey: globalThis.crypto.randomUUID() }); onSuccess(); } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); } }
-  return <Modal title={p.t("转售号码给代理")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body"><p className="lp-admin-confirm-target">{holding.phoneNumber}</p><label>{p.t("目标代理")}<AppCombobox aria-label={p.t("转售目标代理")} value={toAgentId} onValueChange={setToAgentId} options={[{ value: '', label: agents.loading ? p.t("正在加载代理…") : p.t("请选择代理") }, ...(agents.data?.data ?? []).filter(agent => agent.status === 'ACTIVE' && agent.id !== holding.agentId).map(agent => ({ value: agent.id, label: agent.name }))]} /></label><label>{p.t("开始时间")}<Input type="datetime-local" required value={startsAt} onChange={event => setStartsAt(event.target.value)} /></label><label>{p.t("到期时间")}<Input type="datetime-local" required value={expiresAt} onChange={event => setExpiresAt(event.target.value)} /></label><p className="lp-admin-context">{p.t("转售不产生支付扣款；当前为本地 / Mock 库存流转。")}</p>{error && <p role="alert" className="lp-admin-error">{error}</p>}</div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy} disabled={!toAgentId}><Check size={15} />{p.t("确认转售")}</ActionButton></footer></form></Modal>;
-}
-function AdminPriceEditor({ rule, onClose, onSuccess }: { rule: PriceRule | null; onClose: () => void; onSuccess: () => void }) {
-  const p = useDisplayPreferences();
-  const agents = useResource('admin-price-agents', signal => api.agentAgents({ signal }));
-  const [kind, setKind] = useState<'RETAIL' | 'WHOLESALE'>(rule?.pricingKind ?? 'RETAIL');
-  const [agentId, setAgentId] = useState(rule?.pricingKind === 'WHOLESALE' ? rule.agentId ?? '' : rule?.sellerAgentId ?? '');
-  const [buyerAgentId, setBuyerAgentId] = useState(rule?.buyerAgentId ?? '');
-  const [regionId, setRegionId] = useState(rule?.regionId ?? '');
-  const [service, setService] = useState(rule?.service ?? 'Telegram');
-  const [plan, setPlan] = useState(rule?.plan ?? 'month');
-  const [currency, setCurrency] = useState(rule?.currency ?? 'USD');
-  const [amount, setAmount] = useState(rule ? (rule.unitAmountMinor / 100).toFixed(2) : '');
-  const [priority, setPriority] = useState(rule?.priority ?? 0);
-  const [active, setActive] = useState(rule?.isActive ?? true);
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  const agentOptions = (agents.data?.data ?? []).filter(agent => agent.status === 'ACTIVE');
-  const childOptions = agentOptions.filter(agent => agent.parentAgentId === agentId);
-  const unitAmountMinor = /^\d{1,12}(\.\d{1,2})?$/.test(amount) ? Math.round(Number(amount) * 100) : 0;
-  async function submit() {
-    setBusy(true); setError('');
-    try {
-      await api.agentSavePrice({ pricingKind: kind, agentId: agentId || null, buyerAgentId: kind === 'WHOLESALE' ? buyerAgentId || null : null, regionId: regionId || null, service: service.trim(), plan: plan.trim(), currency, unitAmountMinor, priority, isActive: active });
-      onSuccess();
-    } catch (cause) { setError(errorMessage(cause)); } finally { setBusy(false); }
-  }
-  const editing = Boolean(rule);
-  const valid = Boolean(agentId && service.trim() && plan.trim() && unitAmountMinor > 0 && (kind !== 'WHOLESALE' || !buyerAgentId || childOptions.some(agent => agent.id === buyerAgentId)));
-  return <Modal title={rule ? p.t("编辑代理价格") : p.t("新增代理价格")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); if (valid) void submit(); }}><div className="lp-admin-dialog-body"><p className="lp-admin-context">{p.t("这里配置代理看到的拿货价和面向客户的零售价。保存后会立即出现在代理中心；历史交易价格不会变化。")}</p><fieldset disabled={busy} className="lp-admin-form-grid">
-    <label>{p.t("价格类型")}<AppCombobox aria-label={p.t("价格类型")} value={kind} onValueChange={value => { setKind(value as typeof kind); setBuyerAgentId(''); }} disabled={editing} options={[{ value: 'RETAIL', label: p.t("客户零售价") }, { value: 'WHOLESALE', label: p.t("代理拿货价") }]} /></label>
-    <label>{p.t("归属代理")}<AppCombobox aria-label={p.t("归属代理")} value={agentId} onValueChange={value => { setAgentId(value); setBuyerAgentId(''); }} disabled={editing || agents.loading} options={[{ value: '', label: agents.loading ? p.t("正在加载代理…") : p.t("请选择代理") }, ...agentOptions.map(agent => ({ value: agent.id, label: agent.name }))]} searchPlaceholder={p.t("搜索代理")} emptyMessage={p.t("没有匹配的代理")} /></label>
-    {kind === 'WHOLESALE' && <label>{p.t("适用下级")}<AppCombobox aria-label={p.t("适用下级")} value={buyerAgentId} onValueChange={setBuyerAgentId} disabled={editing || !agentId} options={[{ value: '', label: p.t("全部直属下级") }, ...childOptions.map(agent => ({ value: agent.id, label: agent.name }))]} searchPlaceholder={p.t("搜索下级代理")} emptyMessage={p.t("没有直属下级")} /></label>}
-    <label>{p.t("国家")}<AppCombobox aria-label={p.t("价格国家")} value={regionId} onValueChange={setRegionId} disabled={editing} options={[{ value: '', label: p.t("全部国家") }, ...regions]} /></label>
-    <label>{p.t("平台")}<AppCombobox aria-label={p.t("价格平台")} value={service} onValueChange={setService} disabled={editing} options={serviceSchema.options.map(value => ({ value, label: value }))} /></label>
-    <label>{p.t("套餐标识")}<Input required maxLength={64} value={plan} disabled={editing} onChange={event => setPlan(event.target.value)} placeholder="week / month" /></label>
-    <label>{p.t("币种")}<Input required pattern="[A-Z]{3}" maxLength={3} value={currency} disabled={editing} onChange={event => setCurrency(event.target.value.toUpperCase())} /></label>
-    <label>{p.t("单价")}<Input required inputMode="decimal" pattern="[0-9]+(\\.[0-9]{1,2})?" value={amount} onChange={event => setAmount(event.target.value)} placeholder="0.00" /></label>
-    <label>{p.t("优先级")}<Input type="number" required min={0} max={100000} step={1} value={priority} onChange={event => setPriority(Number(event.target.value))} /><small>{p.t("同一平台、套餐和国家有多条规则时，数字越大越优先。")}</small></label>
-    <label>{p.t("规则状态")}<AppCombobox aria-label={p.t("规则状态")} value={active ? '1' : '0'} onValueChange={value => setActive(value === '1')} options={[{ value: '1', label: p.t("启用") }, { value: '0', label: p.t("停用") }]} /></label>
-  </fieldset>{rule && <p className="lp-admin-context">{p.t("规则的归属和适用范围不能直接编辑；需要换范围时请新增规则并停用原规则。")}</p>}{error && <p role="alert" className="lp-admin-error">{error}</p>}</div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy} disabled={!valid}>{p.t("保存价格")}</ActionButton></footer></form></Modal>;
+  return <Modal title={p.t("释放号码回到库存")} onClose={onClose} busy={busy}><form onSubmit={event => { event.preventDefault(); void submit(); }}><div className="lp-admin-dialog-body"><p className="lp-admin-warning">{p.t("释放会结束代理持有记录，并将号码重新标记为可分配。释放不退还已付货款。")}</p><label>{p.t("操作原因")}<Textarea required minLength={3} maxLength={200} value={reason} onChange={event => setReason(event.target.value)} /></label>{error && <p role="alert" className="lp-admin-error">{error}</p>}</div><footer><ActionButton onClick={onClose} disabled={busy}>{p.t("取消")}</ActionButton><ActionButton type="submit" variant="accent" busy={busy}><Check size={15} />{p.t("确认释放")}</ActionButton></footer></form></Modal>;
 }
 function InventoryPage() {
   const p = useDisplayPreferences();
   const [tab, setTab] = useState<'stock' | 'holdings' | 'balances' | 'prices' | 'transactions'>('stock');
+  const [incomePeriod, setIncomePeriod] = useState<'today' | '7d' | '30d'>('7d');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [action, setAction] = useState<'holding' | 'adjust' | 'transfer' | null>(null);
   const [stockImport, setStockImport] = useState(false);
@@ -651,31 +591,51 @@ function InventoryPage() {
   const [stockFilter, setStockFilter] = useState<{ status: '' | 'AVAILABLE' | 'ALLOCATED' | 'RELEASED'; platform: '' | 'Telegram' | 'WhatsApp' | 'Google'; region: '' | 'us' | 'gb' | 'ca' | 'sg' | 'de' | 'nl' }>({ status: 'AVAILABLE', platform: '', region: '' });
   const [stockPage, setStockPage] = useState<{ page: number; pageSize: 5 | 10 | 20 }>({ page: 1, pageSize: 20 });
   const [holdingRegion, setHoldingRegion] = useState<'' | 'us' | 'gb' | 'ca' | 'sg' | 'de' | 'nl'>('');
+  const [holdingAgent, setHoldingAgent] = useState('');
+  const [selectedHoldings, setSelectedHoldings] = useState<Map<string, NumberHolding>>(new Map());
+  const [allFilteredHoldings, setAllFilteredHoldings] = useState(false);
+  const [holdingBatch, setHoldingBatch] = useState<{ selection: HoldingBatchSelection; sourceAgentId: string } | null>(null);
   const [holdingPage, setHoldingPage] = useState<{ page: number; pageSize: 5 | 10 | 20 }>({ page: 1, pageSize: 20 });
-  const refresh = () => { setSelectedStockIds([]); setRevision(x => x + 1); };
+  const clearHoldingSelection = () => { setSelectedHoldings(new Map()); setAllFilteredHoldings(false); };
+  const refresh = () => { setSelectedStockIds([]); clearHoldingSelection(); setRevision(x => x + 1); };
   function filterStock(next: Partial<typeof stockFilter>) { setStockFilter(current => ({ ...current, ...next })); setStockPage(current => ({ ...current, page: 1 })); setSelectedStockIds([]); }
   const stockInput = { search: query, ...stockFilter, ...stockPage };
-  const holdingInput = { search: query, region: holdingRegion, ...holdingPage };
+  const holdingInput = { search: query, region: holdingRegion, agentId: holdingAgent || undefined, ...holdingPage };
   const stock = useResource(`stock:${revision}:${JSON.stringify(stockInput)}`, signal => api.agentStock(stockInput, { signal }), revision);
   const holdings = useResource(`holdings:${revision}:${JSON.stringify(holdingInput)}`, signal => api.agentHoldings(holdingInput, { signal }), revision);
   const pageAvailable = stock.data?.data.filter(item => item.status === 'AVAILABLE') ?? [];
   const regionOptions = [{ value: '', label: p.t("全部国家") }, ...regions];
   const balances = useResource(`balances:${revision}`, signal => api.agentBalances({ signal }), revision);
   const prices = useResource(`prices:${revision}`, signal => api.agentPrices({ signal }), revision);
+  const income = useResource(`platform-income:${revision}:${incomePeriod}`, signal => api.agentPlatformSettlement(incomePeriod, { signal }), revision);
   const transactions = useResource(`tx:${revision}:${page}`, signal => api.agentTransactions(page, 20, { signal }), revision);
   const agents = useResource(`inventory-agents:${revision}`, signal => api.agentAgents({ signal }), revision);
   const customers = useResource(`inventory-customers:${revision}`, signal => api.agentCustomers({ signal }), revision);
   const ownerName = (agentId: string | null | undefined, customerId: string | null | undefined) =>
     (agentId ? agents.data?.data.find(item => item.id === agentId)?.name : customers.data?.data.find(item => item.id === customerId)?.name) ?? null;
-  const tabs = [['stock', p.t("号码库存"), p.t("专供代理的号码池（和「号码管理」里卖给普通用户的号码是两套）。在这里把号码分给代理")], ['holdings', p.t("代理持有"), p.t("代理手里现有的号码")], ['balances', p.t("余额"), p.t("代理和客户的账户余额")], ['prices', p.t("价格"), p.t("代理拿货价和零售价")], ['transactions', p.t("交易流水"), p.t("所有余额变动")]] as const;
+  const pageTransferable = holdings.data?.data.filter(holding => holding.transferable === true) ?? [];
+  const selectedOwners = new Set([...selectedHoldings.values()].map(holding => holding.agentId).filter((id): id is string => Boolean(id)));
+  const batchSourceAgent = allFilteredHoldings ? holdingAgent : selectedOwners.size === 1 ? [...selectedOwners][0] : '';
+  const holdingSelectionCount = allFilteredHoldings ? p.t('已选择当前筛选结果中全部可转交号码（跨页）') : `${p.t('已勾选')} ${selectedHoldings.size.toLocaleString()} ${p.t('个号码（可跨页）')}`;
+  function selectHoldings(rows: NumberHolding[], checked: boolean) {
+    setSelectedHoldings(previous => {
+      const next = new Map(previous);
+      for (const holding of rows) {
+        if (checked && next.size < 10000) next.set(holding.id, holding);
+        else if (!checked) next.delete(holding.id);
+      }
+      return next;
+    });
+  }
+  const tabs = [['stock', p.t("号码库存"), p.t("来自总库存的号码 × 平台资源；在这里把可售资源分给代理")], ['holdings', p.t("代理持有"), p.t("代理手里现有的号码")], ['balances', p.t("余额"), p.t("代理和客户的账户余额")], ['prices', p.t("价格"), p.t("代理拿货价和零售价")], ['transactions', p.t("交易流水"), p.t("所有余额变动")]] as const;
   return <>
     <div className="lp-admin-tabs" role="tablist" aria-label={p.t("代理库存视图")}>
       {tabs.map(([key, label]) => <button type="button" key={key} role="tab" aria-selected={tab === key} className="lp-admin-tab" onClick={() => setTab(key)}>{label}</button>)}
       <AdminTooltip label={p.t("刷新数据")}><span className="lp-admin-tabs-refresh"><ActionButton variant="ghost" size="icon" className="lp-admin-icon-button" aria-label={p.t("刷新数据")} onClick={refresh}><RefreshCw size={16} /></ActionButton></span></AdminTooltip>
     </div>
     <div className="lp-admin-tab-toolbar"><p className="lp-admin-context">{tabs.find(([key]) => key === tab)?.[2]}{tab === 'stock' && p.t("，可跨页勾选后一次分配。")}</p><div className="lp-admin-actions">
-      {tab === 'stock' && <ActionButton onClick={() => setStockImport(true)}><Plus size={16} />{p.t("导入号码")}</ActionButton>}
-      {tab === 'holdings' && <ActionButton onClick={() => setAction('holding')}><Plus size={16} />{p.t("手动录入代理号码")}</ActionButton>}
+      {tab === 'stock' && canUseLocalInventoryImport && <ActionButton onClick={() => setStockImport(true)}><Plus size={16} />{p.t("导入号码（开发）")}</ActionButton>}
+      {tab === 'holdings' && canUseLocalInventoryImport && <ActionButton onClick={() => setAction('holding')}><Plus size={16} />{p.t("手动录入代理号码（开发）")}</ActionButton>}
       {tab === 'prices' && <ActionButton variant="accent" onClick={() => setPriceEdit('new')}><Plus size={16} />{p.t("新增代理价格")}</ActionButton>}
     </div></div>
     {tab === 'stock' && <div className="lp-admin-status-chips" role="group" aria-label={p.t("按状态查看")}>
@@ -685,17 +645,25 @@ function InventoryPage() {
         return <button type="button" key={label} aria-pressed={stockFilter.status === value} onClick={() => filterStock({ status: value })}>{label}{count !== null && <span>{count.toLocaleString()}</span>}</button>;
       })}
     </div>}
-    {(tab === 'stock' || tab === 'holdings') && <form className="lp-admin-toolbar lp-admin-tab-search" onSubmit={e => { e.preventDefault(); setStockPage(current => ({ ...current, page: 1 })); setHoldingPage(current => ({ ...current, page: 1 })); setSelectedStockIds([]); setQuery(search); }}>
+    {(tab === 'stock' || tab === 'holdings') && <form className="lp-admin-toolbar lp-admin-tab-search" onSubmit={e => { e.preventDefault(); setStockPage(current => ({ ...current, page: 1 })); setHoldingPage(current => ({ ...current, page: 1 })); setSelectedStockIds([]); clearHoldingSelection(); setQuery(search); }}>
       <AppSearchInput className="lp-admin-search" aria-label={p.t("搜索号码")} placeholder={p.t("搜索号码")} maxLength={64} value={search} onValueChange={setSearch}><ActionButton size="sm" type="submit">{p.t("搜索")}</ActionButton></AppSearchInput>
       {tab === 'stock' && <SelectField aria-label={p.t("平台筛选")} value={stockFilter.platform} onValueChange={value => filterStock({ platform: value as typeof stockFilter.platform })} options={[{ value: '', label: p.t("全部平台") }, ...serviceSchema.options.map(v => ({ value: v, label: v }))]} />}
-      <AppCombobox aria-label={p.t("国家筛选")} value={tab === 'stock' ? stockFilter.region : holdingRegion} onValueChange={value => { if (tab === 'stock') filterStock({ region: value as typeof stockFilter.region }); else { setHoldingRegion(value as typeof holdingRegion); setHoldingPage(current => ({ ...current, page: 1 })); } }} options={regionOptions} />
+      {tab === 'holdings' && <AppCombobox aria-label={p.t('持有代理筛选')} value={holdingAgent} onValueChange={value => { setHoldingAgent(value); setHoldingPage(current => ({ ...current, page: 1 })); clearHoldingSelection(); }} options={[{ value: '', label: p.t('全部持有人') }, ...(agents.data?.data ?? []).map(agent => ({ value: agent.id, label: agent.name }))]} searchPlaceholder={p.t('搜索代理')} emptyMessage={p.t('没有匹配的代理')} />}
+      <AppCombobox aria-label={p.t("国家筛选")} value={tab === 'stock' ? stockFilter.region : holdingRegion} onValueChange={value => { if (tab === 'stock') filterStock({ region: value as typeof stockFilter.region }); else { setHoldingRegion(value as typeof holdingRegion); setHoldingPage(current => ({ ...current, page: 1 })); clearHoldingSelection(); } }} options={regionOptions} />
     </form>}
     {tab === 'stock' && selectedStockIds.length > 0 && <div className="lp-admin-selection-bar" role="status"><span>{p.t("已选择 ")}<strong>{quantityLabel(selectedStockIds.length, p.language)}</strong>{p.t("（翻页后仍保留）")}</span><ActionButton size="sm" variant="ghost" onClick={() => setSelectedStockIds([])}>{p.t("清空选择")}</ActionButton><ActionButton size="sm" variant="accent" onClick={() => setBatchClaimStock(true)}><Users size={15} />{p.t("分配给代理")}</ActionButton></div>}
     {tab === 'stock' && <><State {...stock} columns={7} empty={stock.data?.data.length === 0} />{stock.data && <Table columns={[<Checkbox aria-label={p.t("选择本页全部可分配号码")} disabled={!pageAvailable.length} checked={pageAvailable.length > 0 && pageAvailable.every(item => selectedStockIds.includes(item.id))} onCheckedChange={checked => setSelectedStockIds(current => checked === true ? [...new Set([...current, ...pageAvailable.map(item => item.id)])] : current.filter(id => !pageAvailable.some(item => item.id === id)))} />, p.t("号码"), p.t("平台"), p.t("国家"), p.t("状态"), p.t("号码到期"), '']} label={p.t("待分配号码库存")}>{stock.data.data.map(item => <tr key={item.id}><td><Checkbox aria-label={p.t("选择 {value1}", { value1: item.phoneNumber })} checked={selectedStockIds.includes(item.id)} disabled={item.status !== 'AVAILABLE'} onCheckedChange={checked => setSelectedStockIds(current => checked === true ? [...new Set([...current, item.id])] : current.filter(id => id !== item.id))} /></td><td><strong className="lp-admin-mono">{item.phoneNumber}</strong></td><td>{item.platformId}</td><td>{regionName(item.regionId)}</td><td><div className="lp-admin-badges"><Badge value={item.status} />{(item.resourceStatus === 'OFFLINE' || item.resourceStatus === 'ERROR') && <Badge value={item.resourceStatus} />}</div></td><td><DateText value={item.resourceExpiresAt} /></td><td>{item.status === 'AVAILABLE' && <ActionButton size="sm" onClick={() => setClaimStock(item)}>{p.t("分配给代理")}</ActionButton>}</td></tr>)}</Table>}
       <RecordPagination busy={stock.loading} page={stockPage.page} pageSize={stockPage.pageSize} totalPages={stock.data?.pagination.totalPages ?? 0} totalItems={stock.data?.pagination.totalItems ?? 0} controls="lp-admin-stock" onPageChange={next => setStockPage(current => ({ ...current, page: next }))} onPageSizeChange={size => setStockPage({ page: 1, pageSize: size })} /></>}
-    {tab === 'holdings' && <><State {...holdings} columns={7} empty={holdings.data?.data.length === 0} />
-      {holdings.data && <Table columns={[p.t("号码"), p.t("持有人"), p.t("国家"), p.t("平台"), p.t("状态"), p.t("有效期至"), '']} label={p.t("号码库存")}>{holdings.data.data.map(h => <tr key={h.id}>
-        <td><strong className="lp-admin-mono">{h.phoneNumber}</strong></td><td>{ownerName(h.agentId, h.customerId) ?? '—'}<small>{h.ownerType === 'AGENT' ? p.t("代理") : p.t("客户")}</small></td><td>{regionName(h.regionId)}</td><td>{h.service ?? '—'}</td>
+    {tab === 'holdings' && <>
+      <div className="lp-admin-selection-bar" role="status"><span>{holdingSelectionCount}</span>
+        <ActionButton size="sm" disabled={!holdingAgent || !holdings.data?.pagination.totalItems || holdings.loading || Boolean(holdings.error)} onClick={() => { setAllFilteredHoldings(true); setSelectedHoldings(new Map()); }}>{p.t('跨页全选筛选结果')}</ActionButton>
+        <ActionButton size="sm" variant="ghost" disabled={!allFilteredHoldings && !selectedHoldings.size} onClick={clearHoldingSelection}>{p.t('清空选择')}</ActionButton>
+        <ActionButton size="sm" variant="accent" disabled={!batchSourceAgent || (!allFilteredHoldings && !selectedHoldings.size) || holdings.loading || Boolean(holdings.error) || agents.loading || !agents.data} onClick={() => setHoldingBatch({ sourceAgentId: batchSourceAgent, selection: allFilteredHoldings ? { mode: 'FILTER', search: query, status: 'ACTIVE', region: holdingRegion, service: '' } : { mode: 'IDS', holdingIds: [...selectedHoldings.keys()].sort() } })}>{p.t('批量转给其他代理')}</ActionButton>
+      </div>
+      <p className="lp-admin-context">{selectedOwners.size > 1 ? p.t('批量转交请选择同一持有代理的号码，可先按持有代理筛选。') : p.t('每批最多 10,000 个；选择持有代理后可跨页全选。调整筛选会清空选择。')}</p>
+      <State {...holdings} columns={8} empty={holdings.data?.data.length === 0} />
+      {holdings.data && <Table columns={[<Checkbox aria-label={p.t('选择本页全部可转交号码')} disabled={!pageTransferable.length || allFilteredHoldings || holdings.loading} checked={allFilteredHoldings || (pageTransferable.length > 0 && pageTransferable.every(holding => selectedHoldings.has(holding.id)))} onCheckedChange={checked => selectHoldings(pageTransferable, checked === true)} />, p.t("号码"), p.t("持有人"), p.t("国家"), p.t("平台"), p.t("状态"), p.t("有效期至"), '']} label={p.t("号码库存")}>{holdings.data.data.map(h => <tr key={h.id}>
+        <td><Checkbox aria-label={p.t('选择 {value1}', { value1: h.phoneNumber })} checked={h.transferable === true && (allFilteredHoldings || selectedHoldings.has(h.id))} disabled={h.transferable !== true || allFilteredHoldings || holdings.loading || (selectedHoldings.size >= 10000 && !selectedHoldings.has(h.id))} onCheckedChange={checked => selectHoldings([h], checked === true)} /></td><td><strong className="lp-admin-mono">{h.phoneNumber}</strong></td><td>{ownerName(h.agentId, h.customerId) ?? '—'}<small>{h.ownerType === 'AGENT' ? p.t("代理") : p.t("客户")}</small></td><td>{regionName(h.regionId)}</td><td>{h.service ?? '—'}</td>
         <td><Badge value={h.status} /></td><td>{h.expiresAt ? <DateText value={h.expiresAt} /> : p.t("长期")}</td><td>{h.status === 'ACTIVE' && <div className="lp-admin-row-actions"><ActionButton size="sm" onClick={() => setResellHolding(h)}>{p.t("转给其他代理")}</ActionButton><RowMenu label={p.t("更多操作")} items={[{ label: p.t("释放回库存"), danger: true, onSelect: () => setReleaseHolding(h.id) }]} /></div>}</td>
       </tr>)}</Table>}
       <RecordPagination busy={holdings.loading} page={holdingPage.page} pageSize={holdingPage.pageSize} totalPages={holdings.data?.pagination.totalPages ?? 0} totalItems={holdings.data?.pagination.totalItems ?? 0} controls="lp-admin-holdings" onPageChange={next => setHoldingPage(current => ({ ...current, page: next }))} onPageSizeChange={size => setHoldingPage({ page: 1, pageSize: size })} /></>}
@@ -705,24 +673,30 @@ function InventoryPage() {
         <td className="lp-admin-numeric"><strong>{(b.balanceMinor / 100).toLocaleString()}</strong> {b.currency}</td><td><div className="lp-admin-row-actions"><ActionButton size="sm" onClick={() => setAdjustTarget({ ownerType: b.ownerType, ownerId: (b.agentId ?? b.customerId)! })}>{p.t("充值 / 扣减")}</ActionButton>{b.ownerType === 'AGENT' && b.agentId && <IconAction label={p.t("查看余额流水")} onClick={() => setLedgerAgent(b.agentId!)}><Eye size={16} /></IconAction>}</div></td>
       </tr>)}</Table>}</>}
     {tab === 'prices' && <><State {...prices} columns={8} empty={prices.data?.data.length === 0} />
-      {prices.data && <Table columns={[p.t("定价类型"), p.t("归属代理"), p.t("适用下级"), p.t("国家"), p.t("平台"), p.t("套餐"), p.t("单价"), p.t("状态"), '']} label={p.t("价格")}>{prices.data.data.map(r => <tr key={r.id}>
-        <td>{r.pricingKind === 'WHOLESALE' ? p.t("批发（代理拿货）") : p.t("零售")}</td><td>{ownerName(r.agentId ?? r.sellerAgentId, null) ?? p.t("平台默认")}</td><td>{r.buyerAgentId ? ownerName(r.buyerAgentId, null) ?? <ShortId value={r.buyerAgentId} /> : p.t("全部下级")}</td><td>{r.regionId ? regionName(r.regionId) : p.t("全部")}</td><td>{r.service}</td><td>{planLabel(r.plan, p.t)}</td>
+      {prices.data && <Table columns={[p.t("适用一级代理"), p.t("国家"), p.t("平台"), p.t("30 天价格"), p.t("状态"), '']} label={p.t("平台批发价")}>{prices.data.data.filter(r => r.sellerType === 'PLATFORM' && r.pricingKind === 'WHOLESALE').map(r => <tr key={r.id}>
+        <td>{r.buyerAgentId ? ownerName(r.buyerAgentId, null) ?? <ShortId value={r.buyerAgentId} /> : p.t("全部一级代理")}</td><td>{r.regionId ? regionName(r.regionId) : p.t("全部国家")}</td><td>{r.service}</td>
         <td className="lp-admin-numeric">{(r.unitAmountMinor / 100).toFixed(2)} {r.currency}</td><td>{r.isActive ? p.t("启用") : p.t("停用")}</td><td><ActionButton size="sm" onClick={() => setPriceEdit(r)}>{p.t("编辑")}</ActionButton></td>
       </tr>)}</Table>}</> }
-    {tab === 'transactions' && <><State {...transactions} columns={6} empty={transactions.data?.data.length === 0} />
+    {tab === 'transactions' && <>
+      <div className="lp-admin-toolbar"><label>{p.t('平台收入周期')}<select value={incomePeriod} onChange={e => setIncomePeriod(e.target.value as typeof incomePeriod)}><option value="today">{p.t('今日')}</option><option value="7d">{p.t('近 7 天')}</option><option value="30d">{p.t('近 30 天')}</option></select></label>
+        {income.data && <strong>{p.t('平台批发收入')}：{(income.data.data.amountMinor / 100).toFixed(2)} USD · {income.data.data.quantity} {p.t('个号码')}</strong>}
+      </div><State {...income} />
+      <State {...transactions} columns={6} empty={transactions.data?.data.length === 0} />
       {transactions.data && <Table columns={[p.t("单号"), p.t("类型"), p.t("买方"), p.t("金额"), p.t("状态"), p.t("创建时间")]} label={p.t("交易流水")}>{transactions.data.data.map(t => <tr key={t.id}>
-        <td><ShortId value={t.orderNumber} /></td><td>{p.t(txKindLabel(t.orderNumber, t.kind))}</td>
+        <td><ActionButton size="sm" onClick={() => setTransactionId(t.id)}><ShortId value={t.orderNumber} /></ActionButton></td><td>{p.t(txKindLabel(t.orderNumber, t.kind))}</td>
         <td>{ownerName(t.buyerAgentId, t.buyerCustomerId) ?? '—'}<small>{t.buyerType === 'AGENT' ? p.t("代理") : p.t("客户")}</small></td><td className="lp-admin-numeric">{(t.amountMinor / 100).toFixed(2)} {t.currency}</td>
         <td><Badge value={t.status} /></td><td><DateText value={t.createdAt} /></td>
       </tr>)}</Table>}
       <RecordPagination busy={transactions.loading} page={page} pageSize={20} totalPages={transactions.data?.pagination.totalPages ?? 0} totalItems={transactions.data?.pagination.totalItems ?? 0} controls="lp-admin-tx" onPageChange={setPage} onPageSizeChange={() => {}} /></>}
+    {transactionId && <SettlementOrderDrawer id={transactionId} onClose={() => setTransactionId(null)} />}
     {ledgerAgent && <LedgerDrawer ownerType="AGENT" ownerId={ledgerAgent} title={p.t("{value1} · 余额流水", { value1: ownerName(ledgerAgent, null) ?? '代理' })} onClose={() => setLedgerAgent(null)} />}
     {action && <InventoryAction kind={action} onClose={() => setAction(null)} onSuccess={() => { setAction(null); refresh(); toast.success(p.t("操作成功，已刷新代理库存。")); }} />}
     {adjustTarget && <InventoryAction kind="adjust" initialOwner={adjustTarget} onClose={() => setAdjustTarget(null)} onSuccess={() => { setAdjustTarget(null); refresh(); toast.success(p.t("余额已更新。")); }} />}
-    {stockImport && <StockImportModal onClose={() => setStockImport(false)} onSuccess={() => { setStockImport(false); refresh(); toast.success(p.t("号码库存已导入。")); }} />}
+    {stockImport && canUseLocalInventoryImport && <StockImportModal onClose={() => setStockImport(false)} onSuccess={() => { setStockImport(false); refresh(); toast.success(p.t("号码库存已导入。")); }} />}
     {batchClaimStock && <BatchStockClaimModal stockIds={selectedStockIds} onClose={() => setBatchClaimStock(false)} onSuccess={() => { setBatchClaimStock(false); refresh(); toast.success(p.t("已批量分配 {value1} 个号码。", { value1: selectedStockIds.length })); }} />}
     {claimStock && <StockClaimModal stock={claimStock} onClose={() => setClaimStock(null)} onSuccess={() => { setClaimStock(null); refresh(); toast.success(p.t("号码已分配给代理。")); }} />}
     {releaseHolding && <ReleaseHoldingModal holdingId={releaseHolding} onClose={() => setReleaseHolding(null)} onSuccess={() => { setReleaseHolding(null); refresh(); toast.success(p.t("号码已释放回库存。")); }} />}
+    {holdingBatch && <AdminHoldingBatchModal selection={holdingBatch.selection} sourceAgentId={holdingBatch.sourceAgentId} agents={agents.data?.data ?? []} onClose={() => setHoldingBatch(null)} onComplete={result => { setHoldingBatch(null); refresh(); toast.success(p.t('已批量转交 {value1} 个号码。', { value1: result.count })); }} />}
     {resellHolding && <ResellHoldingModal holding={resellHolding} onClose={() => setResellHolding(null)} onSuccess={() => { setResellHolding(null); refresh(); toast.success(p.t("号码已转售给代理。")); }} />}
     {priceEdit && <AdminPriceEditor rule={priceEdit === 'new' ? null : priceEdit} onClose={() => setPriceEdit(null)} onSuccess={() => { setPriceEdit(null); refresh(); toast.success(p.t("代理价格已保存。")); }} />}
   </>;
@@ -782,21 +756,21 @@ function Dashboard({ revision, detail }: { revision: number; detail: (value: Det
   const audit = useList('audit', auditSchema, { page: auditPage, pageSize: auditPageSize }, revision);
   if (!result.data) return result.loading ? <><div className="lp-admin-metrics" aria-hidden="true">{[0, 1, 2, 3].map(key => <Card className="lp-admin-metric-skeleton" key={key}><Skeleton /><Skeleton /></Card>)}</div><Card className="lp-admin-section"><State {...result} columns={7} /></Card></> : <State {...result} />;
   const s = result.data.data;
-  const metrics: { label: string; value: number; page: AdminPage; status?: string; hint: string; icon: typeof Users }[] = [
-    { label: p.t("今日订单"), value: s.todayOrders, page: 'orders', status: 'today', hint: p.t("今天用户下的单"), icon: WalletCards },
+  const metrics: { label: string; value: number; page: AdminPage; status?: string; view?: string; hint: string; icon: typeof Users }[] = [
+    { label: p.t("今日订单"), value: s.todayOrders, page: 'orders', view: 'today', hint: p.t("今天用户下的单"), icon: WalletCards },
     { label: p.t("使用中的号码"), value: s.activeNumbers, page: 'numbers', status: 'ACTIVE', hint: p.t("已卖出且在服务期内"), icon: Smartphone },
-    { label: p.t("可售号码"), value: s.saleNumbers, page: 'numbers', status: 'AVAILABLE', hint: p.t("还能卖给用户的库存"), icon: PackageCheck },
+    { label: p.t("可售号码"), value: s.saleNumbers, page: 'numbers', status: 'AVAILABLE', hint: p.t("仅统计前台开放的地区"), icon: PackageCheck },
     { label: p.t("用户总数"), value: s.users, page: 'users', hint: p.t("所有注册账号"), icon: Users },
   ];
   const todos = [
-    { count: s.exceptionOrders, label: p.t("笔订单需要核对"), empty: p.t("订单都正常"), href: adminHref('orders', { status: 'EXCEPTION' }), icon: AlertCircle },
+    { count: s.exceptionOrders, label: p.t("笔订单需要核对"), empty: p.t("订单都正常"), href: adminHref('orders', { view: 'attention' }), icon: AlertCircle },
     { count: s.expiringNumbers, label: p.t("个号码 3 天内到期"), empty: p.t("近 3 天没有到期的号码"), href: adminHref('numbers', { status: 'expiring' }), icon: Clock3 },
   ];
   const pending = todos.filter(item => item.count > 0).length;
   return <><State {...result} />
     <section className="lp-admin-todo" data-attention={pending > 0} aria-label={p.t("待处理事项")}><div className="lp-admin-todo-title">{pending ? <AlertCircle size={20} /> : <Check size={20} />}<div><h2>{pending ? p.t("有 {value1} 件事需要你看一下", { value1: pending }) : p.t("一切正常，暂时没有要处理的事")}</h2><p>{p.t("点击下面的条目可以直接跳到对应列表。")}</p></div></div>
       <div className="lp-admin-todo-items">{todos.map(item => { const Icon = item.icon; return <a key={item.label} className="lp-admin-todo-item" data-attention={item.count > 0} href={item.href}><Icon size={18} aria-hidden="true" /><span>{item.count > 0 ? <><strong>{item.count}</strong> {item.label}</> : item.empty}</span><ArrowUpRight size={15} aria-hidden="true" /></a>; })}</div></section>
-    <div className="lp-admin-metrics">{metrics.map(m => { const Icon = m.icon; return <Card className="lp-admin-metric" key={m.label}><a href={adminHref(m.page, m.status ? { status: m.status } : {})}><span>{m.label}</span><Icon size={18} className="lp-admin-metric-icon" aria-hidden="true" /><strong>{m.value.toLocaleString()}</strong><small>{m.hint}</small></a></Card>; })}</div>
+    <div className="lp-admin-metrics">{metrics.map(m => { const Icon = m.icon; return <Card className="lp-admin-metric" key={m.label}><a href={adminHref(m.page, { ...(m.status ? { status: m.status } : {}), ...(m.view ? { view: m.view } : {}) })}><span>{m.label}</span><Icon size={18} className="lp-admin-metric-icon" aria-hidden="true" /><strong>{m.value.toLocaleString()}</strong><small>{m.hint}</small></a></Card>; })}</div>
     <nav className="lp-admin-quick" aria-label={p.t("常用操作")}><span>{p.t("常用操作")}</span>
       <a href={adminHref('numbers', { status: 'AVAILABLE' })}><Smartphone size={16} />{p.t("手动给用户分配号码")}</a>
       <a href={adminHref('products')}><Pencil size={16} />{p.t("修改商品价格")}</a>
@@ -814,10 +788,14 @@ function AdminMain({ user, address, sessionError, retrySession }: { user: User; 
   const path = address.split('?')[0];
   const page: AdminPage = path === '/admin' ? 'dashboard' : path.slice('/admin/'.length) as AdminPage;
   const params = new URLSearchParams(address.split('?')[1] ?? '');
+  const legacyOrderStatus = page === 'orders' ? params.get('status') : null;
+  const legacyOrderView = legacyOrderStatus === 'today' ? 'today' : ['EXCEPTION', 'UNVERIFIED'].includes(legacyOrderStatus ?? '') ? 'attention' : undefined;
+  if (legacyOrderView) { params.delete('status'); if (!params.get('view')) params.set('view', legacyOrderView); }
+  useEffect(() => { if (legacyOrderView) navigate(`${path}?${params}`, true); }, [address]);
   const parsed = Number(params.get('page'));
   const provider = params.get('provider');
   const pageNumber = Number.isInteger(parsed) && parsed > 0 && parsed <= 100000 ? parsed : 1;
-  const input: Partial<AdminQuery> = { page: pageNumber, pageSize: [5, 10, 20].includes(Number(params.get('pageSize'))) ? Number(params.get('pageSize')) : 20, search: params.get('search') ?? '', status: params.get('status') ?? '', ...(regions.some(r => r.value === params.get('region')) ? { region: params.get('region') as AdminQuery['region'] } : {}), ...(params.get('userId') && z.string().uuid().safeParse(params.get('userId')).success ? { userId: params.get('userId')! } : {}), ...(provider === 'pingcode' || provider === 'pingcode-mock' ? { provider } : {}) };
+  const input: Partial<AdminQuery> = { page: pageNumber, pageSize: [5, 10, 20].includes(Number(params.get('pageSize'))) ? Number(params.get('pageSize')) : 20, search: params.get('search') ?? '', status: params.get('status') ?? '', ...(page === 'orders' && (params.get('view') === 'today' || params.get('view') === 'attention') ? { view: params.get('view') as AdminQuery['view'] } : {}), ...(regions.some(r => r.value === params.get('region')) ? { region: params.get('region') as AdminQuery['region'] } : {}), ...(params.get('userId') && z.string().uuid().safeParse(params.get('userId')).success ? { userId: params.get('userId')! } : {}), ...(provider === 'pingcode' || provider === 'pingcode-mock' ? { provider } : {}) };
   const [search, setSearch] = useState(input.search ?? '');
   const [revision, setRevision] = useState(0);
   const [detail, setDetail] = useState<DetailTarget | null>(null);
@@ -838,7 +816,7 @@ function AdminMain({ user, address, sessionError, retrySession }: { user: User; 
     <AdminSidebar page={page} />
     <div className="lp-admin-main"><header className="lp-admin-header"><div className="lp-admin-header-leading"><AdminTooltip label={p.t("展开 / 收起导航")} side="bottom"><SidebarTrigger className="lp-admin-button lp-admin-sidebar-trigger" aria-label={p.t("展开 / 收起导航")} /></AdminTooltip><nav className="lp-admin-breadcrumb" aria-label={p.t("面包屑")}><span>{p.t("平台管理")}</span><span aria-hidden="true">/</span><span aria-current="page">{p.t(adminTitles[page])}</span></nav></div><div className="lp-admin-header-actions"><AdminTooltip label={p.t("刷新数据")}><span><ActionButton variant="ghost" aria-label={p.t("刷新数据")} aria-busy={pending > 0} disabled={pending > 0} onClick={refresh}><RefreshCw size={16} className={pending > 0 ? 'lp-admin-spin' : ''} /><span className="lp-admin-refresh-label">{pending > 0 ? p.t("正在刷新…") : p.t("刷新数据")}</span></ActionButton></span></AdminTooltip><AdminAccountMenu user={user} logout={() => void logout()} busy={loggingOut} /></div></header>
     <main className="lp-admin-content" aria-busy={pending > 0}>{sessionError && <div className="lp-admin-refresh-error" role="alert"><AlertCircle size={16} /><p>{p.t("权限复核失败：")}{sessionError}</p><ActionButton onClick={retrySession}>{p.t("重试")}</ActionButton></div>}<div key={page} className="lp-admin-page"><div className="lp-admin-page-heading"><div><h1>{p.t(adminTitles[page])}</h1><p className="lp-admin-page-description">{p.t(adminDescriptions[page])}</p></div><div className="lp-admin-actions">{page === 'products' && <><ActionButton onClick={() => setSyncingProducts(true)}><RefreshCw size={16} />{p.t("从上游同步")}</ActionButton><ActionButton variant="accent" onClick={() => setProduct(null)}><Plus size={16} />{p.t("创建商品")}</ActionButton></>}</div></div>
-      {page !== 'dashboard' && !['agents', 'inventory', 'api-docs', 'webhooks'].includes(page) && <form className="lp-admin-toolbar" onSubmit={e => { e.preventDefault(); update('search', search); }}><AppSearchInput className="lp-admin-search" aria-label={p.t("搜索管理记录")} placeholder={page === 'users' ? p.t("搜索用户名、邮箱或用户 ID") : page === 'numbers' ? p.t("搜索号码、平台或用户") : page === 'products' ? p.t("搜索商品名称或平台") : page === 'projects' ? p.t("搜索平台名称或项目 ID") : page === 'receipts' ? p.t("搜索短信 ID、号码、平台或用户") : p.t("搜索订单或用户")} maxLength={200} value={search} onValueChange={setSearch}><ActionButton size="sm" type="submit">{p.t("搜索")}</ActionButton></AppSearchInput><SelectField aria-label={p.t("状态筛选")} value={input.status ?? ''} onValueChange={v => update('status', v)} options={[{ value: '', label: p.t("全部状态") }, ...translatedFilters(page, p.t)]} />{['projects', 'receipts'].includes(page) && <SelectField aria-label={p.t("来源筛选")} value={input.provider ?? ''} onValueChange={v => update('provider', v)} options={[{ value: '', label: p.t("全部来源") }, { value: 'pingcode', label: p.t("上游 PC") }, { value: 'pingcode-mock', label: p.t("演示数据") }]} />}{['numbers', 'products'].includes(page) && <AppCombobox aria-label={p.t("国家筛选")} value={input.region ?? ''} onValueChange={v => update('region', v)} options={[{ value: '', label: p.t("全部国家") }, ...regions]} />}{input.userId && <ActionButton size="sm" onClick={() => update('userId', '')}><X size={14} />{p.t("只看某个用户：清除")}</ActionButton>}</form>}
+      {page !== 'dashboard' && !['agents', 'inventory', 'api-docs', 'webhooks'].includes(page) && <form className="lp-admin-toolbar" onSubmit={e => { e.preventDefault(); update('search', search); }}><AppSearchInput className="lp-admin-search" aria-label={p.t("搜索管理记录")} placeholder={page === 'users' ? p.t("搜索用户名、邮箱或用户 ID") : page === 'numbers' ? p.t("搜索号码、平台或用户") : page === 'products' ? p.t("搜索商品名称或平台") : page === 'projects' ? p.t("搜索平台名称或项目 ID") : page === 'receipts' ? p.t("搜索短信 ID、号码、平台或用户") : p.t("搜索订单或用户")} maxLength={200} value={search} onValueChange={setSearch}><ActionButton size="sm" type="submit">{p.t("搜索")}</ActionButton></AppSearchInput><SelectField aria-label={p.t("状态筛选")} value={input.status ?? ''} onValueChange={v => update('status', v)} options={[{ value: '', label: p.t("全部状态") }, ...translatedFilters(page, p.t)]} />{page === 'orders' && <OrderQuickFilters input={input} revision={revision} update={update} />}{['projects', 'receipts'].includes(page) && <SelectField aria-label={p.t("来源筛选")} value={input.provider ?? ''} onValueChange={v => update('provider', v)} options={[{ value: '', label: p.t("全部来源") }, { value: 'pingcode', label: p.t("上游 PC") }, { value: 'pingcode-mock', label: p.t("演示数据") }]} />}{['numbers', 'products'].includes(page) && <AppCombobox aria-label={p.t("国家筛选")} value={input.region ?? ''} onValueChange={v => update('region', v)} options={[{ value: '', label: p.t("全部国家") }, ...regions]} />}{input.userId && <ActionButton size="sm" onClick={() => update('userId', '')}><X size={14} />{p.t("只看某个用户：清除")}</ActionButton>}</form>}
       <Card className={['dashboard', 'api-docs', 'webhooks'].includes(page) ? 'lp-admin-records-dashboard' : 'lp-admin-records-card'} id="lp-admin-records">{page === 'api-docs' ? <ApiDocumentation /> : page === 'webhooks' ? <WebhookPage {...listProps} /> : page === 'dashboard' ? <Dashboard revision={revision} detail={setDetail} /> : page === 'users' ? <UsersList {...listProps} /> : page === 'numbers' ? <NumbersList {...listProps} /> : page === 'products' ? <ProductsList {...listProps} edit={setProduct} /> : page === 'projects' ? <ProjectsList {...listProps} /> : page === 'receipts' ? <ReceiptsList {...listProps} /> : page === 'recharges' ? <RechargesList {...listProps} /> : page === 'agents' ? <AgentsList revision={revision} /> : page === 'inventory' ? <InventoryPage /> : <OrdersList {...listProps} />}</Card>
     </div></main></div>{detail && <Detail target={detail} onClose={() => setDetail(null)} />}{action && <ConfirmAction target={action} onClose={() => setAction(null)} onSuccess={success} />}{product !== undefined && <ProductEditor product={product} onClose={() => setProduct(undefined)} onSuccess={success} />}{syncingProducts && <ProductSyncModal onClose={() => setSyncingProducts(false)} onSuccess={() => { setSyncingProducts(false); setRevision(x => x + 1); }} />}
     <Toaster theme={p.theme === 'dark' ? 'dark' : 'light'} closeButton position="bottom-right" className="lp-admin-toaster" toastOptions={{ className: 'lp-admin-toast' }} />

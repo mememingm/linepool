@@ -9,6 +9,7 @@ import type { AgentDashboardData, MetricPeriod } from './types';
 import { agentQueryKey } from '../access';
 import { queryClient, workspaceApi as api } from '../../api/query-client';
 import { agentError } from '../subagent-shared';
+import SettlementMetrics from '../SettlementMetrics';
 
 function useAgentDashboard(agentId: string, period: MetricPeriod, revision: number): { data: AgentDashboardData | undefined; loading: boolean; error: string; retry: () => void } {
   const query = useQuery({
@@ -31,6 +32,7 @@ export default function AgentDashboard({ access, revision }: AgentPageProps) {
   return <>
     {error && <State loading={loading} error={error} retry={retry} data={data} columns={4} />}
     <AgentMetricCards tier={access.tier} data={data} loading={loading} />
+    {data && <SettlementMetrics data={data} partner={access.tier === 'PARTNER'} />}
     <div className="lp-agent-chart-grid">
       {hasSales && <AgentRevenueChart {...chart} />}
       <AgentCodeVolumeChart {...chart} />

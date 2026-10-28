@@ -1,0 +1,141 @@
+# API 错误码与三端文案
+
+由 `node scripts/export-api-errors.mjs` 从后端 `ApiFailure` 和 HTTP 错误出口生成。普通用户、代理和管理员共用 `src/linepool/i18n/api-errors.ts` 中的中英文文案；余额和价格错误可在代理端补充对应金额或商品。
+
+未知 4xx 显示本地化的操作失败提示和错误码；未知 5xx 显示服务暂不可用，不显示后端原文。
+
+| 错误码 | 中文 | English | 后端来源 |
+| --- | --- | --- | --- |
+| `ACCOUNT_DISABLED` | 账号已被停用，如有疑问请联系客服 | Your account has been disabled. Please contact support. | `backend/src/authentication.ts` |
+| `ACTOR_NOT_ACTIVE` | 当前代理已暂停或终止，请联系平台 | Your agent account is suspended or terminated. Please contact the platform. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts` |
+| `ADMIN_PASSWORD_PROTECTED` | 请通过登录页的找回密码功能重置管理员密码 | Please reset administrator passwords using password recovery on the sign-in page. | `backend/src/administration.ts` |
+| `ADMIN_PROTECTED` | 不能在此停用管理员账号 | Administrator accounts cannot be disabled here. | `backend/src/administration.ts` |
+| `ADMIN_REQUIRED` | 当前账号没有平台管理员权限 | This account does not have administrator access. | `backend/src/administration.ts`, `backend/src/agent-inventory.ts`, `backend/src/providers/webhook-inbox.ts` |
+| `AGENT_HIERARCHY_INVALID` | 代理层级关系无效，请核对上级代理 | The agent hierarchy is invalid. Please check the parent agent. | `backend/src/agent-inventory.ts` |
+| `AGENT_LEVEL_INVALID` | 代理级别不符合要求，请核对后重试 | The agent level is invalid. Please check and retry. | `backend/src/agent-inventory.ts` |
+| `AGENT_MANAGEMENT_REQUIRED` | 你没有管理此代理的权限 | You do not have permission to manage this agent. | `backend/src/agent-inventory.ts` |
+| `AGENT_NOT_ACTIVE` | 目标代理已暂停或终止，请先核对代理状态 | The recipient agent is suspended or terminated. Please check their status. | `backend/src/agent-inventory.ts`, `backend/src/authentication.ts`, `backend/src/holding-batch.ts` |
+| `AGENT_NOT_FOUND` | 未找到目标代理，请刷新后重试 | The agent was not found. Please refresh and retry. | `backend/src/agent-inventory.ts` |
+| `AGENT_REQUIRED` | 当前账号不是代理，无法访问代理工作台 | This account is not an agent and cannot access the agent workspace. | `backend/src/agent-inventory-controller.ts`, `backend/src/agent-inventory.ts` |
+| `AGENT_STATUS_FORBIDDEN` | 终止代理及恢复已终止代理需由平台处理 | Contact the platform to terminate or restore a terminated agent. | `backend/src/agent-inventory.ts` |
+| `AMOUNT_TOO_LARGE` | 金额超过允许范围，请减少金额 | The amount exceeds the allowed limit. Please enter a smaller amount. | `backend/src/agent-settlement.ts` |
+| `AUTH_REQUIRED` | 请先登录后再操作 | Please sign in to continue. | `backend/src/recharge.ts` |
+| `BALANCE_ACCOUNT_NOT_FOUND` | 余额账户不存在，请联系平台 | The balance account was not found. Please contact the platform. | `backend/src/agent-inventory.ts` |
+| `BALANCE_CHANGED` | 余额已变化，请刷新后重试 | The balance has changed. Please refresh and retry. | `backend/src/agent-settlement.ts` |
+| `BATCH_EMPTY` | 当前范围没有可划转号码，请调整筛选条件 | No transferable numbers match. Please change the filters. | `backend/src/holding-batch.ts` |
+| `BATCH_EXPIRY_REQUIRED` | 所选号码包含长期号码，请填写统一到期时间 | The selection includes numbers without an expiry date. Please enter a batch expiry date. | `backend/src/holding-batch.ts` |
+| `BATCH_RECIPIENT_INVALID` | 批量接收方无效，请重新选择 | The batch recipient is invalid. Please choose another. | `backend/src/agent-inventory.ts` |
+| `BATCH_SELECTION_CHANGED` | 核对后号码、价格或计费天数发生变化，整批未划转，请重新核对 | Numbers, prices or billable days changed after review. Nothing was transferred. Please review again. | `backend/src/holding-batch.ts` |
+| `BATCH_TOO_LARGE` | 筛选结果超过 10,000 个号码，请缩小范围后分批操作 | More than 10,000 numbers match. Please narrow the selection and process separate batches. | `backend/src/holding-batch.ts` |
+| `CUSTOMER_HOLDING_NOT_ALLOWED` | 客户号码必须通过分配给客户操作交付 | Please use the customer assignment action to deliver customer numbers. | `backend/src/agent-inventory.ts` |
+| `CUSTOMER_MANAGEMENT_REQUIRED` | 你没有管理此客户的权限 | You do not have permission to manage this customer. | `backend/src/agent-inventory.ts` |
+| `CUSTOMER_NOT_ACTIVE` | 目标客户已暂停或终止 | The customer is suspended or terminated. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts` |
+| `CUSTOMER_NOT_FOUND` | 未找到可接收的直属客户 | No eligible direct customer was found. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts` |
+| `CUSTOMER_TERMINATED` | 该客户已终止，请核对后重试 | This customer has been terminated. Please check and retry. | `backend/src/agent-inventory.ts` |
+| `DATABASE_UNAVAILABLE` | 服务暂时不可用，请稍后重试 | The service is temporarily unavailable. Please try again later. | `backend/src/http.ts` |
+| `DUPLICATE_STOCK` | 该号码已在库存中，请勿重复导入 | This number is already in stock. Do not import it again. | `backend/src/agent-inventory.ts` |
+| `EMAIL_EXISTS` | 该邮箱已注册 | This email is already registered. | `backend/src/authentication.ts` |
+| `FORBIDDEN` | 你没有权限进行此操作 | You do not have permission to perform this action. | `backend/src/http.ts` |
+| `HOLDING_NOT_ACTIVE` | 该号码已不在可转交状态 | This number is no longer available for transfer. | `backend/src/agent-inventory.ts` |
+| `HOLDING_NOT_AVAILABLE` | 该号码已到期或资源不可用，请重新选择 | This number has expired or is unavailable. Please choose another. | `backend/src/agent-inventory.ts` |
+| `HOLDING_NOT_FOUND` | 该号码已转交或退出库存，请刷新可转交列表 | This number has been transferred or removed. Please refresh the available numbers. | `backend/src/agent-inventory.ts` |
+| `HOLDING_WINDOW_EXCEEDED` | 使用期限不能超过原号码或资源的到期时间 | The service period cannot exceed the number or resource expiry date. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts` |
+| `HOLDING_WINDOW_INVALID` | 使用开始时间不能早于原持有开始时间 | The service cannot start before the current holding begins. | `backend/src/agent-inventory.ts` |
+| `IDEMPOTENCY_CONFLICT` | 请求内容与之前的操作不一致，请核对操作记录 | This request differs from the earlier action. Please check your records. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts`, `backend/src/ordering.ts`, `backend/src/recharge.ts`, `backend/src/sandbox.ts` |
+| `INSUFFICIENT_BALANCE` | 余额不足，请联系上级或平台充值 | Insufficient balance. Please contact your parent agent or the platform to add funds. | `backend/src/agent-inventory.ts`, `backend/src/agent-settlement.ts` |
+| `INSUFFICIENT_POINTS` | 积分余额不足 | Insufficient points. | `backend/src/ordering.ts` |
+| `INSUFFICIENT_STOCK` | 所选服务库存不足，请重新选择 | Not enough stock for this service. Please choose another. | `backend/src/providers/mock-receiving-provider.ts` |
+| `INTERNAL_ERROR` | 服务暂时不可用，请稍后重试 | The service is temporarily unavailable. Please try again later. | `backend/src/http.ts` |
+| `INVALID_CREDENTIALS` | 账号或密码不正确 | Incorrect email or password. | `backend/src/authentication.ts` |
+| `INVALID_CURRENT_PASSWORD` | 当前密码不正确，请重新输入 | The current password is incorrect. Please try again. | `backend/src/authentication.ts` |
+| `INVALID_DURATION` | 服务天数请选择 7 天或 30 天 | Please select a service period of 7 or 30 days. | `backend/src/administration.ts` |
+| `INVALID_HOLDING_WINDOW` | 请填写有效的使用期限 | Please enter a valid service period. | `backend/src/agent-inventory.ts`, `backend/src/agent-settlement.ts`, `backend/src/holding-batch.ts` |
+| `INVALID_JSON` | 提交内容格式有误，请刷新后重试 | The request format is invalid. Please refresh and try again. | `backend/src/http.ts` |
+| `INVALID_RESET_TOKEN` | 重置链接无效或已过期，请重新申请 | The reset link is invalid or expired. Please request a new one. | `backend/src/password-recovery.ts` |
+| `MAX_AGENT_LEVEL` | 二级代理不能再创建下级 | Second-level agents cannot create subagents. | `backend/src/agent-inventory.ts` |
+| `MESSAGE_NOT_FOUND` | 短信不存在或无权查看 | The message was not found or is not accessible. | `backend/src/workspace.ts` |
+| `MOCK_CLAIM_STALE` | 模拟订单处理状态已变化，请刷新后重试 | The simulated order processing state has changed. Please refresh and retry. | `backend/src/mock-fulfillment.ts` |
+| `MOCK_DEBIT_MISSING` | 模拟订单缺少积分扣款记录，请核对订单 | The simulated order has no points debit. Please check the order. | `backend/src/mock-fulfillment.ts` |
+| `MOCK_RESERVATION_CONFLICT` | 模拟订单的号码预留冲突，请核对订单 | The simulated order has a reservation conflict. Please check the order. | `backend/src/mock-fulfillment.ts` |
+| `MOCK_TERMINAL` | 模拟订单已结束，请刷新查看结果 | The simulated order is already finalized. Please refresh for the result. | `backend/src/mock-fulfillment.ts` |
+| `MOCK_TRANSITION` | 模拟订单不能执行此状态变更 | This state change is not allowed for the simulated order. | `backend/src/mock-fulfillment.ts` |
+| `NOT_DEFERRED_MOCK` | 该订单不支持此模拟操作 | This order does not support this simulation. | `backend/src/mock-fulfillment.ts` |
+| `NOT_ENROLLED` | 当前账号尚未绑定代理身份 | This account is not enrolled as an agent. | `backend/src/agent-inventory-controller.ts`, `backend/src/agent-inventory.ts` |
+| `NOT_FOUND` | 记录不存在或已变化，请刷新后重试 | The record was not found or has changed. Please refresh and retry. | `backend/src/administration.ts`, `backend/src/sandbox.ts` |
+| `NUMBER_ASSIGNED` | 号码已被分配，不能重复分配或上架 | The number is already assigned and cannot be assigned or listed again. | `backend/src/administration.ts` |
+| `NUMBER_NOT_FOUND` | 号码不存在或已不再属于当前账号 | This number was not found or no longer belongs to your account. | `backend/src/number-services.ts` |
+| `NUMBER_RESERVED` | 该号码有待完成订单，请先处理订单 | This number has an unresolved order. Please resolve the order first. | `backend/src/administration.ts` |
+| `OFFER_NOT_FOUND` | 所选服务期限已不可售，请重新选择 | This offer is no longer available. Please choose another. | `backend/src/ordering.ts` |
+| `ORDER_NOT_FOUND` | 订单不存在或无权查看 | The order was not found or is not accessible. | `backend/src/mock-fulfillment.ts`, `backend/src/sandbox.ts`, `backend/src/workspace.ts` |
+| `ORDER_STATE_CONFLICT` | 订单状态已变化，请刷新后重试 | The order status has changed. Please refresh and retry. | `backend/src/mock-fulfillment.ts` |
+| `ORIGIN_REJECTED` | 当前访问地址未获服务授权 | This site is not authorized to access the service. | `backend/src/http.ts` |
+| `OWNER_NOT_FOUND` | 未找到目标账户，请核对后重试 | The target account was not found. Please check and retry. | `backend/src/agent-inventory.ts` |
+| `OWNER_NOT_VISIBLE` | 该对象不在你的管理范围内 | This account is outside your management scope. | `backend/src/agent-inventory.ts` |
+| `OWNERSHIP_CHANGED` | 号码归属已变化，请刷新后重试 | The number ownership has changed. Please refresh and retry. | `backend/src/administration.ts` |
+| `PARENT_AGENT_NOT_ACTIVE` | 上级代理已暂停或终止 | The parent agent is suspended or terminated. | `backend/src/agent-inventory.ts` |
+| `PARENT_AGENT_NOT_FOUND` | 未找到上级代理，请核对后重试 | The parent agent was not found. Please check and retry. | `backend/src/agent-inventory.ts` |
+| `PASSWORD_RECOVERY_UNAVAILABLE` | 邮件找回暂未配置，请联系管理员重置密码 | Email recovery is unavailable. Please contact an administrator. | `backend/src/password-recovery.ts` |
+| `PAYLOAD_TOO_LARGE` | 提交内容过多，请减少后重试 | The request is too large. Please submit less information. | `backend/src/http.ts` |
+| `PAYMENT_AMOUNT_MISMATCH` | 付款金额与订单不一致，请联系客服核对 | The payment amount does not match the order. Please contact support. | `backend/src/recharge.ts` |
+| `PAYMENT_TRANSACTION_REQUIRED` | 缺少付款凭证，请核对后重试 | A payment reference is required. Please check and retry. | `backend/src/recharge.ts` |
+| `PAYMENT_TRANSACTION_REUSED` | 该付款凭证已被使用，请联系客服核对 | This payment reference has already been used. Please contact support. | `backend/src/recharge.ts` |
+| `PLATFORM_REQUIRED` | 该操作仅平台可执行 | Only the platform can perform this action. | `backend/src/number-services.ts` |
+| `PRICE_BUYER_INVALID` | 价格规则的买方不在允许范围，请重新选择 | The price-rule buyer is not eligible. Please choose another. | `backend/src/agent-inventory.ts` |
+| `PRICE_CHANGED` | 价格或号码期限已变化，请返回修改并重新核对金额 | The price or service period has changed. Please go back and review the amount. | `backend/src/agent-settlement.ts` |
+| `PRICE_NOT_SET` | 尚未设置适用价格，请先在商品与价格中设置 | No applicable price is set. Please configure it in Products and Pricing. | `backend/src/agent-settlement.ts` |
+| `PRICE_SELLER_INVALID` | 价格规则的卖方不在允许范围，请重新选择 | The price-rule seller is not eligible. Please choose another. | `backend/src/agent-inventory.ts` |
+| `PRODUCT_EXISTS` | 该国家和平台已有相同天数的商品，请编辑原商品 | A product for this country, platform and duration already exists. Please edit it. | `backend/src/administration.ts` |
+| `PRODUCT_NOT_OFFERED_UPSTREAM` | 上游没有提供该国家和平台的号码，不能创建商品 | The supplier has no numbers for this country and platform. A product cannot be created. | `backend/src/administration.ts` |
+| `PROVIDER_ALLOCATION_INACTIVE` | 短信对应的号码服务已失效，请核对有效期 | The service for this message is inactive. Please check its validity period. | `backend/src/providers/receiving-sync.ts`, `backend/src/sandbox.ts` |
+| `PROVIDER_CURSOR_REPEATED` | 上游同步进度异常，请稍后重试 | The supplier sync cursor is invalid. Please try again later. | `backend/src/providers/receiving-sync.ts` |
+| `PROVIDER_EVENT_CONFLICT` | 上游事件内容冲突，请核对接收记录 | The supplier event has conflicting data. Please check the receipt. | `backend/src/providers/receiving-sync.ts`, `backend/src/providers/webhook-inbox.ts` |
+| `PROVIDER_MESSAGE_CONFLICT` | 上游短信内容冲突，请核对接收记录 | The supplier message has conflicting data. Please check the receipt. | `backend/src/providers/receiving-sync.ts`, `backend/src/providers/webhook-inbox.ts` |
+| `PROVIDER_NUMBER_MISMATCH` | 短信与号码资源不一致，请核对接收记录 | The message does not match the number resource. Please check the receipt. | `backend/src/providers/receiving-sync.ts` |
+| `PROVIDER_NUMBER_WITHOUT_PHONE` | 上游号码缺少手机号，请核对接收记录 | The supplier number has no phone number. Please check the receipt. | `backend/src/providers/receiving-sync.ts` |
+| `PROVIDER_PAGE_LIMIT` | 上游同步数据量超过限制，请缩小范围后重试 | The supplier sync limit was reached. Please narrow the scope and retry. | `backend/src/providers/receiving-sync.ts` |
+| `PROVIDER_PROJECT_DISABLED` | 上游项目已停用，请核对项目配置 | The supplier project is disabled. Please check its configuration. | `backend/src/provider-sync.ts` |
+| `PROVIDER_PROJECT_NOT_FOUND` | 上游项目不存在，请核对项目配置 | The supplier project was not found. Please check its configuration. | `backend/src/provider-sync.ts` |
+| `PROVIDER_ROUTE_UNCONFIRMED` | 短信归属尚未确认，请核对接收记录 | The message recipient is unconfirmed. Please check the receipt. | `backend/src/providers/receiving-sync.ts` |
+| `PROVIDER_UNAVAILABLE` | 上游服务暂时不可用，请稍后重试 | The supplier service is temporarily unavailable. Please try again later. | `backend/src/agent-inventory.ts` |
+| `QUOTE_REQUIRED` | 请先核对结算金额后再提交 | Please review the settlement quote before submitting. | `backend/src/agent-settlement.ts` |
+| `RATE_LIMITED` | 操作太频繁，请稍后再试 | Too many requests. Please try again later. | `backend/src/http.ts` |
+| `RECEIPT_NOT_FOUND` | 接收记录不存在，请刷新后重试 | The receipt was not found. Please refresh and retry. | `backend/src/providers/webhook-inbox.ts` |
+| `RECHARGE_AMOUNT_INVALID` | 充值金额不符合要求，请重新填写 | The top-up amount is invalid. Please enter it again. | `backend/src/recharge.ts` |
+| `RECHARGE_NOT_CONFIGURED` | 在线充值暂未开通，请联系客服 | Online top-up is unavailable. Please contact support. | `backend/src/recharge.ts` |
+| `RECHARGE_ORDER_NOT_FOUND` | 充值订单不存在或无权查看 | The top-up order was not found or is not accessible. | `backend/src/recharge.ts` |
+| `RECHARGE_ORDER_NOT_PENDING` | 充值订单状态已变化，请刷新后核对 | The top-up order status has changed. Please refresh and check it. | `backend/src/recharge.ts` |
+| `RECHARGE_SETTINGS_CHANGED` | 充值配置已被修改，请关闭弹窗、刷新后重新填写 | Top-up settings have changed. Please close the dialog, refresh and try again. | `backend/src/recharge.ts` |
+| `REGION_INVALID` | 所选国家无效，请重新选择 | The selected country is invalid. Please choose another. | `backend/src/agent-inventory.ts` |
+| `RENEWAL_DISABLED` | 短期短信接收服务暂不支持续费 | Short-term SMS services do not support renewal yet. | `backend/src/number-services.ts` |
+| `REQUEST_FAILED` | 操作未完成，请稍后重试 | The action could not be completed. Please try again later. | `backend/src/http.ts` |
+| `RESALE_SAME_OWNER` | 不能将号码转交给自己 | You cannot transfer a number to yourself. | `backend/src/agent-inventory.ts` |
+| `RESALE_SCOPE_INVALID` | 号码只能转交给直属下级 | Numbers can only be transferred to direct subagents. | `backend/src/agent-inventory.ts`, `backend/src/holding-batch.ts` |
+| `RESOURCE_EXPIRES_TOO_SOON` | 号码资源有效期不足以覆盖所选服务天数 | The number resource expires before the selected service period ends. | `backend/src/administration.ts` |
+| `RESOURCE_UNAVAILABLE` | 号码资源当前不可用 | The number resource is currently unavailable. | `backend/src/administration.ts` |
+| `SERVICE_INVALID` | 所选平台无效，请重新选择 | The selected platform is invalid. Please choose another. | `backend/src/agent-inventory.ts` |
+| `SERVICE_MISMATCH` | 号码与所选平台不一致，请重新选择 | The number does not match the selected platform. Please choose another. | `backend/src/agent-inventory.ts` |
+| `STOCK_NOT_FOUND` | 库存号码不存在，请刷新后重试 | The stock number was not found. Please refresh and retry. | `backend/src/agent-inventory.ts` |
+| `STOCK_RESOURCE_EXPIRES` | 库存号码的有效期不足，请调整使用期限 | The stock number expires too soon. Please change the service period. | `backend/src/agent-inventory.ts` |
+| `STOCK_RESOURCE_UNAVAILABLE` | 库存号码的资源状态不可用，请重新选择 | The stock number resource is unavailable. Please choose another. | `backend/src/agent-inventory.ts` |
+| `STOCK_UNAVAILABLE` | 库存号码不可用，请重新选择 | The stock number is unavailable. Please choose another. | `backend/src/agent-inventory.ts` |
+| `SUBAGENT_MANAGEMENT_REQUIRED` | 仅一级代理可管理直属下级 | Only first-level agents can manage direct subagents. | `backend/src/agent-inventory.ts` |
+| `SUBAGENT_NOT_FOUND` | 未找到该直属下级，或你无权访问 | This direct subagent was not found or is not accessible. | `backend/src/agent-inventory.ts` |
+| `SYNC_ALREADY_RUNNING` | 同步正在进行，请等待完成后重试 | A sync is already running. Please wait for it to finish. | `backend/src/provider-sync.ts` |
+| `SYNC_CONFLICT_NOT_FOUND` | 同步冲突记录不存在，请刷新后重试 | The sync conflict was not found. Please refresh and retry. | `backend/src/provider-sync.ts` |
+| `SYNC_LEASE_LOST` | 同步任务已交接，请刷新查看最新结果 | The sync task has moved to another worker. Please refresh for the latest result. | `backend/src/provider-sync.ts` |
+| `SYNC_MAPPING_CHANGED` | 同步映射已变化，请刷新后重试 | The sync mapping has changed. Please refresh and retry. | `backend/src/provider-sync.ts` |
+| `TRANSACTION_NOT_FOUND` | 交易记录不存在或无权查看 | The transaction was not found or is not accessible. | `backend/src/agent-inventory.ts` |
+| `TRANSFER_SAME_OWNER` | 不能向自己的账户转账 | You cannot transfer funds to your own account. | `backend/src/agent-inventory.ts` |
+| `TRANSFER_SCOPE_INVALID` | 只能转余额给正常启用的直属下级代理 | You can only transfer funds to active direct subagents. | `backend/src/agent-inventory.ts` |
+| `UNAUTHENTICATED` | 登录已过期，请重新登录 | Your session has expired. Please sign in again. | `backend/src/authentication.ts`, `backend/src/ordering.ts`, `backend/src/recharge.ts`, `backend/src/workspace.ts` |
+| `USER_ALREADY_ENROLLED` | 该账号已经绑定代理或客户，请核对后重试 | This account is already linked to an agent or customer. | `backend/src/agent-inventory.ts` |
+| `USER_NOT_ELIGIBLE` | 请绑定正常启用的普通账号 | Please use an active regular user account. | `backend/src/agent-inventory.ts` |
+| `USER_NOT_FOUND` | 未找到该用户，请确认对方已注册 | The user was not found. Please confirm they have registered. | `backend/src/agent-inventory.ts`, `backend/src/recharge.ts` |
+| `USER_UNAVAILABLE` | 目标用户不存在或已停用 | The target user was not found or is disabled. | `backend/src/administration.ts` |
+| `VALIDATION_ERROR` | 提交内容不符合要求，请检查后重试 | Please check the submitted information and try again. | `backend/src/http.ts` |
+| `WEBHOOK_ENCODING_UNSUPPORTED` | 短信回调编码不受支持，请核对回调配置 | The SMS callback encoding is unsupported. Please check the configuration. | `backend/src/providers/pingcode-webhook.ts` |
+| `WEBHOOK_EVENT_ID_MISMATCH` | 短信回调事件编号不一致，请核对接收记录 | The SMS callback event IDs do not match. Please check the receipt. | `backend/src/providers/pingcode-webhook.ts` |
+| `WEBHOOK_JSON_REQUIRED` | 短信回调须使用 JSON 格式，请核对回调配置 | SMS callbacks require JSON. Please check the configuration. | `backend/src/providers/pingcode-webhook.ts` |
+| `WEBHOOK_NOT_CONFIGURED` | 短信回调尚未配置，请联系管理员 | The SMS callback is not configured. Please contact an administrator. | `backend/src/providers/pingcode-webhook.ts` |
+| `WEBHOOK_SIGNATURE_INVALID` | 短信回调签名无效，请核对回调配置 | The SMS callback signature is invalid. Please check the configuration. | `backend/src/providers/pingcode-webhook.ts` |
+| `WEBHOOK_TIME_INVALID` | 短信回调时间无效，请核对回调配置 | The SMS callback timestamp is invalid. Please check the configuration. | `backend/src/providers/pingcode-webhook.ts` |

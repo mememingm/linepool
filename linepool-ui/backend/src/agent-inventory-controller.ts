@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   adjustBalanceInputSchema, agentInventoryQuerySchema, agentNumberImportInputSchema, agentStatusInputSchema, agentStockQuerySchema, agentTransactionsQuerySchema,
   claimAgentNumberInputSchema, claimAgentNumbersInputSchema, createAgentInputSchema, createCustomerInputSchema, createHoldingInputSchema, createTxOrderInputSchema, assignHoldingInputSchema,
-  holdingBatchInputSchema, holdingBatchPreviewInputSchema, type HoldingBatchInput, type HoldingBatchPreviewInput,
+  settlementQuoteInputSchema, type SettlementQuoteInput, holdingBatchInputSchema, holdingBatchPreviewInputSchema, type HoldingBatchInput, type HoldingBatchPreviewInput,
   paginationQuerySchema, releaseHoldingInputSchema, resellHoldingInputSchema, transferBalanceInputSchema, upsertPriceRuleInputSchema, uuidSchema,
   type AdjustBalanceInput, type AgentInventoryQuery, type AgentNumberImportInput, type AgentStatusInput, type AgentStockQuery, type AgentTransactionsQuery,
   type ClaimAgentNumberInput, type ClaimAgentNumbersInput, type CreateAgentInput, type CreateCustomerInput, type CreateHoldingInput, type CreateTxOrderInput, type AssignHoldingInput, type OwnerRef,
@@ -211,6 +211,17 @@ export class AgentInventoryController {
   balances(@Req() request: SessionRequest) {
     return this.inventory.balances(request.user.id);
   }
+  @Get('transactions/:id')
+  transactionDetail(@Req() request: SessionRequest, @Param('id', new SchemaPipe(uuidSchema)) id: string,
+    @Query(new SchemaPipe(paginationQuerySchema)) input: PaginationQuery) {
+    return this.inventory.transactionDetail(request.user.id, id, input);
+  }
+
+  @Get('platform-settlement')
+  platformSettlement(@Req() request: SessionRequest, @Query('period', new SchemaPipe(agentMetricPeriodSchema)) period: AgentMetricPeriod = '7d') {
+    return this.inventory.platformSettlement(request.user.id, period);
+  }
+
   @Get('transactions')
   transactions(@Req() request: SessionRequest, @Query(new SchemaPipe(agentTransactionsQuerySchema)) input: AgentTransactionsQuery) {
     return this.inventory.transactions(request.user.id, input);
@@ -221,6 +232,12 @@ export class AgentInventoryController {
     @Query(new SchemaPipe(ledgerQuerySchema)) input: LedgerQuery) {
     return this.inventory.ledger(request.user.id, toOwnerRef(params), input);
   }
+  @Post('settlement-preview')
+  settlementPreview(@Req() request: SessionRequest, @Body(new SchemaPipe(settlementQuoteInputSchema)) input: SettlementQuoteInput) { return this.inventory.settlementPreview(request.user.id, input); }
+
+  @Get('price-options')
+  priceOptions(@Req() request: SessionRequest) { return this.inventory.priceOptions(request.user.id); }
+
   @Get('prices')
   prices(@Req() request: SessionRequest) {
     return this.inventory.prices(request.user.id);

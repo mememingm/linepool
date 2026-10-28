@@ -93,7 +93,7 @@ export default function WelcomePage() {
       if (!button) return;
       shadow.querySelectorAll('[data-period]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
       const selected = shadow.querySelector('[data-selected-period]');
-      if (selected) selected.textContent = host.current?.lang.startsWith('en') ? `${button.dataset.period} month${button.dataset.period === '1' ? '' : 's'}` : `${button.dataset.period} 个月`;
+      if (selected) selected.textContent = host.current?.lang.startsWith('en') ? `${button.dataset.period} days` : `${button.dataset.period} 天`;
     }, { signal: events.signal });
     const observer = new IntersectionObserver(entries => entries.forEach(entry => {
       entry.target.classList.toggle('reference-in-view', entry.isIntersecting);
@@ -110,9 +110,9 @@ export default function WelcomePage() {
     for (const { node, source } of sources.current) node.textContent = preferences.t(source);
     for (const { element, name, source } of attributes.current) element.setAttribute(name, preferences.t(source));
     root.querySelectorAll('.hero__card').forEach(card => card.classList.toggle('light', preferences.theme === 'light'));
-    const period = root.querySelector<HTMLElement>('[data-period][aria-pressed="true"]')?.dataset.period ?? '1';
+    const period = root.querySelector<HTMLElement>('[data-period][aria-pressed="true"]')?.dataset.period ?? '7';
     const selected = root.querySelector('[data-selected-period]');
-    if (selected) selected.textContent = preferences.t('{months} 个月', { months: period });
+    if (selected) selected.textContent = preferences.t('{days} 天', { days: period });
     document.title = `LINEPOOL · ${preferences.t('号码与短信服务')}`;
   }, [root, preferences.language, preferences.theme]);
   return <div className="lp-welcome-page"><div ref={host} className="authkit-home" data-theme={preferences.theme} lang={preferences.locale} />{controls && createPortal(<PreferenceControls preferences={preferences} />, controls)}</div>;

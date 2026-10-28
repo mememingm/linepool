@@ -27,7 +27,7 @@ import { useRecordPagination } from './useRecordPagination';
 import './WorkspacePages.css';
 import PageContainer from './PageContainer';
 import PurchasePage from './PurchasePage';
-import { cheapestSaleOffer } from './sale-catalog';
+import { cheapestSaleOffer, saleOffers, saleRegions } from './sale-catalog';
 import SandboxTools from './SandboxTools';
 import { TransactionsButton } from '../wallet/Recharge';
 
@@ -129,9 +129,9 @@ function PointsPage({ data }: PageProps) {
 }
 function RegionContextPage({ data, route }: PageProps) {
   const p = useDisplayPreferences();
-  const region = data.catalog.regions.find(item => item.id === route.region);
+  const region = saleRegions(data.catalog).find(item => item.id === route.region);
   if (!region) return <EmptyState title={p.t(detailCopy.catalogNotFound)} />;
-  const offers = data.catalog.offers.filter(offer => offer.region === region.id && data.catalog.services.includes(offer.service));
+  const offers = saleOffers(data.catalog).filter(offer => offer.region === region.id && data.catalog.services.includes(offer.service));
   return <>
     <section aria-label={p.t(detailCopy.titles['region-detail'])}>
       <div className="lp-shell-detail-identity"><Flag code={region.id} /><span>{region.english}</span><StatusPill tone={region.availableCount > 0 ? 'green' : 'neutral'}>{p.t(region.availableCount > 0 ? detailCopy.available : detailCopy.soldOut)}</StatusPill></div>
@@ -158,9 +158,20 @@ function RegionContextPage({ data, route }: PageProps) {
 function RegionsPage({ data }: PageProps) {
   const p = useDisplayPreferences();
   const [search, setSearch] = useState(''); const [area, setArea] = useState('all');
-  const filtered = data.catalog.regions.filter(region => (area === 'all' || region.area === area) && `${region.name} ${p.t(region.name)} ${region.english} ${region.prefix}`.toLowerCase().includes(search.trim().toLowerCase()));
-  const areas = [...new Set(data.catalog.regions.map(region => region.area))];
-  return <><div className="lp-shell-view-toolbar"><SearchField label={p.t("搜索地区或区号")} value={search} onChange={setSearch} /><SelectField aria-label={p.t("地区范围")} value={area} onValueChange={setArea} options={[{ value: 'all', label: p.t("全部地区") }, ...areas.map(item => ({ value: item, label: p.t(item) }))]} /><span className="lp-shell-view-count">{p.t("{count} 个地区", { count: p.n(filtered.length) })}</span></div>{!filtered.length ? <EmptyState title={p.t("暂无符合条件的地区")}><ActionButton size="sm" onClick={() => { setSearch(''); setArea('all'); }}>{p.t("清除筛选")}</ActionButton></EmptyState> : <div className="lp-shell-view-region-grid">{filtered.map(region => { const lowest = cheapestSaleOffer(data.catalog, region.id); return <article key={region.id} className="lp-shell-view-region"><div className="lp-shell-view-country"><Flag code={region.id} /><span><h2>{p.t("{region}号码", { region: p.t(region.name) })}</h2><small>{region.english} · {region.prefix}</small></span></div><dl className="lp-shell-view-facts"><div><dt>{p.t("可用库存")}</dt><dd>{p.n(lowest ? region.availableCount : 0)}{' '}{p.t("个")}</dd></div><div><dt>{p.t("短期服务")}</dt><dd>{lowest ? p.t("{points} 积分起 / {days} 天", { points: p.n(lowest.unitPoints), days: p.n(lowest.durationDays) }) : p.t("暂无短期服务")}</dd></div></dl><div className="lp-shell-detail-actions"><PageLink href={detailHref({ page: 'region-detail', region: region.id })}>{p.t(detailCopy.links.region)}</PageLink>{lowest ? <PageLink href={shellHref('purchase', { region: region.id })}>{p.t("创建服务")}</PageLink> : <StatusPill tone="neutral">{p.t("暂不可用")}</StatusPill>}</div></article>; })}</div>}</>;
+  const regions = saleRegions(data.catalog);
+  const filtered = regions.filter(region => (area === 'all' || region.area === area) && `${region.name} ${p.t(region.name)} ${region.english} ${region.prefix}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const areas = [...new Set(regions.map(region => region.area))];
+  return <>
+    <div className="lp-shell-view-toolbar"><SearchField label={p.t("搜索地区或区号")} value={search} onChange={setSearch} /><SelectField aria-label={p.t("地区范围")} value={area} onValueChange={setArea} options={[{ value: 'all', label: p.t("全部地区") }, ...areas.map(item => ({ value: item, label: p.t(item) }))]} /><span className="lp-shell-view-count">{p.t("{count} 个地区", { count: p.n(filtered.length) })}</span></div>
+    {!filtered.length ? <EmptyState title={p.t("暂无符合条件的地区")}><ActionButton size="sm" onClick={() => { setSearch(''); setArea('all'); }}>{p.t("清除筛选")}</ActionButton></EmptyState> : <div className="lp-shell-view-region-grid">{filtered.map(region => {
+      const lowest = cheapestSaleOffer(data.catalog, region.id);
+      return <article key={region.id} className="lp-shell-view-region" data-available={Boolean(lowest)}>
+        <div className="lp-shell-view-country"><Flag code={region.id} /><span><h2>{p.t("{region}号码", { region: p.t(region.name) })}</h2><small>{region.english} · {region.prefix}</small></span></div>
+        <dl className="lp-shell-view-facts"><div><dt>{p.t("库存")}</dt><dd>{p.t(lowest ? "可用" : "暂无库存")}</dd></div><div><dt>{p.t("短期服务")}</dt><dd>{lowest ? p.t("{points} 积分起 / {days} 天", { points: p.n(lowest.unitPoints), days: p.n(lowest.durationDays) }) : p.t("暂无短期服务")}</dd></div></dl>
+        <div className="lp-shell-detail-actions"><PageLink href={detailHref({ page: 'region-detail', region: region.id })}>{p.t(detailCopy.links.region)}</PageLink>{lowest ? <PageLink href={shellHref('purchase', { region: region.id })}>{p.t("创建服务")}</PageLink> : <StatusPill tone="neutral">{p.t("暂不可用")}</StatusPill>}</div>
+      </article>;
+    })}</div>}
+  </>;
 }
 function AccountPage({ data, actions }: PageProps) {
   const p = useDisplayPreferences();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { NumberHolding } from '@linepool/contracts';
 
 type Duration = '7' | '30' | '90' | 'all' | 'custom';
@@ -36,11 +36,12 @@ export function useHoldingDuration(holding: HoldingWindowSource | undefined) {
   function update(value: { duration?: Duration; customDate?: string }) {
     if (holding) setChoice({ holdingId: holding.id, duration, customDate, ...value });
   }
+  const window = useMemo(() => holdingWindow(holding, duration, customDate), [holding?.id, holding?.startsAt, holding?.expiresAt, duration, customDate]);
   return {
     duration, customDate, remaining,
     setDuration: (value: Duration) => update({ duration: value }),
     setCustomDate: (value: string) => update({ customDate: value }),
-    window: holdingWindow(holding, duration, customDate),
+    window,
     // Recompute at the confirmation click, then freeze this result for submission and retries.
     resolveWindow: () => holdingWindow(holding, duration, customDate),
   };

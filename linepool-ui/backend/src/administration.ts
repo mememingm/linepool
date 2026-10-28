@@ -1,10 +1,11 @@
 import { Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { hash } from 'bcryptjs';
-import type { AdminQuery, NumberActionInput, ProductInput, UserStatusInput, AdminPasswordResetInput } from '@linepool/contracts/admin';
+import { storefrontRegionIds } from '@linepool/contracts';
+import { adminOrdersQuerySchema, type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput, type AdminPasswordResetInput } from '@linepool/contracts/admin';
 import { type SessionRequest } from './authentication.js';
 import { Database } from './database.js';
-import { ApiFailure } from './http.js';
+import { ApiFailure, SchemaPipe } from './http.js';
 import { pagination } from './workspace.js';
 import { availableStock, releaseExpired } from './platform-inventory.js';
 
@@ -26,6 +27,7 @@ const numberFields = `s.id,n.id AS number_id,n.phone_number,n.region_id,r.name A
  s.provider,s.external_project_id,p.project_name,b.external_number_id,n.resource_expires_at,
  a.id AS allocation_id,s.sale_enabled,a.user_id AS assigned_user_id,u.display_name AS owner_name,a.order_id,a.expires_at,
  CASE WHEN a.id IS NOT NULL THEN 'ASSIGNED' WHEN ${availableStock('7')} THEN 'AVAILABLE' ELSE 'UNSELLABLE' END AS sale_status`;
+const orderNeedsAttention = "(o.fulfillment_status='FAILED' OR NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT'))";
 const orderFrom = 'FROM orders o JOIN users u ON u.id=o.user_id';
 const orderFields = `o.id,o.order_number,o.user_id,u.display_name AS owner_name,o.plan_name,o.quantity,o.total_points,o.created_at,
  CASE WHEN EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.reverses_ledger_id IS NOT NULL) THEN 'POINTS_REVERSED'
@@ -74,6 +76,7 @@ export type AdminSection = 'users' | 'numbers' | 'products' | 'orders' | 'audit'
 export class Administration {
   constructor(private readonly db: Database) {}
   async list(section: AdminSection, input: AdminQuery) {
+    if (section === 'orders') input = new SchemaPipe(adminOrdersQuerySchema).transform(input);
     const values: unknown[] = [];
     const clauses = ['true'];
     const add = (sql: string, value: unknown) => { values.push(value); clauses.push(sql.replaceAll('?', `$${values.length}`)); };
@@ -108,10 +111,9 @@ export class Administration {
         fields = orderFields; from = orderFrom; sort = 'o.created_at DESC,o.id';
         if (input.search) add('(o.order_number ILIKE ? OR u.display_name ILIKE ? OR o.plan_name ILIKE ?)', search);
         if (input.userId) add('o.user_id=?', input.userId);
-        if (input.status === 'today') clauses.push("o.created_at >= date_trunc('day',now())");
-        else if (input.status === 'UNVERIFIED') clauses.push("NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT')");
-        else if (input.status === 'EXCEPTION') clauses.push("(o.fulfillment_status='FAILED' OR NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT'))");
-        else if (input.status) add('o.fulfillment_status=?', input.status);
+        if (input.view === 'today') clauses.push("o.created_at >= date_trunc('day',now())");
+        if (input.view === 'attention') clauses.push(orderNeedsAttention);
+        if (input.status) add('o.fulfillment_status=?', input.status);
         break;
       case 'projects':
         fields = projectFields; from = projectFrom; sort = 'p.provider,p.platform_id,p.external_project_id';
@@ -143,12 +145,12 @@ export class Administration {
     const { rows: [stats] } = await this.db.query(`SELECT
       (SELECT count(*)::int FROM users) AS users,
       (SELECT count(*)::int FROM number_allocations WHERE released_at IS NULL AND expires_at>now()) AS "activeNumbers",
-      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE ${availableStock('7')}) AS "saleNumbers",
-      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE s.provider='pingcode' AND ${availableStock('7')}) AS "pcSaleNumbers",
-      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE s.provider='pingcode-mock' AND ${availableStock('7')}) AS "demoSaleNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE n.region_id=ANY($1::text[]) AND ${availableStock('7')}) AS "saleNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE n.region_id=ANY($1::text[]) AND s.provider='pingcode' AND ${availableStock('7')}) AS "pcSaleNumbers",
+      (SELECT count(*)::int FROM number_platforms s JOIN phone_numbers n ON n.id=s.number_id WHERE n.region_id=ANY($1::text[]) AND s.provider='pingcode-mock' AND ${availableStock('7')}) AS "demoSaleNumbers",
       (SELECT count(*)::int FROM number_allocations WHERE released_at IS NULL AND expires_at>now() AND expires_at<=now()+interval '3 days') AS "expiringNumbers",
       (SELECT count(*)::int FROM orders WHERE created_at>=date_trunc('day',now())) AS "todayOrders",
-      (SELECT count(*)::int FROM orders o WHERE o.fulfillment_status='FAILED' OR NOT EXISTS(SELECT 1 FROM point_ledger l WHERE l.reference_id=o.id AND l.type='ORDER_DEBIT')) AS "exceptionOrders"`);
+      (SELECT count(*)::int FROM orders o WHERE ${orderNeedsAttention}) AS "exceptionOrders"`, [storefrontRegionIds]);
     const page = { page: 1, pageSize: 5, search: '', status: '' };
     const [orders, numbers, audit] = await Promise.all([
       this.list('orders', page), this.list('numbers', { ...page, status: 'expiring' }), this.list('audit', page),

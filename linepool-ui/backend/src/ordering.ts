@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import type { CreateOrderInput } from '@linepool/contracts';
+import { isStorefrontRegion, type CreateOrderInput } from '@linepool/contracts';
 import { Database } from './database.js';
 import { ApiFailure } from './http.js';
 import { Workspace } from './workspace.js';
@@ -12,6 +12,7 @@ import { MockReceivingProvider } from './providers/mock-receiving-provider.js';
 export class Ordering {
   constructor(private readonly db: Database, private readonly workspace: Workspace, private readonly provider: ReceivingProvider = new MockReceivingProvider(), private readonly environment?: Environment) {}
   async create(userId: string, input: CreateOrderInput, delivery: 'immediate' | 'deferred-mock' = 'immediate') {
+    if (!isStorefrontRegion(input.region)) throw new ApiFailure(409, 'REGION_NOT_AVAILABLE', 'This region is not open for storefront purchases');
     if (this.environment?.values.LOCAL_SANDBOX) delivery = 'deferred-mock';
     return this.db.transaction(async client => {
       const { rows: [user] } = await client.query<{ points_balance: number; account_status: string }>(

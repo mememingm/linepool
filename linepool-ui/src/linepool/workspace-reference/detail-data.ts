@@ -3,6 +3,7 @@ import { translate } from '../i18n/format';
 import { LinepoolApiError } from '../api/client';
 import { uuidSchema, type Catalog, type CreateOrderInput, type OrderDetail } from '../api/contracts';
 import type { ShellFilters, ShellRoute } from './navigation';
+import { saleOffers, saleRegions } from './sale-catalog';
 
 // Keep new detail-page copy together for the following preferences/i18n phase.
 export const detailCopy = {
@@ -42,9 +43,10 @@ export type CatalogDetail =
   | { kind: 'offer'; region: Region; offer: CatalogOffer };
 
 export function resolveCatalogDetail(catalog: Catalog, route: ShellRoute): CatalogDetail | null {
-  const region = catalog.regions.find(item => item.id === route.region);
-  const hasService = catalog.services.some(service => service === route.service);
-  const offers = catalog.offers.filter(offer => catalog.regions.some(item => item.id === offer.region) && catalog.services.includes(offer.service));
+  const regions = saleRegions(catalog);
+  const region = regions.find(item => item.id === route.region);
+  const offers = saleOffers(catalog).filter(offer => regions.some(item => item.id === offer.region) && catalog.services.includes(offer.service));
+  const hasService = offers.some(offer => offer.service === route.service);
   if (route.page === 'region-detail') return region ? { kind: 'region', region, offers: offers.filter(offer => offer.region === region.id) } : null;
   if (route.page === 'service-detail') return hasService ? { kind: 'service', service: route.service, offers: offers.filter(offer => offer.service === route.service) } : null;
   if (route.page === 'offer-detail' && region && hasService) {
@@ -56,7 +58,7 @@ export function resolveCatalogDetail(catalog: Catalog, route: ShellRoute): Catal
 
 export function regionPageTitle(catalog: Catalog, regionId: string, locale: Locale = 'zh-CN') {
   if (!regionId) return translate('地区服务', locale);
-  const region = catalog.regions.find(item => item.id === regionId);
+  const region = saleRegions(catalog).find(item => item.id === regionId);
   return region
     ? translate('{region}号码', locale, { region: locale === 'en-US' ? region.english : region.name })
     : translate(detailCopy.catalogNotFound, locale);
@@ -76,9 +78,11 @@ export type PurchaseSelection = { region: string; service: string; plan: string;
 export function purchaseSelection(catalog: Catalog, filters: ShellFilters, pending: CreateOrderInput | null): PurchaseSelection {
   // A frozen intent must outrank a new URL, even after inventory/catalog changes.
   if (pending) return { region: pending.region, service: pending.service, plan: pending.plan, quantity: pending.quantity };
-  const region = catalog.regions.some(item => item.id === filters.region) ? filters.region! : catalog.regions[0]?.id ?? '';
-  const service = catalog.services.some(item => item === filters.service) ? filters.service! : catalog.services[0] ?? '';
-  const plans = catalog.offers.filter(offer => offer.region === region && offer.service === service);
+  const regions = saleRegions(catalog);
+  const region = regions.some(item => item.id === filters.region) ? filters.region! : regions[0]?.id ?? '';
+  const offers = saleOffers(catalog).filter(offer => offer.region === region);
+  const service = offers.some(item => item.service === filters.service) ? filters.service! : offers[0]?.service ?? '';
+  const plans = offers.filter(offer => offer.service === service);
   const plan = plans.find(item => item.plan === filters.plan)?.plan ?? plans.find(item => item.plan === 'month')?.plan ?? plans[0]?.plan ?? 'month';
   return { region, service, plan, quantity: 1 };
 }

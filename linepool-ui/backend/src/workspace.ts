@@ -21,9 +21,16 @@ export type NumberRow = {
   id: string; phone_number: string; region_id: AssignedNumber['region']; country: string;
   service: AssignedNumber['service']; order_id: string | null; assigned_at: Date; expires_at: Date;
   allocation_id: string; message_count: number; unread_count: number;
+  source?: 'DIRECT' | 'AGENT'; provided_by?: string | null; released_at?: Date | null;
 };
 export const orderSelect = 'SELECT o.*,r.name AS country FROM orders o JOIN regions r ON r.id=o.region_id';
-export const numberSelect = `SELECT n.id,n.phone_number,n.region_id,a.platform_id AS service,a.order_id,a.assigned_at,
+export const numberSelect = `SELECT n.id,n.phone_number,n.region_id,a.platform_id AS service,a.order_id,a.assigned_at,a.released_at,
+  CASE WHEN a.agent_entitlement_id IS NULL THEN 'DIRECT' ELSE 'AGENT' END AS source,
+  (SELECT supplier.name FROM service_entitlements e JOIN number_holdings holding ON holding.id=e.holding_id
+    LEFT JOIN customers customer ON customer.id=holding.customer_id
+    LEFT JOIN number_holdings previous ON previous.id=holding.source_holding_id
+    LEFT JOIN agents supplier ON supplier.id=COALESCE(customer.agent_id,previous.agent_id)
+    WHERE e.id=a.agent_entitlement_id) AS provided_by,
   LEAST(a.expires_at,COALESCE(a.released_at,a.expires_at)) AS expires_at,a.id AS allocation_id,r.name AS country,
   (SELECT count(*)::int FROM sms_messages m WHERE m.allocation_id=a.id AND m.user_id=a.user_id) AS message_count,
   (SELECT count(*)::int FROM sms_messages m WHERE m.allocation_id=a.id AND m.user_id=a.user_id AND NOT m.is_read) AS unread_count
@@ -40,9 +47,10 @@ export function toOrder(row: OrderRow): Order {
 export function toNumber(row: NumberRow): AssignedNumber {
   return {
     id: row.id, allocationId: row.allocation_id, phoneNumber: row.phone_number, region: row.region_id, country: row.country,
-    service: row.service, orderId: row.order_id, assignedAt: row.assigned_at.toISOString(),
-    expiresAt: row.expires_at.toISOString(), status: allocationStatus(row.expires_at),
-    remainingDays: Math.max(0, Math.ceil((row.expires_at.getTime() - Date.now()) / 86400000)),
+    service: row.service, source: row.source ?? 'DIRECT', providedBy: row.provided_by ?? null,
+    orderId: row.order_id, assignedAt: row.assigned_at.toISOString(),
+    expiresAt: row.expires_at.toISOString(), status: row.released_at ? 'EXPIRED' : allocationStatus(row.expires_at),
+    remainingDays: row.released_at ? 0 : Math.max(0, Math.ceil((row.expires_at.getTime() - Date.now()) / 86400000)),
     messageCount: row.message_count, unreadCount: row.unread_count, isDemo: true,
   };
 }
@@ -74,12 +82,12 @@ export class Workspace {
       this.db.query<{ id: AssignedNumber['region']; name: string; english: string; prefix: string; area: string; available_count: number }>(
         `SELECT r.*,(SELECT count(DISTINCT n.id)::int ${from} JOIN offers o ON o.region_id=n.region_id AND o.service=s.platform_id
           WHERE n.region_id=r.id AND o.is_active AND o.duration_days IN (7,30) AND ${stock}) AS available_count
-         FROM regions r WHERE r.is_active ORDER BY r.sort_order,r.id`,
+         FROM regions r WHERE r.is_active AND r.id='us' ORDER BY r.sort_order,r.id`,
       ),
       this.db.query<{ region_id: Order['region']; service: Order['service']; plan: Order['plan']; name: string; duration_days: number; unit_points: number; available_count: number }>(
         `SELECT o.*,(SELECT count(*)::int ${from} WHERE ${stock}) AS available_count
          FROM offers o JOIN regions r ON r.id=o.region_id JOIN platforms p ON p.id=o.service
-         WHERE o.is_active AND p.is_active AND r.is_active AND o.duration_days IN (7,30)
+         WHERE o.is_active AND p.is_active AND r.is_active AND o.region_id='us' AND o.duration_days IN (7,30)
          AND o.capability='RECEIVE' AND NOT o.allow_renewal ORDER BY o.region_id,o.service,o.duration_days`,
       ),
       this.db.query<{ service: string; plan: string; code: string; available_count: number }>(
@@ -139,7 +147,7 @@ export class Workspace {
     const { rows: [order] } = await query<OrderRow>(`${orderSelect} WHERE o.id=$1 AND o.user_id=$2`, [id, userId]);
     if (!order) throw new ApiFailure(404, 'ORDER_NOT_FOUND', 'Order not found');
     const { rows } = await query<NumberRow>(`SELECT n.id,n.phone_number,n.region_id,r.name AS country,a.platform_id AS service,
-      a.id AS allocation_id,a.order_id,a.assigned_at,LEAST(a.expires_at,COALESCE(a.released_at,a.expires_at)) AS expires_at,
+      a.id AS allocation_id,a.order_id,a.assigned_at,a.released_at,LEAST(a.expires_at,COALESCE(a.released_at,a.expires_at)) AS expires_at,
       (SELECT count(*)::int FROM sms_messages m WHERE m.allocation_id=a.id AND m.user_id=a.user_id) AS message_count,
       (SELECT count(*)::int FROM sms_messages m WHERE m.allocation_id=a.id AND m.user_id=a.user_id AND NOT m.is_read) AS unread_count
       FROM number_allocations a JOIN phone_numbers n ON n.id=a.number_id JOIN regions r ON r.id=n.region_id

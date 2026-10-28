@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import type { HoldingBatchInput, HoldingBatchPreviewInput } from '@linepool/contracts';
 import type { Database } from './database.js';
 import { ApiFailure } from './http.js';
+import { quoteSettlement, saveSettlement, settleBalances } from './agent-settlement.js';
 
 export function transferableHoldingSql(stock = 's') {
   return `h.owner_type='AGENT' AND h.status='ACTIVE' AND h.transferred_at IS NULL
@@ -14,7 +15,8 @@ export function transferableHoldingSql(stock = 's') {
 type BatchContext = { agent: { id: string }; capabilities: { transferHoldings: boolean } };
 
 type Source = {
-  id: string; stock_id: string; phone_number: string; region_id: string; platform_id: string;
+  id: string; stock_id: string; inventory_id: string; phone_number: string; region_id: string; platform_id: string;
+  cost_minor: string;
   starts_at: Date; expires_at: Date | null; resource_expires_at: Date | null; transferable: boolean;
 };
 
@@ -39,7 +41,7 @@ export class HoldingBatch {
       if (selection.service) { values.push(selection.service); where += ` AND s.platform_id=$${values.length}`; }
     }
     const { rows } = await client.query<Source>(
-      `SELECT h.id,h.phone_number,h.region_id,h.starts_at,h.expires_at,s.id AS stock_id,
+      `SELECT h.id,h.phone_number,h.region_id,h.cost_minor,h.starts_at,h.expires_at,s.id AS stock_id,s.inventory_id,
         s.platform_id,s.resource_expires_at,(${transferableHoldingSql()}) AS transferable
        FROM number_holdings h JOIN agent_number_stock s ON s.holding_id=h.id
        WHERE ${where} ORDER BY h.id LIMIT 10001${lock ? ' FOR UPDATE OF h,s' : ''}`, values);
@@ -76,7 +78,7 @@ export class HoldingBatch {
       if (!Number.isFinite(expiry)) throw new ApiFailure(409, 'BATCH_EXPIRY_REQUIRED', 'Choose an expiry for holdings without a finite end');
       if (expiry > maximum) throw new ApiFailure(409, 'HOLDING_WINDOW_EXCEEDED', 'Batch expiry exceeds a holding or resource expiry');
       if (expiry <= Date.parse(startsAt)) throw new ApiFailure(409, 'INVALID_HOLDING_WINDOW', 'Batch expiry must follow each holding start');
-      return { sourceId: row.id, holdingId: randomUUID(), stockId: row.stock_id, phoneNumber: row.phone_number,
+      return { sourceId: row.id, holdingId: randomUUID(), stockId: row.stock_id, inventoryId: row.inventory_id, phoneNumber: row.phone_number,
         regionId: row.region_id, service: row.platform_id, startsAt, expiresAt: new Date(expiry).toISOString() };
     });
     // Exclude the clock and generated IDs; include all source/window evidence and the exact requested destination.
@@ -92,13 +94,20 @@ export class HoldingBatch {
       regions: group('regionId'), services: group('service') } };
   }
 
+  private async settlement(client: PoolClient, agentId: string, rows: Source[], items: ReturnType<HoldingBatch['plan']>['items'], input: HoldingBatchPreviewInput) {
+    return quoteSettlement(client, agentId, input.recipient.ownerType === 'AGENT' ? input.recipient.agentId : null,
+      input.recipient.ownerType === 'CUSTOMER', items.map((item, index) => ({ key: item.sourceId, phoneNumber: item.phoneNumber, regionId: item.regionId, service: item.service, startsAt: item.startsAt, expiresAt: item.expiresAt, costMinor: Number(rows[index]!.cost_minor) })), input.bookAmountMinor);
+  }
+
   async preview(context: BatchContext, input: HoldingBatchPreviewInput) {
     return this.db.transaction(async client => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
       await client.query("SET LOCAL statement_timeout='60s'");
       const rows = await this.sources(client, context.agent.id, input, false);
       await this.recipient(client, context, input, false);
-      return { data: this.plan(rows, input).preview };
+      const { items, preview } = this.plan(rows, input);
+      const settlement = await this.settlement(client, context.agent.id, rows, items, input);
+      return { data: { ...preview, fingerprint: `${preview.fingerprint}:${settlement.quote.fingerprint}`, settlement: settlement.quote } };
     });
   }
 
@@ -119,7 +128,8 @@ export class HoldingBatch {
       const rows = await this.sources(client, context.agent.id, input, true);
       await this.recipient(client, context, input, true);
       const { items, preview } = this.plan(rows, input);
-      if (preview.fingerprint !== input.fingerprint) throw new ApiFailure(409, 'BATCH_SELECTION_CHANGED', 'Inventory changed after preview; review the batch again');
+      const settlement = await this.settlement(client, context.agent.id, rows, items, input);
+      if (`${preview.fingerprint}:${settlement.quote.fingerprint}` !== input.fingerprint) throw new ApiFailure(409, 'BATCH_SELECTION_CHANGED', '号码、价格或计费天数已变化，请重新核对');
       // Recheck the sender under a lock so concurrent suspension cannot race the write.
       const { rows: [sender] } = await client.query<{ status: string }>('SELECT status FROM agents WHERE id=$1 FOR UPDATE', [context.agent.id]);
       if (sender?.status !== 'ACTIVE') throw new ApiFailure(403, 'ACTOR_NOT_ACTIVE', 'Agent is not active');
@@ -134,20 +144,21 @@ export class HoldingBatch {
         [orderId, `LP-${isAgent ? 'R' : 'A'}-${randomUUID().toUpperCase()}`, isAgent ? 'AGENT' : 'CUSTOMER',
           isAgent ? targetId : null, isAgent ? null : targetId, context.agent.id, isAgent ? 'WHOLESALE' : 'RETAIL',
           input.idempotencyKey, actorId, JSON.stringify({ operation: 'holdingBatch', input, result: { count: items.length } })]);
+      await settleBalances(client, orderId, settlement);
       const sourceIds = items.map(item => item.sourceId);
       await client.query("UPDATE number_holdings SET status='RETIRED',transferred_at=now() WHERE id=ANY($1::uuid[])", [sourceIds]);
       await client.query("UPDATE service_entitlements SET status='REVOKED' WHERE holding_id=ANY($1::uuid[]) AND status='ACTIVE'", [sourceIds]);
       const payload = JSON.stringify(items);
       // JSON recordset keeps SQL parameter count bounded even for 10,000 numbers.
-      const records = `jsonb_to_recordset($1::jsonb) AS item("sourceId" uuid,"holdingId" uuid,"stockId" uuid,
+      const records = `jsonb_to_recordset($1::jsonb) AS item("sourceId" uuid,"holdingId" uuid,"stockId" uuid,"inventoryId" uuid,
         "phoneNumber" text,"regionId" text,service text,"startsAt" timestamptz,"expiresAt" timestamptz)`;
       await client.query(
-        `INSERT INTO number_holdings(id,owner_type,agent_id,customer_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at)
-         SELECT item."holdingId",$2,$3,$4,item."regionId",item."phoneNumber",'ACTIVE',$5,item."sourceId",item."startsAt",item."expiresAt" FROM ${records}`,
+        `INSERT INTO number_holdings(id,owner_type,agent_id,customer_id,region_id,phone_number,status,source_tx_order_id,source_holding_id,starts_at,expires_at,inventory_id)
+         SELECT item."holdingId",$2,$3,$4,item."regionId",item."phoneNumber",'ACTIVE',$5,item."sourceId",item."startsAt",item."expiresAt",item."inventoryId" FROM ${records}`,
         [payload, isAgent ? 'AGENT' : 'CUSTOMER', isAgent ? targetId : null, isAgent ? null : targetId, orderId]);
       await client.query(
-        `INSERT INTO service_entitlements(holding_id,service,starts_at,expires_at,status,source_tx_order_id)
-         SELECT item."holdingId",item.service,item."startsAt",item."expiresAt",'ACTIVE',$2 FROM ${records}`, [payload, orderId]);
+        `INSERT INTO service_entitlements(holding_id,service,inventory_id,starts_at,expires_at,status,source_tx_order_id)
+         SELECT item."holdingId",item.service,item."inventoryId",item."startsAt",item."expiresAt",'ACTIVE',$2 FROM ${records}`, [payload, orderId]);
       await client.query(
         `UPDATE agent_number_stock stock SET status='ALLOCATED',holding_id=item."holdingId" FROM ${records} WHERE stock.id=item."stockId"`, [payload]);
       await client.query(
@@ -155,6 +166,7 @@ export class HoldingBatch {
          SELECT item."stockId",item."holdingId",$2,'批量库存划拨',$3,
            jsonb_build_object('orderId',$4::text,'sourceHoldingId',item."sourceId",'fromAgentId',$5::text,'recipientId',$6::text,'batch',true)
          FROM ${records}`, [payload, isAgent ? 'RESELL' : 'ASSIGN_CUSTOMER', actorId, orderId, context.agent.id, targetId]);
+      await saveSettlement(client, orderId, settlement, items.map(item => ({ id: item.holdingId, key: item.sourceId })));
       return { data: { orderId, count: items.length, replayed: false } };
     });
   }

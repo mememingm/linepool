@@ -14,11 +14,13 @@ import { AdminTooltip } from './Presentation';
 export const statusLabels: Record<string, string> = {
   ACTIVE: '正常', DISABLED: '已禁用', USER: '普通用户', ADMIN: '平台管理员',
   AVAILABLE: '可售', ASSIGNED: '已分配', UNSELLABLE: '不可售', LOCAL: '本地资源', ONLINE: '在线', OFFLINE: '离线', ERROR: '异常',
+  SERVICE_ACTIVE: '服务有效', SERVICE_EXPIRING: '3 天内到期', SERVICE_EXPIRED: '有效期已结束',
   COMPLETED: '已完成', PROCESSING: '处理中', FAILED: '失败', CANCELLED: '已取消', UNVERIFIED: '待核对',
   POINTS_DEBITED: '积分已扣除', NOT_CONFIGURED: '未接入支付', PENDING: '待支付', CONFIRMED: '已确认', PENDING_REVIEW: '待处理', UNKNOWN: '待核对',
   SUCCEEDED: '已到账', EXPIRED: '已超时',
   PC: 'PC', DEMO: '演示', NOT_CONNECTED: '未接入', PROJECT_ACTIVE: '已启用', PROJECT_INACTIVE: '已停用',
   IMPORTED: '已分发', UNMATCHED: '未匹配用户', RECEIPT_PENDING: '待处理',
+  STOREFRONT_CLOSED: '前台未开放',
   PRODUCT_ON: '销售中', PRODUCT_OFF: '已下架', PRODUCT_NEW: '待生成', ALLOCATED: '已分配给代理', RESERVED: '已预留', RELEASED: '已释放', RETIRED: '已退出库存', SUSPENDED: '已暂停', TERMINATED: '已终止',
 };
 const regionNames: Record<string, string> = { us: '美国', gb: '英国', ca: '加拿大', sg: '新加坡', de: '德国', nl: '荷兰' };
@@ -76,7 +78,7 @@ export function ActionButton({ className = '', variant = 'outline', busy = false
 }
 export function Badge({ value }: { value: string }) {
   const p = useDisplayPreferences();
-  const tone = ['ACTIVE', 'COMPLETED', 'SUCCEEDED', 'POINTS_DEBITED', 'ONLINE', 'AVAILABLE', 'CONFIRMED', 'IMPORTED', 'PROJECT_ACTIVE', 'PRODUCT_ON'].includes(value) ? 'success' : ['FAILED', 'DISABLED', 'ERROR'].includes(value) ? 'danger' : ['PROCESSING', 'ALLOCATED', 'ASSIGNED'].includes(value) ? 'info' : ['PENDING', 'PENDING_REVIEW', 'UNKNOWN', 'UNVERIFIED', 'UNMATCHED', 'RECEIPT_PENDING'].includes(value) ? 'warning' : 'neutral';
+  const tone = ['ACTIVE', 'SERVICE_ACTIVE', 'COMPLETED', 'SUCCEEDED', 'POINTS_DEBITED', 'ONLINE', 'AVAILABLE', 'CONFIRMED', 'IMPORTED', 'PROJECT_ACTIVE', 'PRODUCT_ON'].includes(value) ? 'success' : ['FAILED', 'DISABLED', 'ERROR', 'SERVICE_EXPIRED'].includes(value) ? 'danger' : ['PROCESSING', 'ALLOCATED', 'ASSIGNED'].includes(value) ? 'info' : ['PENDING', 'PENDING_REVIEW', 'UNKNOWN', 'UNVERIFIED', 'UNMATCHED', 'RECEIPT_PENDING', 'SERVICE_EXPIRING'].includes(value) ? 'warning' : 'neutral';
   return <StatusBadge variant="outline" className="lp-admin-status" data-tone={tone}>{p.t(statusLabels[value] ?? value)}</StatusBadge>;
 }
 export function DateText({ value }: { value: string | null }) {

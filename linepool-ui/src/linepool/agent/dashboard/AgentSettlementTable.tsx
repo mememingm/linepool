@@ -13,7 +13,7 @@ export function AgentSettlementTable({ data }: { data?: AgentDashboardData }) {
   const amount = (minor: number | null) => minor == null ? '—' : `${(minor / 100).toFixed(2)} ${currency}`;
   const profit = (minor: number | null) => data?.costStatus === 'SYNCED' && minor != null ? amount(minor) : '—';
   return <Card className="lp-admin-section"><div className="lp-admin-section-heading"><h2>下级代理经营概览</h2><a href={agentHref('agents')}>全部下级 <ArrowUpRight size={14} /></a></div>
-    {rows.length ? <Table columns={['下级代理', '销售额', '接码量', '当前库存', '利润', '最近活跃']} label="下级代理经营概览">{rows.map(row => <tr key={row.agentId}>
+    {rows.length ? <Table columns={['下级代理', '我向下级销售额', '接码量', '当前库存', '我的毛利', '最近活跃']} label="下级代理经营概览">{rows.map(row => <tr key={row.agentId}>
       <td><a href={subagentHref(row.agentId)}>{row.name}</a></td><td className="lp-admin-numeric">{amount(row.salesMinor)}</td>
       <td className="lp-admin-numeric">{p.n(row.codeCount)}</td><td className="lp-admin-numeric">{p.n(row.inventoryCount)}</td>
       <td className="lp-admin-numeric">{profit(row.profitMinor)}</td><td><DateText value={row.lastActiveAt} /></td>

@@ -93,6 +93,7 @@ export const numberSchema = z.object({
   id: uuidSchema, phoneNumber: z.string(), region: regionIdSchema, country: z.string(),
   service: serviceSchema, orderId: uuidSchema.nullable(), status: z.enum(['ACTIVE', 'EXPIRED']),
   allocationId: uuidSchema.optional(),
+  source: z.enum(['DIRECT', 'AGENT']).optional(), providedBy: z.string().nullable().optional(),
   assignedAt: timestamp, expiresAt: timestamp, remainingDays: z.number().int().nonnegative(),
   messageCount: z.number().int().nonnegative(), unreadCount: z.number().int().nonnegative(),
   isDemo: z.literal(true),

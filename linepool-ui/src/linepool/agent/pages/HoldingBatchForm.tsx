@@ -4,6 +4,8 @@ import { workspaceApi as api } from '../../api/query-client';
 import { DateText, Facts, Modal, regionName } from '../../admin/primitives';
 import AppCombobox from '../../AppCombobox';
 import { agentError } from '../subagent-shared';
+import { SettlementPreview } from '../SettlementPreview';
+import { settlementMoney } from '../SettlementPriceEditor';
 import type { AgentPageProps } from '../pages';
 import { ErrorText, FormFooter, useAgentAction, useChildren, useCustomers } from './shared';
 
@@ -18,6 +20,8 @@ export default function HoldingBatchForm({ access, selection, onClose, onComplet
   const [kind, setKind] = useState<'AGENT' | 'CUSTOMER'>(canTransfer ? 'AGENT' : 'CUSTOMER');
   const [target, setTarget] = useState('');
   const [expiry, setExpiry] = useState('');
+  const [price, setPrice] = useState('');
+  const bookAmount = price ? settlementMoney(price) : undefined;
   const [preview, setPreview] = useState<HoldingBatchPreview | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [error, setError] = useState('');
@@ -27,10 +31,10 @@ export default function HoldingBatchForm({ access, selection, onClose, onComplet
   const choices = (kind === 'AGENT' ? children.data : customers.data)?.filter(item => item.status === 'ACTIVE') ?? [];
   const targetName = choices.find(item => item.id === target)?.name ?? target;
   const recipient: OwnerRef = kind === 'AGENT' ? { ownerType: 'AGENT', agentId: target } : { ownerType: 'CUSTOMER', customerId: target };
-  const valid = !!target && (!expiry || (Number.isFinite(Date.parse(expiry)) && Date.parse(expiry) > Date.now()));
+  const valid = !!target && bookAmount !== null && (!expiry || (Number.isFinite(Date.parse(expiry)) && Date.parse(expiry) > Date.now()));
   return <Modal title="批量划转号码" onClose={onClose} busy={busy}><form className="lp-agent-form" onSubmit={event => {
     event.preventDefault(); if (!valid || busy) return;
-    const payload = { selection, recipient, expiresAt: expiry ? new Date(expiry).toISOString() : null };
+    const payload = { selection, recipient, expiresAt: expiry ? new Date(expiry).toISOString() : null, bookAmountMinor: kind === 'CUSTOMER' ? bookAmount ?? undefined : undefined };
     if (!preview) {
       if (previewInFlight.current) return;
       previewInFlight.current = true; setPreviewBusy(true); setError('');
@@ -49,8 +53,8 @@ export default function HoldingBatchForm({ access, selection, onClose, onComplet
       ['平台', preview.services.map(item => `${item.value} ${item.count.toLocaleString()} 个`).join('、')],
       ['开始方式', '立即开始；尚未生效的号码沿用原开始时间'],
       ['到期方式', expiry ? <DateText value={new Date(expiry).toISOString()} /> : '分别沿用各号码原到期时间（不超过资源到期时间）'],
-      ['最早到期', <DateText value={preview.earliestExpiresAt} />], ['结算', '库存划拨（不收款、不扣余额）'],
-    ]} /><p className="lp-admin-context">号码示例：{preview.sample.join('、')}{preview.count > preview.sample.length ? '…' : ''}</p>
+      ['最早到期', <DateText value={preview.earliestExpiresAt} />],
+    ]} /><SettlementPreview quote={preview.settlement} retail={kind === 'CUSTOMER'} /><p className="lp-admin-context">号码示例：{preview.sample.join('、')}{preview.count > preview.sample.length ? '…' : ''}</p>
       <p className="lp-admin-context">确认后将统一划转以上号码。若号码状态或归属发生变化，整批取消，请返回修改并重新核对。提交期间请保持页面打开。</p></> : <fieldset disabled={busy}>
       <p className="lp-admin-context">{selection.mode === 'FILTER' ? '已选择当前筛选结果中全部可划转号码，包含其他页。' : `已勾选 ${selection.holdingIds.length.toLocaleString()} 个号码，可包含不同页。`}单次最多划转 10,000 个号码。</p>
       <label>划转给<select value={kind} onChange={event => { setKind(event.target.value as typeof kind); setTarget(''); }}>
@@ -58,9 +62,10 @@ export default function HoldingBatchForm({ access, selection, onClose, onComplet
       </select></label>
       <label>接收方<AppCombobox aria-label="批量划转接收方" value={target} onValueChange={setTarget} options={choices.map(item => ({ value: item.id, label: item.name }))} placeholder="请选择接收方" searchPlaceholder="搜索接收方" emptyMessage="没有启用的接收方" /></label>
       <ErrorText error={(kind === 'AGENT' ? children.error : customers.error) ? agentError(kind === 'AGENT' ? children.error : customers.error) : ''} />
+      {kind === 'CUSTOMER' && <label>每个号码售价（记账，可选）<input inputMode="decimal" value={price} onChange={event => setPrice(event.target.value)} placeholder="留空按各号码参考售价计算" /></label>}
       <label>统一到期时间（可选）<input type="datetime-local" value={expiry} onChange={event => setExpiry(event.target.value)} /></label>
       <p className="lp-admin-context">留空时，各号码保留原到期时间；填写后，全部使用该时间，且不能超过任一号码或资源的到期时间。长期号码需填写到期时间。</p>
     </fieldset>}
     <ErrorText error={error || action.error} />
-  </div><FormFooter busy={busy} onClose={onClose} onBack={preview ? () => { setPreview(null); setError(''); } : undefined} disabled={!valid} label={preview ? `确认划转 ${preview.count.toLocaleString()} 个号码` : '核对数量与接收方'} /></form></Modal>;
+  </div><FormFooter busy={busy} onClose={onClose} onBack={preview ? () => { setPreview(null); setError(''); } : undefined} disabled={!valid || bookAmount === null || !!preview && !preview.settlement.sufficient} label={preview ? `确认划转 ${preview.count.toLocaleString()} 个号码` : '核对数量与接收方'} /></form></Modal>;
 }

@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryClient, workspaceApi } from '../api/query-client';
 import { z } from 'zod';
 import { languageStore, type Locale } from '../preferences/store';
+import { apiFailureMessage } from '../i18n/api-errors';
 import { dateLabel, translate } from '../i18n/format';
 import { createLinepoolApi, LinepoolApiError, type ApiRequestOptions } from '../api/client';
 import type { CreateRenewalInput, InboxQuery, PointsQuery, PaginationQuery, UsageQuery } from '../api/contracts';
@@ -25,29 +26,10 @@ export type WorkspaceData = {
   orders: Order[];
   ledger: LedgerEntry[];
 };
-export function apiMessage(error: unknown, locale: Locale = 'zh-CN'): string {
+export function apiMessage(error: unknown, locale: Locale = languageStore.getSnapshot()): string {
   if (error instanceof z.ZodError) return translate('请检查账号、密码及提交内容', locale);
   if (!(error instanceof LinepoolApiError)) return translate('操作失败，请重试', locale);
-  const labels: Record<string, string> = {
-    INVALID_CREDENTIALS: '账号或密码不正确', EMAIL_EXISTS: '该邮箱已注册',
-    INVALID_CURRENT_PASSWORD: '当前密码不正确，请重新输入',
-    PASSWORD_RECOVERY_UNAVAILABLE: '邮件找回暂未配置，请联系管理员重置密码',
-    INVALID_RESET_TOKEN: '重置链接无效或已过期，请重新申请。',
-    UNAUTHENTICATED: '登录已过期，请重新登录', NETWORK_ERROR: '无法连接 API，请检查服务后重试',
-    NUMBER_NOT_FOUND: '号码不存在或已不再属于当前账号',
-    RENEWAL_DISABLED: '短期短信接收服务暂不支持续费',
-    OFFER_NOT_FOUND: '所选服务期限已不可售，请重新选择',
-    NUMBER_EXPIRY_CHANGED: '号码到期时间已变化，请刷新续费方案后重试',
-    RENEWAL_KEY_CONFLICT: '此请求已用于其他续费申请，请查看申请记录',
-    RENEWAL_PENDING: '该号码已有待处理申请，请查看申请记录',
-    RENEWAL_DURATION_UNAVAILABLE: '此续费时长暂不可用，请刷新方案',
-    REQUEST_TIMEOUT: '请求超时，请重试；重复提交会复用原申请',
-    INSUFFICIENT_POINTS: '积分余额不足', INSUFFICIENT_STOCK: '所选服务库存不足，请重新选择',
-    IDEMPOTENCY_CONFLICT: '此请求键已用于其他订单，请确认订单记录',
-    INVALID_RESPONSE: 'API 返回的数据格式不正确，请稍后重试', ORIGIN_REJECTED: '当前访问地址未获 API 授权',
-    ORDER_NOT_FOUND: '订单不存在', MESSAGE_NOT_FOUND: '短信不存在', VALIDATION_ERROR: '提交内容不符合接口要求',
-  };
-  return translate(labels[error.code] ?? (error.status === 429 ? '请求过于频繁，请稍后重试' : error.status >= 500 ? '服务暂时不可用，请稍后重试' : error.message), locale);
+  return apiFailureMessage(error.code, error.status, locale);
 }
 async function allPages<T>(fetchPage: (page: number) => Promise<PaginatedResponse<T>>): Promise<T[]> {
   const first = await fetchPage(1);
@@ -73,16 +55,24 @@ export function useWorkspaceApi(page: ShellRoute['page'] = 'dashboard') {
   const dashboard = useQuery({ queryKey: [...key('dashboard'), page === 'dashboard' ? 'overview' : 'summary'], queryFn: async ({ signal }) => (await (page === 'dashboard' ? api.dashboardOverview({ signal }) : api.dashboard({ signal }))).data, enabled }, client);
   // Number options are needed only inside the inbox. Record lists use their own server pagination.
   const numbers = useQuery({ queryKey: key('numbers'), queryFn: ({ signal }) => allPages(page => api.numbers({ page, pageSize: 100 }, { signal })), enabled: enabled && page === 'inbox' }, client);
-  const queries = [account, ...(needsCatalog ? [catalog] : []), dashboard, ...(page === 'inbox' ? [numbers] : [])];
+  const messages = useQuery({ queryKey: key('messages'), queryFn: ({ signal }) => allPages(page => api.inbox({ page, pageSize: 100 }, { signal })), enabled: enabled && page === 'inbox' }, client);
+  // The points page shows the full ledger; other pages only need the balance from the account.
+  const ledger = useQuery({ queryKey: key('ledger'), queryFn: async ({ signal }) => {
+    const first = await api.points({ page: 1, pageSize: 100 }, { signal });
+    const entries = [...first.data.entries];
+    for (let next = 2; next <= first.pagination.totalPages; next++) entries.push(...(await api.points({ page: next, pageSize: 100 }, { signal })).data.entries);
+    return entries;
+  }, enabled: enabled && page === 'points' }, client);
+  const queries = [account, ...(needsCatalog ? [catalog] : []), dashboard, ...(page === 'inbox' ? [numbers, messages] : []), ...(page === 'points' ? [ledger] : [])];
   const failure = session.error ?? queries.find(query => query.error)?.error;
   const unauthorized = [session, ...queries].some(query => query.error instanceof LinepoolApiError && query.error.status === 401);
   const needsLogin = signedOut || unauthorized;
   const data = useMemo<WorkspaceData | null>(() => {
-    if (!enabled || unauthorized || !account.data || (needsCatalog && !catalog.data) || !dashboard.data || (page === 'inbox' && !numbers.data)) return null;
+    if (!enabled || unauthorized || !account.data || (needsCatalog && !catalog.data) || !dashboard.data || (page === 'inbox' && (!numbers.data || !messages.data)) || (page === 'points' && !ledger.data)) return null;
     return { account: account.data, catalog: catalog.data ?? emptyCatalog, dashboard: dashboard.data,
       numbers: page === 'inbox' ? numbers.data! : dashboard.data.overview?.recentNumbers ?? emptyNumbers,
-      messages: dashboard.data.overview?.recentMessages ?? emptyMessages, orders: dashboard.data.recentOrders ?? emptyOrders, ledger: emptyLedger };
-  }, [enabled, unauthorized, needsCatalog, page, account.data, catalog.data, dashboard.data, numbers.data]);
+      messages: page === 'inbox' ? messages.data! : dashboard.data.overview?.recentMessages ?? emptyMessages, orders: dashboard.data.recentOrders ?? emptyOrders, ledger: page === 'points' ? ledger.data! : emptyLedger };
+  }, [enabled, unauthorized, needsCatalog, page, account.data, catalog.data, dashboard.data, numbers.data, messages.data, ledger.data]);
   const loading = !needsLogin && (session.isFetching || queries.some(query => query.isFetching) || (session.isPending && !session.error));
   const lastUpdated = data ? Math.max(...queries.map(query => query.dataUpdatedAt)) : null;
   const error = notice || (failure && !unauthorized ? apiMessage(failure) : '');
