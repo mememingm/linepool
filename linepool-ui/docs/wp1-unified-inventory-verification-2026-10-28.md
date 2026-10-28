@@ -55,3 +55,12 @@
 - `POST /api/agent-inventory/settlement-preview`（root，`operation=RESELL`、目标小李）对 `+16475562011` / ca 返回 409 `PRICE_NOT_SET`，`sufficient/price` 不生成。
 - 同一只读预览对 `+65815562004` / sg 返回 409 `PRICE_NOT_SET`，`sufficient/price` 不生成。
 - 该接口在 `backend/src/agent-inventory.ts` 使用 `READ ONLY` 事务；本次只读请求没有写价格、库存或账本。两个许可号码均无可用结算价格，因此 WP1 写验收继续 **blocked**；不自行新增或修改价格规则。
+
+## 临时价格夹具后的受控循环（blocked）
+
+- 统筹授权使用 USD 3.00（300 cents）临时价格；证据：`C:/Users/27792/.rove/worktrees/llinepool-5e751a034ad2/nuthatch/linepool-ui/.local/wp1-api-20261028/price-fixture-cycle-receipts.json`。
+- 管理员仅新增两条规则，均返回 **201**：WhatsApp/ca 规则 ID `a8a3959d-8a56-4956-bea0-bbcbc775d474`；WhatsApp/sg 规则 ID `7ebda651-612f-445d-b66b-6f06fbe9a7be`。两条均 AGENT seller、root sellerAgent、WHOLESALE、P30D、USD、300、active；未写其他价格。
+- root 对许可号码 `+16475562011` 的 RESELL settlement preview 返回 **201**，`sufficient=true`、`unitAmountMinor=300`、`amountMinor=270`、`billedDays=27`；随后 `POST /api/agent-inventory/holdings/resell` 返回 **201**，生成小李目标 holding `b4213a4d-fb0d-40cd-a392-8d49ce3d406b`。
+- 管理员 release 该目标 holding 返回 **201**，同一 stock `099f7cb5-4460-4cdf-a86c-f4bf368d4d15` 正确变为 AVAILABLE、`holdingId=null`。
+- 受控复位的 claim 只读结算预览随后返回 **409 `STOCK_UNAVAILABLE`**（号码不可用或超过资源期限），因此立即停止；未执行 claim、客户分配、批量预览/划转或后续复位。该循环已发生一次临时 resell/release 写入，统筹必须用快照 `D:/llinepool/linepool-ui/backend/.local/backups/before-wp1-write-cycles-2026-10-28T07-20-40-974Z.dump` 恢复，包含临时价格规则和本次交易记录。
+- 本轮结果为 **blocked**，不能视为完整 WP1 写验收通过；没有自行恢复数据库，也没有操作第二条 WhatsApp/sg stock、其他账号或其他号码。
