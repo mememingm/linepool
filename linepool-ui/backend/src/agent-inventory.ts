@@ -1123,14 +1123,20 @@ export class AgentInventory {
           throw new ApiFailure(403, 'TRANSFER_SCOPE_INVALID', 'Agents can only transfer from their own balance');
         }
         if (toKey.ownerType === 'AGENT') {
-          const { rows: [child] } = await client.query<{ id: string }>(
-            'SELECT id FROM agents WHERE id=$1 AND parent_agent_id=$2', [toKey.agentId, actor.agentId]);
+          const { rows: [child] } = await client.query<{ id: string; status: string }>(
+            'SELECT id,status FROM agents WHERE id=$1 AND parent_agent_id=$2 FOR UPDATE', [toKey.agentId, actor.agentId]);
           if (!child) throw new ApiFailure(403, 'TRANSFER_SCOPE_INVALID', 'Agents can only transfer to direct child agents');
+          if (child.status !== 'ACTIVE') throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', 'Target agent is not active');
         } else {
           const { rows: [customer] } = await client.query<{ id: string }>(
             'SELECT id FROM customers WHERE id=$1 AND agent_id=$2', [toKey.customerId, actor.agentId]);
           if (!customer) throw new ApiFailure(403, 'TRANSFER_SCOPE_INVALID', 'Agents can only transfer to their own customers');
         }
+      } else if (actor.kind === 'ADMIN' && toKey.ownerType === 'AGENT') {
+        const { rows: [target] } = await client.query<{ id: string; status: string }>(
+          'SELECT id,status FROM agents WHERE id=$1 FOR UPDATE', [toKey.agentId]);
+        if (!target) throw new ApiFailure(404, 'AGENT_NOT_FOUND', 'Target agent was not found');
+        if (target.status !== 'ACTIVE') throw new ApiFailure(409, 'AGENT_NOT_ACTIVE', 'Target agent is not active');
       } else if (actor.kind === 'CUSTOMER') {
         throw new ApiFailure(403, 'TRANSFER_SCOPE_INVALID', 'Customers cannot initiate balance transfers');
       }
