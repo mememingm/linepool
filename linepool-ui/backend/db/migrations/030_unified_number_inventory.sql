@@ -35,8 +35,8 @@ ON CONFLICT(provider,number_id) DO NOTHING;
 
 UPDATE service_entitlements e SET inventory_id=p.id
 FROM number_holdings h JOIN phone_numbers n ON n.phone_number=h.phone_number
-JOIN number_platforms p ON p.number_id=n.id AND p.platform_id=e.service
-WHERE e.holding_id=h.id;
+JOIN number_platforms p ON p.number_id=n.id
+WHERE e.holding_id=h.id AND p.platform_id=e.service;
 ALTER TABLE service_entitlements ALTER COLUMN inventory_id SET NOT NULL;
 UPDATE number_holdings h SET inventory_id=resolved.inventory_id
 FROM (
