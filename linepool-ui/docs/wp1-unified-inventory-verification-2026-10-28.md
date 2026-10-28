@@ -47,3 +47,11 @@
 - `POST /api/agent-inventory/holdings/resell`（root → 小李，`+16475562011`，新 UUID idempotencyKey）返回 **409 `PRICE_NOT_SET`**，提示 `WhatsApp / ca` 未设置价格。
 - 按要求立即停止；未执行 release、claim、assign-customer、batch-preview、batch-transfer，也未产生任何数据库变化。快照无需本次恢复。
 - 因为没有设置价格依据，不能安全猜测价格或追加价格写入；本循环标记 **blocked**，不是通过。
+
+## 价格与结算预览只读核对
+
+- 证据：`C:/Users/27792/.rove/worktrees/llinepool-5e751a034ad2/nuthatch/linepool-ui/.local/wp1-api-20261028/price-quote-receipts.json`。
+- `GET /api/agent-inventory/prices`（root）返回 200。现有规则仅 1 条：`service=Google`、`regionId=null`、`pricingKind=WHOLESALE`、`unitAmountMinor=300`、`isActive=true`；没有 WhatsApp/ca 或 WhatsApp/sg 规则。
+- `POST /api/agent-inventory/settlement-preview`（root，`operation=RESELL`、目标小李）对 `+16475562011` / ca 返回 409 `PRICE_NOT_SET`，`sufficient/price` 不生成。
+- 同一只读预览对 `+65815562004` / sg 返回 409 `PRICE_NOT_SET`，`sufficient/price` 不生成。
+- 该接口在 `backend/src/agent-inventory.ts` 使用 `READ ONLY` 事务；本次只读请求没有写价格、库存或账本。两个许可号码均无可用结算价格，因此 WP1 写验收继续 **blocked**；不自行新增或修改价格规则。
