@@ -39,7 +39,7 @@ export default function BalanceTransfer({ agentId, recipientId = '', onClose, on
       <label>币种<select value={currency} onChange={event => setCurrency(event.target.value)}>{[...new Set(['USD', ...accounts.map(item => item.currency)])].map(value => <option key={value}>{value}</option>)}</select></label>
       <p className="lp-admin-context">可用余额：{money(balance, currency)}</p>
       <label>金额<input required inputMode="decimal" value={amount} pattern="[0-9]+(\.[0-9]{1,2})?" onChange={event => setAmount(event.target.value)} placeholder="0.00" /></label>
-      {!!amountMinor && amountMinor > balance && <p role="alert" className="lp-admin-error">转移金额超过可用余额。</p>}
+      {!!amountMinor && amountMinor > balance && <p role="alert" className="lp-admin-error">余额不足：需要 {money(amountMinor, currency)}，当前 {money(balance, currency)}。</p>}
       <label>转账说明<textarea required maxLength={200} value={description} onChange={event => setDescription(event.target.value)} /></label>
     </fieldset>}
     <State loading={children.isFetching || balances.isFetching} error={children.error || balances.error ? agentError(children.error ?? balances.error) : ''} retry={() => { void children.refetch(); void balances.refetch(); }} />
