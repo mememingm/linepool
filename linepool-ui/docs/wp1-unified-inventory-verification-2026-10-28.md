@@ -64,3 +64,11 @@
 - 管理员 release 该目标 holding 返回 **201**，同一 stock `099f7cb5-4460-4cdf-a86c-f4bf368d4d15` 正确变为 AVAILABLE、`holdingId=null`。
 - 受控复位的 claim 只读结算预览随后返回 **409 `STOCK_UNAVAILABLE`**（号码不可用或超过资源期限），因此立即停止；未执行 claim、客户分配、批量预览/划转或后续复位。该循环已发生一次临时 resell/release 写入，统筹必须用快照 `D:/llinepool/linepool-ui/backend/.local/backups/before-wp1-write-cycles-2026-10-28T07-20-40-974Z.dump` 恢复，包含临时价格规则和本次交易记录。
 - 本轮结果为 **blocked**，不能视为完整 WP1 写验收通过；没有自行恢复数据库，也没有操作第二条 WhatsApp/sg stock、其他账号或其他号码。
+
+## 最终恢复核对
+
+- 临时价格夹具两次 POST 均返回 **201**：WhatsApp/ca 与 WhatsApp/sg；RESELL settlement preview 返回 **201、sufficient=true**；RESELL 返回 **201**；管理员 release 返回 **201**。
+- 随后 CLAIM settlement preview 返回 **409 `STOCK_UNAVAILABLE`**，因此未执行 claim、assign-customer、batch-preview 或 batch-transfer。
+- 统筹已恢复快照：`D:/llinepool/linepool-ui/backend/.local/backups/before-short-term-2026-10-28T07-20-40-974Z.dump`。数据库复核确认临时价格规则已消失，`+16475562011` 已恢复为 root ACTIVE holding，stock 已恢复 ALLOCATED；部分临时交易也已清除。最终状态以统筹恢复后的数据库核对为准。
+- 源码复核 `sharedAgentStockSql`：AVAILABLE 条件只对 `n.region_id='us'` 成立；非美国统一库存即使释放后也会被视为 RELEASED。这解释了本次非美国 stock 释放后无法 claim 的当前实现/数据边界。该事实记录为阻塞原因，不代表 WP1 写验收完整通过。
+- 完整请求证据：`C:/Users/27792/.rove/worktrees/llinepool-5e751a034ad2/nuthatch/linepool-ui/.local/wp1-api-20261028/price-fixture-cycle-receipts.json`。
