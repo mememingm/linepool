@@ -3,12 +3,12 @@ import { isAdminPath } from '../linepool/admin/navigation';
 import { isAgentPath } from '../linepool/agent/navigation';
 const AdminShell = lazy(() => import('../linepool/admin/AdminShell'));
 const AgentAdminShell = lazy(() => import('../linepool/agent/AgentAdminShell'));
-import WelcomePage from '../linepool/welcome/WelcomePage';
 import WelcomeLogin from '../linepool/welcome/WelcomeLogin';
 import WelcomePasswordRecovery from '../linepool/welcome/WelcomePasswordRecovery';
 import { OriginalScene } from '../linepool/welcome/WelcomeShared';
 const WorkspaceReferenceShell = lazy(() => import('../linepool/workspace-reference/WorkspaceReferenceShell'));
 import { isShellPath } from '../linepool/workspace-reference/navigation';
+import HomePage from '../linepool/home/HomePage';
 const AsciiSharksDemo = lazy(() => import('../linepool/ascii-sharks/AsciiSharksDemo'));
 import { handleSiteLink, normalizeAddress } from './router';
 
@@ -34,9 +34,10 @@ export default function App() {
   }, []);
   const path = address.split('?')[0];
   if (path === '/ascii-sharks') return <Suspense fallback={<main className="lp-site-not-found" style={{ background: '#080e12', color: '#dce7e3' }} role="status">正在唤醒字符海洋…</main>}><AsciiSharksDemo /></Suspense>;
+  if (path === '/') return <HomePage />;
   if (path === '/forgot-password' || path === '/reset-password') return <><OriginalScene /><WelcomePasswordRecovery key={path} reset={path === '/reset-password'} /></>;
-  const welcomePath = path === '/' || path === '/login' || path === '/register';
-  if (welcomePath) return <><OriginalScene />{path === '/' ? <WelcomePage /> : <WelcomeLogin key={path} />}</>;
+  const welcomePath = path === '/login' || path === '/register';
+  if (welcomePath) return <><OriginalScene /><WelcomeLogin key={path} /></>;
   if (isAdminPath(path)) return <Suspense fallback={<main className="lp-site-not-found" role="status">正在加载管理后台…</main>}><AdminShell address={address} /></Suspense>;
   if (isAgentPath(path)) return <Suspense fallback={<main className="lp-site-not-found" role="status">正在加载代理中心…</main>}><AgentAdminShell address={address} /></Suspense>;
   if (isShellPath(path)) return <Suspense fallback={<WorkspaceSkeleton />}><WorkspaceReferenceShell /></Suspense>;
