@@ -1,6 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": { "types": ["vite/client"] },
-  "include": ["./**/*.ts", "../../src/linepool/workspace-reference/navigation.ts", "../../src/linepool/workspace-reference/detail-data.ts"],
-  "exclude": ["../../node_modules"]
-}

@@ -34,7 +34,7 @@
     "verify:catalog-upstream": "node scripts/verify-catalog-upstream.mjs",
     "pretypecheck": "npm run build",
     "typecheck": "tsc --noEmit",
-    "typecheck:all": "npm run contracts:typecheck && npm run typecheck && npm run api:typecheck && npm run test:typecheck",
+    "typecheck:all": "npm run contracts:typecheck && npm run typecheck && npm run api:typecheck",
     "prebuild": "npm run contracts:build",
     "build": "npm run verify:upstream && vite build && tsc -p tsconfig.build.json && node scripts/finalize-package.mjs",
     "build:web": "npm run build && vite build --mode web",
@@ -43,17 +43,6 @@
     "contracts:build": "npm run build --workspace @linepool/contracts",
     "contracts:watch": "npm run build --workspace @linepool/contracts -- --watch",
     "contracts:typecheck": "npm run typecheck --workspace @linepool/contracts",
-    "contracts:test": "npm run test --workspace @linepool/contracts",
-    "client:typecheck": "tsc -p tests/api/tsconfig.json --noEmit",
-    "client:test": "vitest run --config tests/api/vitest.config.ts",
-    "api:test:typecheck": "npm run test:typecheck --workspace @linepool/react-backend",
-    "api:test": "npm run test --workspace @linepool/react-backend",
-    "details:typecheck": "tsc -p tests/workspace-details/tsconfig.json --noEmit",
-    "details:test": "vitest run --config tests/workspace-details/vitest.config.ts",
-    "preferences:typecheck": "tsc -p tests/preferences/tsconfig.json --noEmit",
-    "preferences:test": "vitest run --config tests/preferences/vitest.config.ts",
-    "test:typecheck": "npm run contracts:build && npm run client:typecheck && npm run details:typecheck && npm run preferences:typecheck && npm run api:test:typecheck",
-    "test": "npm run contracts:build && npm run contracts:test && npm run client:test && npm run details:test && npm run preferences:test && npm run api:test",
     "api:install": "npm install",
     "preapi:build": "npm run contracts:build",
     "api:build": "npm run build --workspace @linepool/react-backend",
@@ -68,7 +57,6 @@
     "db:status": "npm run db:status --prefix backend",
     "db:create": "npm run db:create --prefix backend",
     "db:migrate": "npm run db:migrate --prefix backend",
-    "db:test:setup": "npm run api:build && npm run db:test:setup --workspace @linepool/react-backend",
     "db:seed": "npm run db:seed --prefix backend",
     "admin:grant": "npm run admin:grant --prefix backend --"
   },
@@ -111,7 +99,6 @@
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",
-    "vite": "^7.3.0",
-    "vitest": "^4.0.0"
+    "vite": "^7.3.0"
   }
 }

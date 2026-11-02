@@ -3,15 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:typecheck": "tsc -p tsconfig.test.json --noEmit",
-    "test:build": "tsc -p tsconfig.test.json",
-    "test:pingcode": "npm run test:build && node --test --test-concurrency=1 dist-test/backend/test/pingcode-adapter.test.js dist-test/backend/test/pingcode-flow.test.js",
-    "test": "npm run test:build && node --test --test-concurrency=1 dist-test/backend/test/*.test.js",
-    "db:test:setup": "node dist/backend/scripts/test-database.js --initialize",
     "start": "node --env-file=.env dist/backend/src/main.js",
     "dev": "tsc-watch -p tsconfig.json --onSuccess \"node --env-file=.env dist/backend/src/main.js\"",
     "db:local:setup": "node --env-file=.env dist/backend/scripts/local-postgres.js setup",

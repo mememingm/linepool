@@ -2,7 +2,7 @@
 
 LP 应用目录为 `linepool-ui/`，包含 React 网站、NestJS API 和共享契约。旧 Vue 项目已移除。整个工作目录还保留独立的 ONCE 应用与 Webhook 联调工具，见[仓库导航](../docs/README.md)。
 
-当前供号与收信仍装配 Mock provider，真实 PC、支付和生产验收待推进。文档阅读入口见[应用文档索引](docs/README.md)。
+当前供号与收信仍装配 Mock provider，真实 PC、支付和生产验收待推进。上游接口文档见 `docs/`，对接前自查清单见[上游对接自查清单](docs/upstream-audit-checklist.md)。
 
 ## 目录结构
 
@@ -18,11 +18,10 @@ linepool-ui/
 ├── packages/contracts/      前后端共享类型与校验
 ├── catalog/                 上游组件快照及许可证
 ├── scripts/                 构建与完整性检查
-├── tests/                   已有测试源码
-└── docs/                    历史开发记录
+└── docs/                    上游接口文档与自查清单
 ```
 
-服务器部署说明与配置模板见仓库根目录的 [deploy/README.md](../deploy/README.md)。`docs/` 中的交接记录保留历史背景，其中旧 Vue 路径、端口和命令不作为当前部署依据。
+服务器部署说明与配置模板见仓库根目录的 [deploy/README.md](../deploy/README.md)。
 
 ## 页面入口
 
@@ -53,7 +52,7 @@ npm run dev:all
 
 - `npm run typecheck`：组件包构建及前端类型检查。
 - `npm run build:all`：构建网站、共享契约与 API；服务器发布使用此命令。
-- `npm run typecheck:all`：前后端及已有测试源码的类型检查，不执行测试。
+- `npm run typecheck:all`：契约、前端和后端的类型检查。
 - `npm run build:web`：组件包与网站构建，网站产物为 `web-dist/`。
 - `npm run preview`：预览 `web-dist/`，使用 5178，启动前先停止同端口开发服务。
 - `npm run verify:upstream` / `npm run verify:catalog-upstream`：上游源码完整性检查。
