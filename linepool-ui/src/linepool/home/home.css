@@ -68,6 +68,7 @@
 .lp-flap::after { content: ''; position: absolute; inset: 50% 0 auto; height: 1px; background: #000c; }
 .lp-flap:not([data-settled]) { color: #9a9387; }
 .lp-flap[data-blank] { background: transparent; box-shadow: none; }
+.lp-flap[data-blank]::after { display: none; }
 .lp-board-code .lp-flap[data-settled] { color: #ffb199; }
 .lp-flaps-sm .lp-flap { font-size: 17px; width: 1.25em; height: 1.6em; border-radius: 3px; }
 .lp-board-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; border-top: 1px dashed #ffffff26; }
@@ -101,11 +102,11 @@ a.lp-departures-row:hover .lp-departures-go { color: var(--signal); }
 
 /* Postcards */
 .lp-postcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 0; padding: 12px 0 0; list-style: none; }
-.lp-postcard { display: flex; min-height: 260px; background: var(--card); border: 1px solid var(--rule); box-shadow: 0 18px 40px -28px #0007; transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s; }
-.lp-postcard:nth-child(1) { transform: rotate(-1.6deg); }
-.lp-postcard:nth-child(2) { transform: rotate(1deg) translateY(14px); }
-.lp-postcard:nth-child(3) { transform: rotate(-.6deg); }
-.lp-postcard:hover { transform: rotate(0) translateY(-10px); box-shadow: 0 34px 60px -30px #0009; z-index: 1; }
+.lp-postcard { --r: 0deg; position: relative; display: flex; min-height: 260px; background: var(--card); border: 1px solid var(--rule); box-shadow: 0 18px 40px -28px #0007; rotate: var(--r); transition: rotate .35s cubic-bezier(.2, .8, .2, 1), translate .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s; }
+.lp-postcard:nth-child(1) { --r: -1.6deg; }
+.lp-postcard:nth-child(2) { --r: 1deg; z-index: 2; translate: 0 14px; }
+.lp-postcard:nth-child(3) { --r: -.6deg; }
+.lp-postcard:hover { rotate: 0deg; translate: 0 -10px; box-shadow: 0 34px 60px -30px #0009; z-index: 3; }
 .lp-postcard-stub { display: grid; place-items: center; width: 44px; flex: none; border-right: 1px dashed var(--rule); }
 .lp-postcard-stub span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--ink-4); }
 .lp-postcard-body { position: relative; display: grid; align-content: end; gap: 12px; padding: 26px; flex: 1; }
@@ -207,3 +208,58 @@ a.lp-departures-row:hover .lp-departures-go { color: var(--signal); }
   .lp-home-marquee [class*='animate-marquee'] { animation-play-state: paused; }
 }
 :where(.dark) .lp-home .lp-board, :where(.dark) .lp-home .lp-home-final { border: 1px solid #ffffff1c; }
+
+/* ---------- Scroll scenes (only while .lp-home[data-motion] is set by useScrollScenes) ---------- */
+.lp-home-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--signal); transform-origin: left; transform: scaleX(var(--page-p, 0)); }
+.lp-home-hero { --p: 0; }
+[data-scene='enter'] { --p: 1; }
+
+/* Hero drifts apart as it leaves: copy lifts and fades, the board tilts back and its signal shadow grows. */
+.lp-home[data-motion] .lp-home-hero-copy { transform: translateY(calc(var(--p) * -90px)); opacity: calc(1 - var(--p) * .85); }
+.lp-home[data-motion] .lp-board { transform: translateY(calc(var(--p) * 70px)) rotate(calc(var(--p) * -4deg)) scale(calc(1 - var(--p) * .06)); box-shadow: 0 1px 0 #ffffff14 inset, 0 40px 80px -40px #0009, calc(14px + var(--p) * 26px) calc(14px + var(--p) * 26px) 0 -2px var(--signal); }
+.lp-home[data-motion] .lp-home-specs { transform: translateY(calc(var(--p) * -30px)); }
+
+/* Ticker leans with scroll speed. */
+.lp-home[data-motion] .lp-home-marquee { transform: skewX(calc(var(--vel, 0) * -14deg)); }
+
+/* Headings: characters rise out of a mask one after another. */
+.lp-split { display: inline-block; overflow: hidden; vertical-align: top; white-space: pre; padding: 0 .06em .1em 0; margin: 0 -.06em -.1em 0; }
+.lp-split > span { display: inline-block; }
+.lp-home[data-motion] .lp-split > span { transition: transform .9s cubic-bezier(.2, .8, .2, 1) calc(var(--i) * 32ms); }
+.lp-home[data-motion] .lp-home-head:not(.is-in) .lp-split > span { transform: translateY(110%) rotate(8deg); }
+.lp-home[data-motion] .lp-home-head > p { transition: opacity .7s .15s, transform .7s .15s cubic-bezier(.2, .8, .2, 1); }
+.lp-home[data-motion] .lp-home-head > p:first-child { transition-delay: 0s; }
+.lp-home[data-motion] .lp-home-head:not(.is-in) > p { opacity: 0; transform: translateY(14px); }
+
+/* Departures board: rows flip down into place like split-flap panels. */
+.lp-departures { perspective: 1000px; }
+.lp-home[data-motion] .lp-departures a.lp-departures-row { transform-origin: 50% 0; transition: background .18s, color .18s, padding .18s, transform .8s cubic-bezier(.2, .8, .2, 1) calc(var(--i) * 80ms), opacity .5s calc(var(--i) * 80ms); }
+.lp-home[data-motion] .lp-departures:not(.is-in) a.lp-departures-row { transform: rotateX(-92deg); opacity: 0; }
+
+/* Postcards start as one stack and deal out across the table while the section scrolls in; stamps land last. */
+@media (min-width: 1025px) {
+  .lp-postcard:nth-child(1) { --dx: 104%; --rr: -9deg; }
+  .lp-postcard:nth-child(2) { --dx: 0%; --rr: 4deg; }
+  .lp-postcard:nth-child(3) { --dx: -104%; --rr: 12deg; }
+  .lp-home[data-motion] .lp-postcard { transform: translateX(calc(var(--dx) * (1 - var(--p)))) rotate(calc(var(--rr) * (1 - var(--p)))); }
+}
+.lp-home[data-motion] .lp-stamp { opacity: clamp(0, (var(--p) - .82) * 6, 1); scale: calc(1.7 - .7 * clamp(0, (var(--p) - .82) * 6, 1)); }
+
+/* Editions rise in turn, seals spin on, and the day counts tick up (Magic UI NumberTicker). */
+.lp-edition-ticker { color: inherit; letter-spacing: inherit; }
+.lp-home[data-motion] .lp-edition { transition: transform .3s, box-shadow .3s, opacity .8s, translate 1s cubic-bezier(.2, .8, .2, 1); }
+.lp-home[data-motion] .lp-edition:nth-child(2) { transition-delay: 0s, 0s, .14s, .14s; }
+.lp-home[data-motion] .lp-editions:not(.is-in) .lp-edition { opacity: 0; translate: 0 80px; }
+.lp-home[data-motion] .lp-edition-seal { transition: rotate 1.2s cubic-bezier(.2, .8, .2, 1) .35s, opacity .8s .35s; }
+.lp-home[data-motion] .lp-editions:not(.is-in) .lp-edition-seal { rotate: -140deg; opacity: 0; }
+
+/* Clauses: the top rule draws across, then items settle in. */
+.lp-clauses { position: relative; }
+.lp-home[data-motion] .lp-clauses { border-top-color: transparent; }
+.lp-home[data-motion] .lp-clauses::before { content: ''; position: absolute; top: -2px; left: 0; right: 0; height: 2px; background: var(--ink-0); transform-origin: left; transition: transform 1.1s cubic-bezier(.2, .8, .2, 1); }
+.lp-home[data-motion] .lp-clauses:not(.is-in)::before { transform: scaleX(0); }
+.lp-home[data-motion] .lp-clauses li { transition: opacity .6s calc(.3s + var(--i) * 90ms), transform .8s cubic-bezier(.2, .8, .2, 1) calc(.3s + var(--i) * 90ms); }
+.lp-home[data-motion] .lp-clauses:not(.is-in) li { opacity: 0; transform: translateY(24px); }
+
+/* Final panel opens from an inset card to full bleed. */
+.lp-home[data-motion] .lp-home-final { clip-path: inset(calc((1 - var(--p)) * 7%) calc((1 - var(--p)) * 12%) round calc((1 - var(--p)) * 36px)); }

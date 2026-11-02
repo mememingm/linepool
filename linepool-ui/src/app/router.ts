@@ -19,7 +19,7 @@ export function normalizeAddress() {
     window.history.replaceState(null, '', '/app' + hash.slice(legacyShell.length));
     return;
   }
-  const aliases: Record<string, string> = { '/welcome': '/', '/home-v2': '/', '/sign-in': '/login', '/sign-up': '/register' };
+  const aliases: Record<string, string> = { '/welcome': '/', '/home-v2': '/', '/sign-in': '/login', '/sign-up': '/register', '/login-v2': '/login', '/register-v2': '/register' };
   if (aliases[pathname]) window.history.replaceState(null, '', aliases[pathname] + search);
   else if (pathname.length > 1 && pathname.endsWith('/')) window.history.replaceState(null, '', pathname.replace(/\/+$/, '') + search + hash);
 }

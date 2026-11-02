@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowRight, ArrowUpRight, Plus } from 'lucide-react';
 import { BlurFade } from '../../vendor/magic/src/components/ui/blur-fade';
 import { Marquee } from '../../vendor/magic/src/components/ui/marquee';
+import { NumberTicker } from '../../vendor/magic/src/components/ui/number-ticker';
 import { DisplayToolbar } from '../preferences/DisplayControls';
 import { useDisplayPreferences } from '../preferences/useDisplayPreferences';
+import { Flaps, reducedMotion, useClock } from './Flaps';
+import { useScrollScenes } from './useScrollScenes';
 import './home.css';
 
 // Mirrors regionIdSchema / serviceSchema in packages/contracts; live stock and prices stay behind sign-in.
@@ -22,40 +25,12 @@ const arrivals = [
   { from: 'WHATSAPP', to: '+44 7700 ··· 21', code: '602117' },
   { from: 'GOOGLE', to: '+65 8123 ··· 07', code: '735190' },
 ] as const;
-const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** Split-flap characters: each tile shuffles briefly, then lands left to right. */
-function Flaps({ text, className = '', replayInView = false }: { text: string; className?: string; replayInView?: boolean }) {
-  const [shown, setShown] = useState(text);
-  const [cycle, setCycle] = useState(0);
-  const element = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!replayInView || !element.current) return;
-    const observer = new IntersectionObserver(([entry]) => { if (entry?.isIntersecting) setCycle(value => value + 1); }, { threshold: .6 });
-    observer.observe(element.current);
-    return () => observer.disconnect();
-  }, [replayInView]);
-  useEffect(() => {
-    if (reducedMotion()) { setShown(text); return; }
-    let tick = 0;
-    const timer = window.setInterval(() => {
-      tick += 1;
-      setShown([...text].map((char, index) => char === ' ' || tick > 5 + index * 2 ? char : glyphs[Math.floor(Math.random() * glyphs.length)]).join(''));
-      if (tick > 5 + text.length * 2) window.clearInterval(timer);
-    }, 55);
-    return () => window.clearInterval(timer);
-  }, [text, cycle]);
-  return <span ref={element} className={`lp-flaps ${className}`} aria-label={text} role="img">
-    {[...shown].map((char, index) => <span key={index} className="lp-flap" data-blank={char === ' ' || undefined} data-settled={char === text[index] || undefined} aria-hidden>{char}</span>)}
-  </span>;
+/** Splits a heading into characters that rise in one after another once the heading is revealed. */
+function SplitText({ text, start = 0 }: { text: string; start?: number }) {
+  return <>{[...text].map((char, index) => <span key={index} className="lp-split" style={{ '--i': start + index } as CSSProperties}><span>{char}</span></span>)}</>;
 }
-
-function useClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
-  return now.toISOString().slice(11, 19);
+function SplitHeading({ id, lead, accent }: { id: string; lead: string; accent?: string }) {
+  return <h2 id={id} aria-label={lead + (accent ?? '')}><span aria-hidden><SplitText text={lead} />{accent && <em><SplitText text={accent} start={[...lead].length} /></em>}</span></h2>;
 }
 
 function ArrivalBoard({ t }: { t: (source: string) => string }) {
@@ -87,6 +62,8 @@ function ArrivalBoard({ t }: { t: (source: string) => string }) {
 export default function HomePage() {
   const p = useDisplayPreferences();
   const { t } = p;
+  const root = useRef<HTMLDivElement>(null);
+  useScrollScenes(root);
   useEffect(() => {
     const title = document.title;
     document.title = `LINEPOOL · ${t('海外号码，专收验证码')}`;
@@ -114,7 +91,7 @@ export default function HomePage() {
     { q: '收不到验证码怎么办？', a: '先确认已在目标平台用该号码请求验证码，再在短信中心点击“刷新短信”。刷新不会延长号码有效期。' },
     { q: '号码可以续费吗？', a: '不可以。短期服务到期后号码失效，需要时请重新下单。' },
   ];
-  return <div className="lp-home" lang={p.locale}>
+  return <div ref={root} className="lp-home" lang={p.locale}>
     <header className="lp-home-header">
       <a href="/" className="lp-home-brand"><span>LINE</span><em>pool</em></a>
       <nav aria-label={t('首页导航')} className="lp-home-nav">
@@ -125,10 +102,11 @@ export default function HomePage() {
         <a href="/login" className="lp-home-text-link">{t('登录')}</a>
         <a href="/register" className="lp-home-block">{t('注册')}</a>
       </div>
+      <span className="lp-home-progress" aria-hidden />
     </header>
 
     <main>
-      <section className="lp-home-hero" aria-labelledby="lp-home-title">
+      <section className="lp-home-hero" aria-labelledby="lp-home-title" data-scene="exit">
         <div className="lp-home-hero-copy">
           <p className="lp-home-kicker"><i className="lp-dot" />{t('短期号码 · 仅接收短信 · 7 / 30 天')}</p>
           <h1 id="lp-home-title">{t('海外号码，')}<br /><mark>{t('专收')}</mark>{t('验证码。')}</h1>
@@ -154,16 +132,16 @@ export default function HomePage() {
       </div>
 
       <section id="regions" className="lp-home-section" aria-labelledby="regions-title">
-        <BlurFade inView className="lp-home-head">
+        <div className="lp-home-head" data-reveal>
           <p className="lp-home-eyebrow">§ 01 · {t('地区')}</p>
-          <h2 id="regions-title">{t('六个地区，')}<em>{t('随时出发')}</em></h2>
+          <SplitHeading id="regions-title" lead={t('六个地区，')} accent={t('随时出发')} />
           <p>{t('实时库存与单价登录后在购买页查看。')}</p>
-        </BlurFade>
-        <div className="lp-departures" role="table" aria-label={t('可选地区')}>
+        </div>
+        <div className="lp-departures" role="table" aria-label={t('可选地区')} data-reveal>
           <div className="lp-departures-row lp-departures-head" role="row">
             <span role="columnheader">{t('代码')}</span><span role="columnheader">{t('地区')}</span><span role="columnheader">{t('国际区号')}</span><span role="columnheader">{t('所属区域')}</span><span role="columnheader">{t('期限')}</span><span role="columnheader" />
           </div>
-          {regions.map(region => <a key={region.code} href="/register" className="lp-departures-row" role="row">
+          {regions.map((region, index) => <a key={region.code} href="/register" className="lp-departures-row" role="row" style={{ '--i': index } as CSSProperties}>
             <span role="cell" className="lp-departures-code">{region.code}</span>
             <span role="cell">{t(region.name)}{'note' in region && <small>{t(region.note)}</small>}</span>
             <span role="cell" className="lp-mono">{region.prefix}</span>
@@ -175,11 +153,11 @@ export default function HomePage() {
       </section>
 
       <section id="how" className="lp-home-section" aria-labelledby="how-title">
-        <BlurFade inView className="lp-home-head">
+        <div className="lp-home-head" data-reveal>
           <p className="lp-home-eyebrow">§ 02 · {t('使用流程')}</p>
-          <h2 id="how-title">{t('三张卡片，')}<em>{t('一个验证码')}</em></h2>
-        </BlurFade>
-        <ol className="lp-postcards">
+          <SplitHeading id="how-title" lead={t('三张卡片，')} accent={t('一个验证码')} />
+        </div>
+        <ol className="lp-postcards" data-scene="enter">
           {steps.map(step => <li key={step.label} className="lp-postcard">
             <div className="lp-postcard-stub"><span>{step.label}</span></div>
             <div className="lp-postcard-body">
@@ -192,16 +170,16 @@ export default function HomePage() {
       </section>
 
       <section id="plans" className="lp-home-section" aria-labelledby="plans-title">
-        <BlurFade inView className="lp-home-head">
+        <div className="lp-home-head" data-reveal>
           <p className="lp-home-eyebrow">§ 03 · {t('期限方案')}</p>
-          <h2 id="plans-title">{t('两种期限，')}<em>{t('按需选择')}</em></h2>
+          <SplitHeading id="plans-title" lead={t('两种期限，')} accent={t('按需选择')} />
           <p>{t('价格以积分计，随地区和平台不同。')}</p>
-        </BlurFade>
-        <div className="lp-editions">
+        </div>
+        <div className="lp-editions" data-reveal>
           {editions.map(edition => <article key={edition.no} className="lp-edition" data-featured={edition.featured || undefined}>
             <header><span>{edition.no}</span>{edition.featured && <span>{t('常用')}</span>}</header>
             <h3>{t(edition.name)}</h3>
-            <p className="lp-edition-days"><strong>{edition.days}</strong>{t(' 天')}</p>
+            <p className="lp-edition-days"><strong><NumberTicker value={edition.days} delay={edition.featured ? .25 : .1} className="lp-edition-ticker" /></strong>{t(' 天')}</p>
             <p className="lp-edition-fit">{t(edition.fit)}</p>
             <ul>{edition.points.map(point => <li key={point}>{t(point)}</li>)}</ul>
             <a href="/register" className="lp-home-block">{t('注册后选购')}<ArrowRight size={16} /></a>
@@ -211,26 +189,26 @@ export default function HomePage() {
       </section>
 
       <section className="lp-home-section" aria-labelledby="terms-title">
-        <BlurFade inView className="lp-home-head">
+        <div className="lp-home-head" data-reveal>
           <p className="lp-home-eyebrow">§ 04 · {t('使用须知')}</p>
-          <h2 id="terms-title">{t('下单前，')}<em>{t('先读这四条')}</em></h2>
-        </BlurFade>
-        <ol className="lp-clauses">
-          {clauses.map((clause, index) => <li key={clause.title}><span className="lp-mono">4.{index + 1}</span><div><h3>{t(clause.title)}</h3><p>{t(clause.text)}</p></div></li>)}
+          <SplitHeading id="terms-title" lead={t('下单前，')} accent={t('先读这四条')} />
+        </div>
+        <ol className="lp-clauses" data-reveal>
+          {clauses.map((clause, index) => <li key={clause.title} style={{ '--i': index } as CSSProperties}><span className="lp-mono">4.{index + 1}</span><div><h3>{t(clause.title)}</h3><p>{t(clause.text)}</p></div></li>)}
         </ol>
       </section>
 
       <section id="faq" className="lp-home-section lp-faq" aria-labelledby="faq-title">
-        <div className="lp-home-head lp-faq-head">
+        <div className="lp-home-head lp-faq-head" data-reveal>
           <p className="lp-home-eyebrow">§ 05 · {t('常见问题')}</p>
-          <h2 id="faq-title">{t('还有疑问？')}</h2>
+          <SplitHeading id="faq-title" lead={t('还有疑问？')} />
         </div>
         <div className="lp-faq-list">
           {faqs.map((item, index) => <details key={item.q} open={index === 0}><summary><span className="lp-mono">Q{index + 1}</span>{t(item.q)}<Plus size={18} aria-hidden /></summary><p>{t(item.a)}</p></details>)}
         </div>
       </section>
 
-      <section className="lp-home-final" aria-labelledby="final-title">
+      <section className="lp-home-final" aria-labelledby="final-title" data-scene="enter">
         <p className="lp-home-eyebrow">{t('准备好了')}</p>
         <h2 id="final-title"><Flaps text="READY" className="lp-flaps-final" replayInView /></h2>
         <p>{t('注册后即可查看各地区的实时库存与价格。')}</p>

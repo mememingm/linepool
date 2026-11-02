@@ -1,11 +1,13 @@
 import { purchaseMessages } from './purchase-messages';
 import { rechargeMessages } from '../wallet/messages';
 import { homeMessages } from './home-messages';
+import { authMessages } from './auth-messages';
 
 export const workspaceMessages: Readonly<Record<string, string>> = {
   ...purchaseMessages,
   ...rechargeMessages,
   ...homeMessages,
+  ...authMessages,
   '代理登录': 'Agent sign in', '登录代理工作台': 'Sign in to the agent center',
   '你的库存与客户，': 'Your inventory and customers,', '在这里管理。': 'managed here.',
   '登录代理工作台，管理号码库存、客户与订单。': 'Sign in to manage your number inventory, customers and orders.',
