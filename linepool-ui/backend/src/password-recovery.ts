@@ -6,6 +6,7 @@ import type { ForgotPasswordInput, ResetPasswordInput } from '@linepool/contract
 import { Database } from './database.js';
 import { Environment } from './environment.js';
 import { ApiFailure } from './http.js';
+import { safeErrorDetails } from './error-summary.js';
 
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -50,11 +51,11 @@ export class PasswordRecovery {
           subject: '重置你的 LINEPOOL 密码 / Reset your LINEPOOL password',
           text: `请打开以下链接设置新密码，链接 30 分钟内有效且仅可使用一次：\n\n${link}\n\nOpen the link to reset your password. It expires in 30 minutes and can be used once.\n如果不是你本人操作，请忽略此邮件。 / If you did not request this, ignore this email.`,
         });
-        if (!result.accepted.length) throw new Error('Email was not accepted');
-      } catch {
+        if (!result.accepted.length) throw Object.assign(new Error('Email was not accepted'), { code: 'SMTP_NOT_ACCEPTED' });
+      } catch (error) {
+        // Do not log recipients, credentials, raw SMTP responses or reset links.
+        this.logger.error({ message: 'Password recovery email delivery failed; check SMTP configuration.', ...safeErrorDetails(error) });
         await this.db.query('DELETE FROM password_reset_tokens WHERE token_hash=$1', [tokenHash]);
-        // Do not log recipients, credentials, raw SMTP errors or reset links.
-        this.logger.error('Password recovery email delivery failed; check SMTP configuration.');
       } finally { transport.close(); }
     }
     // Unknown, disabled and recently requested accounts receive the same response.

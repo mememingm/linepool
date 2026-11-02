@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { PoolClient } from 'pg';
 import { Database } from './database.js';
 import { ApiFailure } from './http.js';
+import { safeErrorDetails } from './error-summary.js';
 
 export const syncResourceSchema = z.strictObject({
   externalNumberId: z.string().trim().min(1).max(200),
@@ -66,7 +67,8 @@ export class ProviderSyncService {
       const snapshot = snapshotSchema.parse(response);
       if (mode === 'FULL' && !snapshot.complete) throw new Error('INCOMPLETE_FULL_SNAPSHOT');
       return await this.applySnapshot(task, snapshot);
-    } catch {
+    } catch (error) {
+      console.error('Provider inventory sync failed', { taskId: task.id, ...safeErrorDetails(error) });
       // Store a bounded local error code; upstream errors may contain credentials or entire response bodies.
       return this.finish(task, 'FAILED', abort.signal.aborted ? 'SYNC_TIMEOUT' : 'SYNC_ADAPTER_OR_SNAPSHOT_FAILED');
     } finally { if (timer) clearTimeout(timer); }

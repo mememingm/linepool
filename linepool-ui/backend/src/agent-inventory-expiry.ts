@@ -1,5 +1,6 @@
 import { Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { Database } from './database.js';
+import { safeErrorDetails } from './error-summary.js';
 
 /** Expires local agent holdings only; it never calls PingCode or performs a purchase. */
 @Injectable()
@@ -36,7 +37,7 @@ export class AgentInventoryExpiry implements OnApplicationBootstrap, OnModuleDes
   onApplicationBootstrap() {
     const tick = () => {
       if (this.running) return;
-      this.running = this.runBatch().catch(() => console.error('Agent holding expiry failed; next scan will retry'))
+      this.running = this.runBatch().catch(error => console.error('Agent holding expiry failed; next scan will retry', safeErrorDetails(error)))
         .finally(() => { this.running = undefined; });
     };
     this.timer = setInterval(tick, 30000);

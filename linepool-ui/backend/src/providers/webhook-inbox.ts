@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Database } from '../database.js';
 import { Environment } from '../environment.js';
 import { ApiFailure } from '../http.js';
+import { safeErrorDetails } from '../error-summary.js';
 
 // Internal normalized input. The HTTP adapter verifies the agreed raw-body signature first.
 // PC must confirm the proposed project-aware wire contract before live integration.
@@ -115,7 +116,7 @@ export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
     if (!this.environment.values.PINGCODE_WEBHOOK_SECRET) return;
     const tick = () => {
       if (this.running) return;
-      this.running = this.retryPending().catch(() => console.error('Webhook inbox retry failed; next scan will retry'))
+      this.running = this.retryPending().catch(error => console.error('Webhook inbox retry failed; next scan will retry', safeErrorDetails(error)))
         .finally(() => { this.running = undefined; });
     };
     this.timer = setInterval(tick, 30000);

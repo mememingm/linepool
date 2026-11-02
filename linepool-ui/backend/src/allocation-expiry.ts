@@ -1,6 +1,7 @@
 import { Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 import { releaseExpired } from './platform-inventory.js';
 import { Database } from './database.js';
+import { safeErrorDetails } from './error-summary.js';
 
 /** Local service expiry only: never calls a supplier and never enables resale. */
 @Injectable()
@@ -18,7 +19,7 @@ export class AllocationExpiry implements OnApplicationBootstrap, OnModuleDestroy
   onApplicationBootstrap() {
     const tick = () => {
       if (this.running) return;
-      this.running = this.runBatch().catch(() => console.error('Local allocation expiry failed; next scan will retry'))
+      this.running = this.runBatch().catch(error => console.error('Local allocation expiry failed; next scan will retry', safeErrorDetails(error)))
         .finally(() => { this.running = undefined; });
     };
     this.timer = setInterval(tick, 30000);

@@ -355,7 +355,8 @@ export class AgentInventory {
         todayCodes: Number(counts?.codes ?? 0),
       };
       return { data: {
-        currency: 'USD', costStatus: 'SYNCED' as const, kpis, trend: trendRows, codeVolume,
+        // Costs come from local settlement records; no supplier cost sync is connected.
+        currency: 'USD', costStatus: 'LOCAL_SIMULATED' as const, kpis, trend: trendRows, codeVolume,
         settlement: {
           purchaseCostMinor: sumMoney(moneyRows, 'purchase'), downstreamSalesMinor: sumMoney(moneyRows, 'downstream'),
           customerSalesMinor: sumMoney(moneyRows, 'customer'), soldCostMinor: sumMoney(moneyRows, 'sold_cost'),
@@ -460,9 +461,11 @@ export class AgentInventory {
         OR (buyer_type='AGENT' AND buyer_agent_id=$1 AND recipient_type='AGENT' AND recipient_agent_id=$2)
         OR (buyer_type='AGENT' AND buyer_agent_id=$2 AND recipient_type='AGENT' AND recipient_agent_id=$1)`;
       const { rows: [count] } = await client.query<{ total: number }>(`SELECT count(*)::int AS total FROM tx_orders WHERE ${where}`, [actor.agentId, agentId]);
-      const { rows } = await client.query(`SELECT * FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4`,
+      const { rows } = await client.query(`SELECT tx_orders.*,
+        (SELECT count(*)::int FROM tx_order_items i WHERE i.tx_order_id=tx_orders.id) AS item_count
+        FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4`,
         [actor.agentId, agentId, query.pageSize, (query.page - 1) * query.pageSize]);
-      return { data: rows.map(row => mapVisibleTxOrder(row, actor)), pagination: pagination(query, count!.total) };
+      return { data: rows.map(row => mapVisibleTxOrder(row, actor, row.item_count)), pagination: pagination(query, count!.total) };
     });
   }
 
@@ -931,9 +934,11 @@ export class AgentInventory {
       }
       const { rows: [count] } = await client.query<{ total: number }>(`SELECT count(*)::int AS total FROM tx_orders WHERE ${where}`, values);
       const { rows } = await client.query(
-        `SELECT * FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        `SELECT tx_orders.*,
+          (SELECT count(*)::int FROM tx_order_items i WHERE i.tx_order_id=tx_orders.id) AS item_count
+          FROM tx_orders WHERE ${where} ORDER BY created_at DESC,id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, query.pageSize, (query.page - 1) * query.pageSize]);
-      return { data: rows.map(row => mapVisibleTxOrder(row, actor)), pagination: pagination(query, count!.total) };
+      return { data: rows.map(row => mapVisibleTxOrder(row, actor, row.item_count)), pagination: pagination(query, count!.total) };
     });
   }
 
@@ -950,7 +955,7 @@ export class AgentInventory {
       if (!order) throw new ApiFailure(404, 'TRANSACTION_NOT_FOUND', '交易不存在或不可访问');
       const { rows: [count] } = await client.query<{ total: number }>('SELECT count(*)::int AS total FROM tx_order_items WHERE tx_order_id=$1', [id]);
       const { rows: items } = await client.query('SELECT * FROM tx_order_items WHERE tx_order_id=$1 ORDER BY id LIMIT $2 OFFSET $3', [id, query.pageSize, (query.page - 1) * query.pageSize]);
-      return { data: { order: mapVisibleTxOrder(order, actor), items: items.map(item => ({ phoneNumber: item.phone_number,
+      return { data: { order: mapVisibleTxOrder(order, actor, count!.total), items: items.map(item => ({ phoneNumber: item.phone_number,
         service: item.service, regionId: item.region_id, startsAt: item.starts_at.toISOString(), expiresAt: item.expires_at.toISOString(),
         unitAmountMinor: item.unit_amount_minor == null ? null : Number(item.unit_amount_minor), billedDays: item.billed_days,
         amountMinor: Number(item.amount_minor), bookAmountMinor: Number(item.book_amount_minor) })), pagination: pagination(query, count!.total) } };
@@ -1254,7 +1259,7 @@ function mapHolding(row: Record<string, unknown>) {
   };
 }
 
-function mapTxOrder(row: Record<string, unknown>) {
+function mapTxOrder(row: Record<string, unknown>, itemCount = 0) {
   return {
     id: row.id, orderNumber: row.order_number, kind: row.kind,
     buyerType: row.buyer_type, buyerAgentId: row.buyer_agent_id, buyerCustomerId: row.buyer_customer_id,
@@ -1263,15 +1268,16 @@ function mapTxOrder(row: Record<string, unknown>) {
     pricingKind: row.pricing_kind,
     currency: row.currency, amountMinor: Number(row.amount_minor), bookAmountMinor: Number(row.book_amount_minor ?? 0), costMinor: Number(row.cost_minor ?? 0),
     unitAmountMinor: row.unit_amount_minor == null ? null : Number(row.unit_amount_minor), billedDays: row.billed_days ?? null, priceRuleId: row.price_rule_id ?? null,
-    quantity: (row.idempotency_payload as { result?: { count?: number } } | null)?.result?.count ?? 1,
+    // Balance-only and pending transactions without number items represent one operation.
+    quantity: Math.max(1, itemCount),
     points: row.points ?? null,
     status: row.status, sourceOrderId: row.source_order_id,
     createdAt: (row.created_at as Date).toISOString(), completedAt: row.completed_at ? (row.completed_at as Date).toISOString() : null,
   };
 }
 
-function mapVisibleTxOrder(row: Record<string, unknown>, actor: { kind: string; agentId: string | null }) {
-  const order = mapTxOrder(row);
+function mapVisibleTxOrder(row: Record<string, unknown>, actor: { kind: string; agentId: string | null }, itemCount: number) {
+  const order = mapTxOrder(row, itemCount);
   return { ...order, costMinor: actor.kind === 'ADMIN' || (actor.kind === 'AGENT' && actor.agentId === row.seller_agent_id) ? order.costMinor : null };
 }
 
