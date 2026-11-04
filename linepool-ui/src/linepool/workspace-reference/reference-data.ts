@@ -10,7 +10,7 @@ export type ReferenceData = {
   totalNumbers?: number; totalMessages?: number; activeNumbers?: number;
   numbers: ReferenceNumber[]; messages: ReferenceMessage[]; services: string[];
   currentMonth: string; months: string[];
-  trends: Record<string, { endDate: string; monthMessages: number; weeks: ReferencePeriod[]; days: ReferencePeriod[] }>;
+  trends: Record<string, { endDate: string; monthMessages: number; weeks: ReferencePeriod[]; days: ReferencePeriod[]; daily: ReferencePeriod[] }>;
 };
 export function referenceData(data: WorkspaceData, locale: Locale = 'zh-CN'): ReferenceData {
   const now = new Date();
@@ -39,6 +39,7 @@ export function referenceData(data: WorkspaceData, locale: Locale = 'zh-CN'): Re
       endDate: dateLabel(end, locale, { year: 'numeric', month: '2-digit', day: '2-digit' }),
       monthMessages: messageTimes.filter(time => time >= monthStart.getTime() && time < monthEnd.getTime() && time <= now.getTime()).length,
       days: Array.from({ length: 7 }, (_, index) => { const day = beforeEnd(6 - index); return period(day, day); }),
+      daily: Array.from({ length: 30 }, (_, index) => { const day = beforeEnd(29 - index); return period(day, day); }),
       weeks: [0, 7, 14, 21].map((offset, index) => period(beforeEnd(29 - offset), beforeEnd(index === 3 ? 0 : 23 - offset))),
     };
   }
@@ -50,6 +51,7 @@ export function referenceData(data: WorkspaceData, locale: Locale = 'zh-CN'): Re
       endDate: dateLabel(now, locale, { year: 'numeric', month: '2-digit', day: '2-digit' }),
       monthMessages: overview.receivedThisMonth,
       days: days.slice(-7),
+      daily: days.slice(-30),
       weeks: chunks.filter(chunk => chunk.length).map(chunk => ({ label: `${chunk[0].label} ~ ${chunk[chunk.length - 1].label}`, messages: chunk.reduce((sum, day) => sum + day.messages, 0), numbers: chunk[chunk.length - 1].numbers })),
     };
   }

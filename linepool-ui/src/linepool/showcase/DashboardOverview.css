@@ -104,3 +104,53 @@
   .lp-shell-page .is-overview .lp-ref-account-stat-label { font-size: 10px; }
   .lp-shell-page .is-overview .lp-ref-account-stats strong { font-size: 20px; }
 }
+
+/* Trend chart header KPIs and legend pills; the signed-in plot itself lives in TrendChart.css. */
+.lp-shell-page .is-overview .lp-ref-analytics > header { align-items: flex-start; flex-wrap: wrap; }
+.lp-shell-page .is-overview .lp-ref-analytics > header > div:first-child { margin-right: auto; }
+.lp-shell-page .is-overview .lp-ref-chart-kpis { display: flex; gap: 22px; margin: 0 8px 0 0; }
+.lp-shell-page .is-overview .lp-ref-chart-kpis div { display: grid; gap: 2px; }
+.lp-shell-page .is-overview .lp-ref-chart-kpis dt { color: var(--ink-2); font-size: 12px; }
+.lp-shell-page .is-overview .lp-ref-chart-kpis dd { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lp-shell-page .is-overview .lp-ref-chart-kpis small { margin-left: 4px; color: var(--ink-2); font-size: 12px; font-weight: 400; }
+.lp-shell-page .is-overview .lp-ref-chart-legend { margin-top: 6px; gap: 8px; }
+.lp-shell-page .is-overview .lp-ref-chart-legend button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.lp-shell-page .is-overview .lp-ref-chart-legend button:nth-child(1) i { border-radius: 3px; background: var(--red); }
+.lp-shell-page .is-overview .lp-ref-chart-legend button:nth-child(2) i { height: 3px; border-radius: 2px; background: var(--accent); }
+.lp-shell-page .is-overview .lp-ref-analytics:has(.lp-trend-empty) .lp-ref-chart-legend { display: none; }
+@media (max-width: 640px) {
+  .lp-shell-page .is-overview .lp-ref-chart-kpis { order: 3; width: 100%; margin: 4px 0 0; }
+}
+
+/* Account card: available points next to the name, with the top-up entry. */
+.lp-shell-page .is-overview .lp-ref-account-identity { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lp-ref-account-balance { display: flex; align-items: baseline; gap: 8px; }
+.lp-ref-account-balance span { color: var(--ink-2); font-size: 12px; }
+.lp-ref-account-balance strong { font-size: 20px; line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums; }
+.lp-ref-account-balance .lp-wallet-entry { align-self: center; }
+
+/* New accounts: one getting-started card instead of two empty metrics. */
+.lp-shell-page .is-overview .lp-ref-onboarding { grid-column: 1 / -1; grid-row: 2; display: grid; gap: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--lp-shadow); }
+.lp-ref-onboarding h2 { font-size: 14px; line-height: 22px; font-weight: 600; }
+.lp-ref-onboarding > div p { margin-top: 2px; color: var(--ink-2); font-size: 12px; }
+.lp-ref-onboarding ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lp-ref-onboarding li { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-content: start; gap: 6px 10px; min-width: 0; padding: 12px; border-radius: 10px; background: var(--lp-soft); }
+.lp-ref-onboarding li > div { display: grid; gap: 2px; min-width: 0; }
+.lp-ref-onboarding li strong { font-size: 13px; font-weight: 600; }
+.lp-ref-onboarding li small { color: var(--ink-2); font-size: 11.5px; line-height: 1.5; }
+.lp-ref-onboarding li > :last-child:not(div) { grid-column: 2; justify-self: start; }
+.lp-ref-onboarding-index { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.lp-ref-onboarding li[data-done] .lp-ref-onboarding-index { background: var(--green, #16a34a); box-shadow: none; color: #fff; }
+.lp-ref-onboarding-link { display: inline-flex; align-items: center; gap: 2px; color: var(--lp-link); font-size: 12px; font-weight: 600; }
+.lp-ref-onboarding-link:hover { text-decoration: underline; }
+
+/* Sidebar empty states match the trend chart's. */
+.lp-ref-side-empty { display: grid; justify-items: start; gap: 4px; padding: 14px 0 6px; }
+.lp-ref-side-empty > span { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 4px; border-radius: 10px; background: var(--lp-soft); color: var(--ink-2); }
+.lp-ref-side-empty strong { font-size: 13px; font-weight: 600; }
+.lp-ref-side-empty p { margin: 0; color: var(--ink-2); font-size: 12px; line-height: 1.6; }
+.lp-ref-side-empty a { display: inline-flex; align-items: center; gap: 2px; margin-top: 4px; color: var(--lp-link); font-size: 12px; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .lp-shell-page .is-overview .lp-ref-onboarding { grid-column: 1; grid-row: auto; }
+}

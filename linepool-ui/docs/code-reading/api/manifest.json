@@ -1,0 +1,912 @@
+{
+  "date": "2026-11-02",
+  "scope": "src/linepool/api/*.ts + packages/contracts/src/*.ts + backend/src/**/*.ts",
+  "entries": [
+    {
+      "source": "src/linepool/api/client.ts",
+      "annotated": "docs/code-reading/api/frontend/client.annotated.ts",
+      "title": "前端接口调用入口",
+      "sourceSha256": "82732f40868755ac2018fc52890ebbbecae15899a3e015679b04201af0658559",
+      "imports": [
+        {
+          "from": "./contracts",
+          "to": "../../../../src/linepool/api/contracts"
+        }
+      ]
+    },
+    {
+      "source": "src/linepool/api/contracts.ts",
+      "annotated": "docs/code-reading/api/frontend/contracts.annotated.ts",
+      "title": "前端共享契约转发入口",
+      "sourceSha256": "7b76bb66bd5936c2d06c4311193654db9d6a2dc634e635e865adc9aa761b9501",
+      "imports": []
+    },
+    {
+      "source": "src/linepool/api/query-client.ts",
+      "annotated": "docs/code-reading/api/frontend/query-client.annotated.ts",
+      "title": "前端查询缓存与预加载",
+      "sourceSha256": "b4a5beb61fd37f42cb6ecb7ae0074fbe96ea0a755eb77caf8578a4b4d66611fd",
+      "imports": [
+        {
+          "from": "./contracts",
+          "to": "../../../../src/linepool/api/contracts"
+        },
+        {
+          "from": "./client",
+          "to": "../../../../src/linepool/api/client"
+        }
+      ]
+    },
+    {
+      "source": "packages/contracts/src/admin.ts",
+      "annotated": "docs/code-reading/admin.annotated.ts",
+      "title": "后台管理契约（已有注释副本）",
+      "sourceSha256": "11990841572ff5790b49ac7c4e47260edcda7f9c91b40285926974f2b72df5a8",
+      "imports": [
+        {
+          "from": "./primitives.js",
+          "to": "../../packages/contracts/src/primitives.js"
+        }
+      ]
+    },
+    {
+      "source": "packages/contracts/src/primitives.ts",
+      "annotated": "docs/code-reading/api/contracts/primitives.annotated.ts",
+      "title": "公共字段与分页规则",
+      "sourceSha256": "316f7762976e65c4e6f27a0cde4a8aefad51c995a081133496c5f444d02f0315",
+      "imports": []
+    },
+    {
+      "source": "packages/contracts/src/index.ts",
+      "annotated": "docs/code-reading/api/contracts/index.annotated.ts",
+      "title": "普通工作台契约与共享导出",
+      "sourceSha256": "7ef2e9cd22799bbb42678dab8dae140ea366deba13ee6928ebd29b7dd9477780",
+      "imports": [
+        {
+          "from": "./primitives.js",
+          "to": "../../../../packages/contracts/src/primitives.js"
+        },
+        {
+          "from": "./primitives.js",
+          "to": "../../../../packages/contracts/src/primitives.js"
+        },
+        {
+          "from": "./number-services.js",
+          "to": "../../../../packages/contracts/src/number-services.js"
+        },
+        {
+          "from": "./platform-catalog.js",
+          "to": "../../../../packages/contracts/src/platform-catalog.js"
+        },
+        {
+          "from": "./recharge.js",
+          "to": "../../../../packages/contracts/src/recharge.js"
+        },
+        {
+          "from": "./agent-inventory.js",
+          "to": "../../../../packages/contracts/src/agent-inventory.js"
+        }
+      ]
+    },
+    {
+      "source": "packages/contracts/src/number-services.ts",
+      "annotated": "docs/code-reading/api/contracts/number-services.annotated.ts",
+      "title": "号码续期与用量契约",
+      "sourceSha256": "6f96c7be74b3517fa023d2528ee4dffe0bc916971bd8758f5d1ec8b93f790b08",
+      "imports": []
+    },
+    {
+      "source": "packages/contracts/src/recharge.ts",
+      "annotated": "docs/code-reading/api/contracts/recharge.annotated.ts",
+      "title": "充值金额与规则契约",
+      "sourceSha256": "800aec573388d262cf6db164aea90f9756ad991986c341bb36ece20b0fcab550",
+      "imports": []
+    },
+    {
+      "source": "packages/contracts/src/agent-inventory.ts",
+      "annotated": "docs/code-reading/api/contracts/agent-inventory.annotated.ts",
+      "title": "代理库存、流转与结算契约",
+      "sourceSha256": "9da89e626d74ff43847ad5096c53204e9933f0864d36dae14e573ccc10ce03ef",
+      "imports": [
+        {
+          "from": "./primitives.js",
+          "to": "../../../../packages/contracts/src/primitives.js"
+        },
+        {
+          "from": "./admin.js",
+          "to": "../../../../packages/contracts/src/admin.js"
+        }
+      ]
+    },
+    {
+      "source": "packages/contracts/src/platform-catalog.ts",
+      "annotated": "docs/code-reading/api/contracts/platform-catalog.annotated.ts",
+      "title": "服务平台品牌目录",
+      "sourceSha256": "6b94f465fad961b4f5058357efbdf4b1eb97c3eaf554a5d1de43d69588c49907",
+      "imports": []
+    },
+    {
+      "source": "backend/src/controllers.ts",
+      "annotated": "docs/code-reading/api/backend/controllers.annotated.ts",
+      "title": "普通用户接口入口",
+      "sourceSha256": "4cd4bdcd8e8bd80ebd2662e53d2ae6a3ed597baf97f2be54b4a5e210a967e072",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./ordering.js",
+          "to": "../../../../backend/src/ordering.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        },
+        {
+          "from": "./number-services.js",
+          "to": "../../../../backend/src/number-services.js"
+        },
+        {
+          "from": "./password-recovery.js",
+          "to": "../../../../backend/src/password-recovery.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/admin-controller.ts",
+      "annotated": "docs/code-reading/api/backend/admin-controller.annotated.ts",
+      "title": "管理后台接口入口",
+      "sourceSha256": "50e933941098853b9be6b763cfa96418e97d786fcd242c9ae51abf35b1a24a78",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./administration.js",
+          "to": "../../../../backend/src/administration.js"
+        },
+        {
+          "from": "./recharge.js",
+          "to": "../../../../backend/src/recharge.js"
+        },
+        {
+          "from": "./upstream-integration.js",
+          "to": "../../../../backend/src/upstream-integration.js"
+        },
+        {
+          "from": "./providers/webhook-inbox.js",
+          "to": "../../../../backend/src/providers/webhook-inbox.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/agent-inventory-controller.ts",
+      "annotated": "docs/code-reading/api/backend/agent-inventory-controller.annotated.ts",
+      "title": "代理库存接口入口",
+      "sourceSha256": "db9a72032ad67675714a6f34c9b0b7e9e45e043a91c158a3c183e364a7fc23c3",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./agent-inventory.js",
+          "to": "../../../../backend/src/agent-inventory.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/http.ts",
+      "annotated": "docs/code-reading/api/backend/http.annotated.ts",
+      "title": "公共输入检查、来源检查与错误返回",
+      "sourceSha256": "9d9490663cd5207dea7e6a7f8e66374bc136cf6b998211a95850a5ee4a6f2d45",
+      "imports": [
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/main.ts",
+      "annotated": "docs/code-reading/api/backend/main.annotated.ts",
+      "title": "后端启动与服务装配",
+      "sourceSha256": "cd787fc2f1dcde7800c303265e93f64c734814a66eb7087ad0aff320b731027f",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./password-recovery.js",
+          "to": "../../../../backend/src/password-recovery.js"
+        },
+        {
+          "from": "./controllers.js",
+          "to": "../../../../backend/src/controllers.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./ordering.js",
+          "to": "../../../../backend/src/ordering.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        },
+        {
+          "from": "./admin-controller.js",
+          "to": "../../../../backend/src/admin-controller.js"
+        },
+        {
+          "from": "./administration.js",
+          "to": "../../../../backend/src/administration.js"
+        },
+        {
+          "from": "./number-services.js",
+          "to": "../../../../backend/src/number-services.js"
+        },
+        {
+          "from": "./number-service-provider.js",
+          "to": "../../../../backend/src/number-service-provider.js"
+        },
+        {
+          "from": "./providers/receiving-provider.js",
+          "to": "../../../../backend/src/providers/receiving-provider.js"
+        },
+        {
+          "from": "./providers/mock-receiving-provider.js",
+          "to": "../../../../backend/src/providers/mock-receiving-provider.js"
+        },
+        {
+          "from": "./providers/receiving-sync.js",
+          "to": "../../../../backend/src/providers/receiving-sync.js"
+        },
+        {
+          "from": "./allocation-expiry.js",
+          "to": "../../../../backend/src/allocation-expiry.js"
+        },
+        {
+          "from": "./business-throttler.js",
+          "to": "../../../../backend/src/business-throttler.js"
+        },
+        {
+          "from": "./sandbox.js",
+          "to": "../../../../backend/src/sandbox.js"
+        },
+        {
+          "from": "./providers/webhook-inbox.js",
+          "to": "../../../../backend/src/providers/webhook-inbox.js"
+        },
+        {
+          "from": "./upstream-integration.js",
+          "to": "../../../../backend/src/upstream-integration.js"
+        },
+        {
+          "from": "./providers/pingcode-webhook.js",
+          "to": "../../../../backend/src/providers/pingcode-webhook.js"
+        },
+        {
+          "from": "./recharge.js",
+          "to": "../../../../backend/src/recharge.js"
+        },
+        {
+          "from": "./agent-inventory.js",
+          "to": "../../../../backend/src/agent-inventory.js"
+        },
+        {
+          "from": "./agent-inventory-expiry.js",
+          "to": "../../../../backend/src/agent-inventory-expiry.js"
+        },
+        {
+          "from": "./agent-inventory-controller.js",
+          "to": "../../../../backend/src/agent-inventory-controller.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/environment.ts",
+      "annotated": "docs/code-reading/api/backend/environment.annotated.ts",
+      "title": "后端环境配置检查",
+      "sourceSha256": "164f05d74113bdde3724a9558a1cb57a5d78c1d422f013c5b666430d379a0e70",
+      "imports": [
+        {
+          "from": "./test-database.js",
+          "to": "../../../../backend/src/test-database.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/database.ts",
+      "annotated": "docs/code-reading/api/backend/database.annotated.ts",
+      "title": "数据库查询与事务入口",
+      "sourceSha256": "f367dede539e4559709c2db0c92758a746c899ae1e7861d8212cce2bbd541084",
+      "imports": [
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/authentication.ts",
+      "annotated": "docs/code-reading/api/backend/authentication.annotated.ts",
+      "title": "登录、账户修改与会话",
+      "sourceSha256": "a6a593a0fd8ed6a6c0e8f5b7c81c5f8224d327e15f51336ec9c80e7622663c1d",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/password-recovery.ts",
+      "annotated": "docs/code-reading/api/backend/password-recovery.annotated.ts",
+      "title": "密码找回与重置",
+      "sourceSha256": "cf0c13300e63d2f558fc37cf1046ab727f5a9d2f76913c3e99d7c8793dc6574d",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./error-summary.js",
+          "to": "../../../../backend/src/error-summary.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/business-throttler.ts",
+      "annotated": "docs/code-reading/api/backend/business-throttler.annotated.ts",
+      "title": "业务请求限流身份",
+      "sourceSha256": "7e49bc47adbd8b7138d28f4db15d07717c2338a16351597909ebaa5243c26192",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/error-summary.ts",
+      "annotated": "docs/code-reading/api/backend/error-summary.annotated.ts",
+      "title": "错误日志摘要",
+      "sourceSha256": "5b91546aad447b5e4ccd68c0fa5acd648d256daa795861e3ec22bd5b7f194431",
+      "imports": []
+    },
+    {
+      "source": "backend/src/workspace.ts",
+      "annotated": "docs/code-reading/api/backend/workspace.annotated.ts",
+      "title": "普通用户工作台查询",
+      "sourceSha256": "181d2f327e2591f5d52ee38c3fca6ebce895386d9cb33b5e06d777ae738770c5",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./providers/receiving-provider.js",
+          "to": "../../../../backend/src/providers/receiving-provider.js"
+        },
+        {
+          "from": "./platform-inventory.js",
+          "to": "../../../../backend/src/platform-inventory.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/ordering.ts",
+      "annotated": "docs/code-reading/api/backend/ordering.annotated.ts",
+      "title": "商城购买与积分扣减",
+      "sourceSha256": "7576855037149c143c0f7ed9934bfcfc120f394dc5040ab5ea1e212e32f73497",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./providers/receiving-provider.js",
+          "to": "../../../../backend/src/providers/receiving-provider.js"
+        },
+        {
+          "from": "./providers/mock-receiving-provider.js",
+          "to": "../../../../backend/src/providers/mock-receiving-provider.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/administration.ts",
+      "annotated": "docs/code-reading/api/backend/administration.annotated.ts",
+      "title": "管理后台业务",
+      "sourceSha256": "44074cdf930edfa4b79135fe1d4fd38c4360f028b3cdaba6301880a36a6e5489",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        },
+        {
+          "from": "./platform-inventory.js",
+          "to": "../../../../backend/src/platform-inventory.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/number-service-provider.ts",
+      "annotated": "docs/code-reading/api/backend/number-service-provider.annotated.ts",
+      "title": "号码服务能力与模拟实现",
+      "sourceSha256": "416ccffb803ccc1ba300b8ff421e34373909ee1e334feb7d1b7565e7d995ccc9",
+      "imports": []
+    },
+    {
+      "source": "backend/src/number-services.ts",
+      "annotated": "docs/code-reading/api/backend/number-services.annotated.ts",
+      "title": "号码续期与用量业务",
+      "sourceSha256": "a4ba22dd9ceeec13d75cfbdd3eae63a32d0df5ebfa1e8cab2538280cbc247f0a",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./number-service-provider.js",
+          "to": "../../../../backend/src/number-service-provider.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/recharge.ts",
+      "annotated": "docs/code-reading/api/backend/recharge.annotated.ts",
+      "title": "充值设置、记录与入账业务",
+      "sourceSha256": "142038c622f4d2d86d8ca67c4d8d10da53fc911e575b583e716f636c841841f7",
+      "imports": [
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/sandbox.ts",
+      "annotated": "docs/code-reading/api/backend/sandbox.annotated.ts",
+      "title": "本地演示沙盒接口",
+      "sourceSha256": "30cc046e33ebd320c3440cdd4bedb560aad0951a8697adce0e8addbabe014d36",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./authentication.js",
+          "to": "../../../../backend/src/authentication.js"
+        },
+        {
+          "from": "./providers/receiving-sync.js",
+          "to": "../../../../backend/src/providers/receiving-sync.js"
+        },
+        {
+          "from": "./mock-fulfillment.js",
+          "to": "../../../../backend/src/mock-fulfillment.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/mock-fulfillment.ts",
+      "annotated": "docs/code-reading/api/backend/mock-fulfillment.annotated.ts",
+      "title": "模拟订单履行状态机",
+      "sourceSha256": "86731068790a1029e03bda765dece178f7e51a5f2d78cb87ae1bb6456af6267e",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./providers/mock-receiving-provider.js",
+          "to": "../../../../backend/src/providers/mock-receiving-provider.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/platform-inventory.ts",
+      "annotated": "docs/code-reading/api/backend/platform-inventory.annotated.ts",
+      "title": "平台服务库存条件与过期释放",
+      "sourceSha256": "3bd17469e5ec0ea0130481e33cda1d5f9b30ab394907da6b9a27961cf48e1100",
+      "imports": []
+    },
+    {
+      "source": "backend/src/allocation-expiry.ts",
+      "annotated": "docs/code-reading/api/backend/allocation-expiry.annotated.ts",
+      "title": "直接分配到期回收任务",
+      "sourceSha256": "f7708cf203b7cdbc78384019c44854be46b3a686ef692b901d81d129814a8757",
+      "imports": [
+        {
+          "from": "./platform-inventory.js",
+          "to": "../../../../backend/src/platform-inventory.js"
+        },
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./error-summary.js",
+          "to": "../../../../backend/src/error-summary.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/agent-inventory.ts",
+      "annotated": "docs/code-reading/api/backend/agent-inventory.annotated.ts",
+      "title": "代理库存核心业务",
+      "sourceSha256": "eaf65eb21ae36e750011a84389c8be78cb250267e76df6938bf7c71dcffdafeb",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./workspace.js",
+          "to": "../../../../backend/src/workspace.js"
+        },
+        {
+          "from": "./agent-settlement.js",
+          "to": "../../../../backend/src/agent-settlement.js"
+        },
+        {
+          "from": "./holding-batch.js",
+          "to": "../../../../backend/src/holding-batch.js"
+        },
+        {
+          "from": "./unified-agent-stock.js",
+          "to": "../../../../backend/src/unified-agent-stock.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/agent-settlement.ts",
+      "annotated": "docs/code-reading/api/backend/agent-settlement.annotated.ts",
+      "title": "代理报价与余额结算",
+      "sourceSha256": "6f62d8363e5c77655a1dec078a242a4acf5f2d3e7a6d8a51bb1839be431f451d",
+      "imports": [
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/holding-batch.ts",
+      "annotated": "docs/code-reading/api/backend/holding-batch.annotated.ts",
+      "title": "持有记录批量预览与流转",
+      "sourceSha256": "67d7d2913afcc375b892971c41d600b01025af4da1256f7763bafd50c5a761d2",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./agent-settlement.js",
+          "to": "../../../../backend/src/agent-settlement.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/unified-agent-stock.ts",
+      "annotated": "docs/code-reading/api/backend/unified-agent-stock.annotated.ts",
+      "title": "商城与代理统一库存查询",
+      "sourceSha256": "87d876dcb4ade28f3b4ede55ed50c13d16ed751bc191a747baea030c0643b796",
+      "imports": [
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/agent-inventory-expiry.ts",
+      "annotated": "docs/code-reading/api/backend/agent-inventory-expiry.annotated.ts",
+      "title": "代理持有与权益到期任务",
+      "sourceSha256": "4c2c79131709e312e9ccf675def2b9675dcc8116a8104628b42efd166794ee0c",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./error-summary.js",
+          "to": "../../../../backend/src/error-summary.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/provider-sync.ts",
+      "annotated": "docs/code-reading/api/backend/provider-sync.annotated.ts",
+      "title": "供应商库存同步能力",
+      "sourceSha256": "8bad4242d2b51f0f78f5b13fc1dfe0d9a5914e6fee5232ef9e0c701e19e8cb2e",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./http.js",
+          "to": "../../../../backend/src/http.js"
+        },
+        {
+          "from": "./error-summary.js",
+          "to": "../../../../backend/src/error-summary.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/upstream-integration.ts",
+      "annotated": "docs/code-reading/api/backend/upstream-integration.annotated.ts",
+      "title": "后台上游接入状态",
+      "sourceSha256": "0db0a1452c1becb4b4828df4d28aabff6d6348eb3cd6ae1d7b317891eb4a1933",
+      "imports": [
+        {
+          "from": "./database.js",
+          "to": "../../../../backend/src/database.js"
+        },
+        {
+          "from": "./environment.js",
+          "to": "../../../../backend/src/environment.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/test-database.ts",
+      "annotated": "docs/code-reading/api/backend/test-database.annotated.ts",
+      "title": "测试环境数据库配置校验辅助",
+      "sourceSha256": "5625f65e4619c1ee236985ee4943461bc11ac3999b3c3f9f5854a3d60f0eb95c",
+      "imports": []
+    },
+    {
+      "source": "backend/src/providers/receiving-provider.ts",
+      "annotated": "docs/code-reading/api/backend/providers/receiving-provider.annotated.ts",
+      "title": "号码接收与分配能力接口",
+      "sourceSha256": "8c9ff60fc54ff84d5cf9866b6e1b150e5a22f99eb0471c28e4150eb27d78102b",
+      "imports": [
+        {
+          "from": "./pingcode-adapter.js",
+          "to": "../../../../../backend/src/providers/pingcode-adapter.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/providers/mock-receiving-provider.ts",
+      "annotated": "docs/code-reading/api/backend/providers/mock-receiving-provider.annotated.ts",
+      "title": "模拟号码预留与分配",
+      "sourceSha256": "cbdd10822a8d04a0ecdb4cc6d8edc33204259a7bfaa12086fdb9cac641138276",
+      "imports": [
+        {
+          "from": "../http.js",
+          "to": "../../../../../backend/src/http.js"
+        },
+        {
+          "from": "./receiving-provider.js",
+          "to": "../../../../../backend/src/providers/receiving-provider.js"
+        },
+        {
+          "from": "./pingcode-adapter.js",
+          "to": "../../../../../backend/src/providers/pingcode-adapter.js"
+        },
+        {
+          "from": "./mock-pingcode-transport.js",
+          "to": "../../../../../backend/src/providers/mock-pingcode-transport.js"
+        },
+        {
+          "from": "../platform-inventory.js",
+          "to": "../../../../../backend/src/platform-inventory.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/providers/receiving-sync.ts",
+      "annotated": "docs/code-reading/api/backend/providers/receiving-sync.annotated.ts",
+      "title": "模拟接收同步与短信归属",
+      "sourceSha256": "87c64fdbfb74a3304559ac2b31ef46017fec299611b0c4cec6dfa52cda86a658",
+      "imports": [
+        {
+          "from": "../database.js",
+          "to": "../../../../../backend/src/database.js"
+        },
+        {
+          "from": "../http.js",
+          "to": "../../../../../backend/src/http.js"
+        },
+        {
+          "from": "./pingcode-adapter.js",
+          "to": "../../../../../backend/src/providers/pingcode-adapter.js"
+        },
+        {
+          "from": "./receiving-provider.js",
+          "to": "../../../../../backend/src/providers/receiving-provider.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/providers/pingcode-adapter.ts",
+      "annotated": "docs/code-reading/api/backend/providers/pingcode-adapter.annotated.ts",
+      "title": "PingCode 报文与内部数据适配",
+      "sourceSha256": "160a99d047e3119d045997d3da858429bc807e8ff74130a2c3ede2ab65da0026",
+      "imports": []
+    },
+    {
+      "source": "backend/src/providers/mock-pingcode-transport.ts",
+      "annotated": "docs/code-reading/api/backend/providers/mock-pingcode-transport.annotated.ts",
+      "title": "模拟 PingCode 请求传输",
+      "sourceSha256": "83dc18eed952755aa20aa5b4b43f789256ec307032f178b308373f68872ea9c9",
+      "imports": [
+        {
+          "from": "./pingcode-adapter.js",
+          "to": "../../../../../backend/src/providers/pingcode-adapter.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/providers/pingcode-webhook.ts",
+      "annotated": "docs/code-reading/api/backend/providers/pingcode-webhook.annotated.ts",
+      "title": "上游短信回调入口",
+      "sourceSha256": "f42acb0ad2e0bed271292bf22ec445d1683cd7d2626dde0cd19512a1f575c7af",
+      "imports": [
+        {
+          "from": "../environment.js",
+          "to": "../../../../../backend/src/environment.js"
+        },
+        {
+          "from": "../http.js",
+          "to": "../../../../../backend/src/http.js"
+        },
+        {
+          "from": "./webhook-inbox.js",
+          "to": "../../../../../backend/src/providers/webhook-inbox.js"
+        }
+      ]
+    },
+    {
+      "source": "backend/src/providers/webhook-inbox.ts",
+      "annotated": "docs/code-reading/api/backend/providers/webhook-inbox.annotated.ts",
+      "title": "已验证回调的收件箱与重试",
+      "sourceSha256": "b82cd379b3e833a37853a52ec3a718f7b440c4fbd0244a2988c330c6353bae45",
+      "imports": [
+        {
+          "from": "../database.js",
+          "to": "../../../../../backend/src/database.js"
+        },
+        {
+          "from": "../environment.js",
+          "to": "../../../../../backend/src/environment.js"
+        },
+        {
+          "from": "../http.js",
+          "to": "../../../../../backend/src/http.js"
+        },
+        {
+          "from": "../error-summary.js",
+          "to": "../../../../../backend/src/error-summary.js"
+        }
+      ]
+    }
+  ]
+}

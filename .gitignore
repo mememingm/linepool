@@ -21,3 +21,4 @@ dist-test/
 output/
 tmp/
 /session-efficiency-audit-*.md
+/ccam/
