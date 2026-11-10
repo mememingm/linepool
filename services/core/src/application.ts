@@ -59,6 +59,7 @@ import { SelfServiceGuard } from './self-service-guard.js';
 import { LinePoolReceiving } from './linepool-receiving.js';
 import { PcShopOrdering } from './pc/shop-ordering.js';
 import { ShopDelivery } from './pc/shop-delivery.js';
+import { ShopDeliverySweep } from './pc/shop-delivery-sweep.js';
 
 /** Site and process role are deployment configuration; no request can select a module or database. */
 @Module({})
@@ -91,6 +92,7 @@ export class RuntimeModule {
     }
     if (environment.isWorker) {
       if (linepool || once) providers.push(MockPcProvider, PcWorker);
+      if (linepool) providers.push(ShopDeliverySweep);
       return { module: RuntimeModule, providers };
     }
     providers.push(AgentInventory, ShopProducts,

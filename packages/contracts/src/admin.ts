@@ -241,3 +241,34 @@ export type ShopDeliveryOutcome = z.infer<typeof shopDeliveryOutcomeSchema>;
 export type AdminShopDeliveryQuery = z.infer<typeof adminShopDeliveryQuerySchema>;
 export type AdminShopDelivery = z.infer<typeof adminShopDeliverySchema>;
 export type AdminShopDeliveryPage = z.infer<typeof adminShopDeliveryPageSchema>;
+
+export const shopDeliveryAttemptStatusSchema = z.enum(['RETRYING', 'FAILED']);
+export const adminShopDeliveryAttemptQuerySchema = paginationQuerySchema.extend({
+  status: shopDeliveryAttemptStatusSchema.optional(),
+});
+export const adminShopDeliveryAttemptSchema = z.object({
+  provider: z.enum(['pingcode', 'pingcode-mock']),
+  externalMessageId: z.string(),
+  connectionId: uuidSchema,
+  numberId: uuidSchema,
+  phoneNumber: z.string().nullable(),
+  sender: z.string().nullable(),
+  attempts: z.number().int().positive(),
+  lastError: z.string(),
+  status: shopDeliveryAttemptStatusSchema,
+  nextAttemptAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export const adminShopDeliveryAttemptPageSchema = z.object({
+  data: z.array(adminShopDeliveryAttemptSchema),
+  pagination: z.object({
+    page: z.number().int().positive(), pageSize: z.number().int().positive(),
+    totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const shopDeliveryRetryResultSchema = z.object({ changed: z.boolean() });
+export type ShopDeliveryAttemptStatus = z.infer<typeof shopDeliveryAttemptStatusSchema>;
+export type AdminShopDeliveryAttemptQuery = z.infer<typeof adminShopDeliveryAttemptQuerySchema>;
+export type AdminShopDeliveryAttempt = z.infer<typeof adminShopDeliveryAttemptSchema>;
+export type AdminShopDeliveryAttemptPage = z.infer<typeof adminShopDeliveryAttemptPageSchema>;

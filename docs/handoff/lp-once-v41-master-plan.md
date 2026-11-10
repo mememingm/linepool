@@ -380,6 +380,10 @@ npm run verify:catalog-upstream --workspace @linepool/ui-react
 
 2026-11-10 补充单已实施：`identifyPlatform` 发送方优先、`basis` 只进回放、覆盖度/发送方纯度报告；052 未改、未建 053。纯度结果：Telegram `85474` 2/2、WhatsApp `29283` 3/3；Google `22000` 0 条历史，用户已破例放行。投递失败改为 savepoint 隔离，代理入库不受影响；见 RUN-20261110-llinepool-24056-11/12。
 
+2026-11-10 补投机制：053 `shop_delivery_attempts` 已应用；`deliverSafely` 失败在 savepoint 内记录 attempts/退避，Worker 每 60 秒扫描遗漏与到期重试；管理端新增投递失败列表与重试；S1–S8 全部回滚通过；Worker 已带 `SHOP_DELIVERY_SWEEP_SINCE` 启动。补投代码未提交；见 RUN-20261110-llinepool-24056-14。
+
+2026-11-10 MISSED 候选窗口追加 `GREATEST(SINCE, now()-7天)` 上限；S1–S3 回滚重跑通过（S1 投递、S2/S3 不选中），S4–S8 同时复跑通过；补投代码提交信息 `feat: LP shop delivery retry sweep`；见 RUN-20261110-llinepool-48480-01。
+
 本机 Magpie 已新增 `DeepSeek` 组（`group/deepseek`），标签为 `deepseek`，会话内保持所选成员；初始为 Pro → Flash，2026-11-10 晚些改为仅 Flash（见下条）。现有 GPT 组保留；本轮不改变 R0–R5 阶段状态，见 RUN-20261110-llinepool-24056-01。
 
 2026-11-10 Magpie 的 DeepSeek 现状：`group/deepseek` 已改为只用 Flash（第二把密钥所在的中转 `deepseek-flash-soul/deepseek-v4.1-flash` 优先，官方 `deepseek/deepseek-flash` 兜底），`deepseek/deepseek-v4-pro` 已从官方供应商的可选模型隐藏。官方主密钥余额 ¥11.48；第二把密钥只被 `ai.soulecho.cc` 接受且仅服务 V4.1 Flash。原误挂到官方供应商的 `soul` 密钥已移除；见 RUN-20261110-llinepool-40352-02/03。
@@ -1299,6 +1303,24 @@ ONCE代理页反馈已解决，用户确认与三项真实链路授权见RUN-924
 - 正式回放 1–11（全部回滚）：case1 Telegram `DELIVERED` code 80556 basis SENDER；case2 Telegram `NO_BUYER`、Google `DELIVERED` 482915（历史无 Google 验证码，正文为合成样本）；case3 OpenAI/Yahoo `UNMATCHED`；case4 1 条投递/1 条消息；case5 `NO_BUYER`；case6 回执 `CONNECTION_IMPORTED`；case7 WhatsApp 11/17、Telegram 2、OpenAI/Yahoo 0；case8 两条均 `DELIVERED`（80556/52561）；case9 Google basis SENDER；case10 `AMBIGUOUS`；case11 savepoint 隔离通过。
 - 执行后：`shop_message_deliveries` 0 行、`sms_messages` 22 行、规则 3 条；无持久测试数据。构建 `build:all` 通过，upstream 117 / catalog 13 未变。
 - 报告：`output/reports/lp-shop-receiving-phase1-20261110.md`。未提交 Git。
+
+#### RUN-20261110-llinepool-24056-14
+
+- 第 0 步提交第一期：`feature/lp-unified-shop` 提交 `6c6a616`（14 files，+703/-8），排除 `functions.ask`，未 push。
+- 迁移 053 `lp_shop_delivery_attempts` 已应用到 `linepool_v42_sandbox`，输出 `Applied migrations: 053_lp_shop_delivery_attempts.sql`，时间 `2026-11-10T06:54:51.608Z`。
+- 代码：`deliverSafely` 失败后 savepoint 内 upsert 尝试行（attempts、300 字错误摘要、2/4/8/16 分钟退避、第 5 次 FAILED）；`ShopDeliverySweep` Worker 60 秒扫描遗漏+到期重试，50 条/轮，`SHOP_DELIVERY_SWEEP_SINCE` 未设置则禁用；管理端 `GET /admin/shop-delivery-attempts` 与 FAILED 重试+审计；后台“店铺投递”增加投递失败标签与重试按钮。
+- S1–S8 全部回滚通过：S1 投递 1/尝试 0；S2/S3 未选中；S4 attempts 1→5、第 5 次 FAILED、不再选中、代理回执 CONNECTION_IMPORTED；S5 重试成功、尝试 0、审计 1；S6 1 投递/1 消息；S7 PC8 非店铺未选中；S8 last_error 无正文/验证码。
+- 只读核对：053 已应用、投递 0、尝试 0、sms 22、规则 3、遗漏候选 0。Worker 日志 `Shop delivery sweep started since 2026-11-10T04:07:23.515Z`。
+- 构建：`build:all` 通过，upstream 117 / catalog 13 未变。补投代码未提交；报告 `output/reports/lp-shop-redelivery-20261110.md`。
+
+#### RUN-20261110-llinepool-48480-01
+
+- 用户要求把 MISSED 候选条件从 `ingested_at >= SINCE` 改为 `ingested_at >= GREATEST(SINCE, now()-7天)`，避免补投早于 7 天的遗漏。
+- 修改：`services/core/src/pc/shop-delivery-sweep.ts` 的 MISSED CTE；未改 052/053 结构、未改识别逻辑。
+- 构建：`npm run build:all` 通过，upstream 117 / catalog 13 未变。
+- 回滚重跑：S1 选中并 `DELIVERED`、投递 1/尝试 0；S2 30 秒前不选中；S3 SINCE 之前不选中；S4–S8 同时复跑通过（S4 1→5 FAILED、S5 重试成功、S6 1 投递/1 消息、S7 PC8 不选中、S8 错误不含正文/验证码）。
+- 当前库：投递 0、尝试 0、sms 22、规则 3；无持久测试数据。
+- 提交：本轮补投代码提交信息 `feat: LP shop delivery retry sweep`，排除 `functions.ask`，未 push。报告 `output/reports/lp-shop-redelivery-20261110.md`。
 
 ## 11. 给后续 agent 的启动提示词
 

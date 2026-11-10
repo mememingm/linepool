@@ -63,6 +63,7 @@ const schema = z.object({
   PC_WAIT_SECONDS: z.coerce.number().int().min(1).max(3600).default(120),
   PC_WORKER_CONNECTION_IDS: z.string().default('').transform(value => value.split(',').map(id => id.trim()).filter(Boolean))
     .pipe(z.array(z.uuid())),
+  SHOP_DELIVERY_SWEEP_SINCE: z.iso.datetime({ offset: true }).optional(),
   PC_MOCK_REFRESH_MODE: z.enum(['SUCCESS', 'REJECTED', 'UNKNOWN']).default('SUCCESS'),
   PC_MOCK_SNAPSHOT_PAGE_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
   PC_MOCK_SNAPSHOT_FAIL_ACCOUNT: z.string().trim().max(200).default(''),

@@ -3,6 +3,7 @@ import { platformCodeRuleShapeSchema } from '@linepool/contracts';
 import { Environment } from '../src/environment.js';
 import { Database } from '../src/database.js';
 import { ShopDelivery, deliverSafely, identifyPlatform, type PlatformRule } from '../src/pc/shop-delivery.js';
+import { findShopDeliveryCandidates, processShopDeliveryCandidate } from '../src/pc/shop-delivery-sweep.js';
 
 /**
  * Read-only report or a necessarily-rolled-back replay of one shop delivery.
@@ -228,8 +229,118 @@ async function case8() {
   }
 }
 
+async function sweepCase() {
+  const since = argument('since') ?? '2026-11-10T04:07:23.515Z';
+  if (!Number.isFinite(Date.parse(since))) throw new Error('--since must be an ISO timestamp');
+  const client = await db.pool.connect();
+  const delivery = new ShopDelivery(environment);
+  try {
+    await client.query('BEGIN');
+    const target = (await client.query<{ id: string; user_id: string; number_id: string; platform_id: string; connection_id: string; agent_id: string }>(`SELECT a.id,a.user_id,a.number_id,a.platform_id,s.connection_id,s.agent_id
+      FROM phone_numbers n JOIN number_allocations a ON a.number_id=n.id AND a.platform_id='Telegram' AND a.released_at IS NULL
+      JOIN orders o ON o.id=a.order_id JOIN shops s ON s.id=o.shop_id AND s.status='ACTIVE'
+      WHERE n.phone_number='+12136082447' LIMIT 1`)).rows[0];
+    if (!target) throw new Error('Sweep target allocation is unavailable');
+    const occurredAt = '2026-11-10T03:10:00.000Z';
+
+    async function createReceipt(label: string, ingestedAt: string, body: string) {
+      const binding = (await client.query<{ external_number_id: string }>(`SELECT external_number_id
+        FROM provider_resource_bindings WHERE number_id=$1 AND provider='pingcode' AND external_project_id IS NULL LIMIT 1`,
+      [target.number_id])).rows[0];
+      if (!binding) throw new Error('Sweep target has no local provider binding');
+      const externalMessageId = `sweep:${label}:${Date.now()}`;
+      const payload = { kind: 'INBOUND', provider: 'pingcode', upstreamAccountId: target.connection_id,
+        externalProjectId: null, externalMessageId, externalNumberId: binding.external_number_id, phoneNumber: '+12136082447',
+        sender: '85474', title: '', content: body, code: null, occurredAt,
+        connectionId: target.connection_id, ownerAgentId: target.agent_id };
+      await client.query(`INSERT INTO provider_message_receipts(provider,external_message_id,fingerprint,upstream_created_at,
+        created_at,external_project_id,external_number_id,raw_payload,received_at,processing_status,failure_reason,processed_at,
+        upstream_account_id,normalized_payload,ingested_at,import_batch_id,attempts,next_attempt_at,last_error,connection_id,
+        owner_agent_id,number_id,connection_read_at)
+        VALUES('pingcode',$1,NULL,NULL,now(),NULL,$2,'{}'::jsonb,now(),'CONNECTION_IMPORTED',NULL,now(),
+        $3,$4::jsonb,$5,NULL,0,NULL,NULL,$3,$6,$7,NULL)`,
+      [externalMessageId, binding.external_number_id, target.connection_id, JSON.stringify(payload), ingestedAt,
+        target.agent_id, target.number_id]);
+      return { externalMessageId, input: { provider: 'pingcode', externalMessageId,
+        connectionId: target.connection_id, numberId: target.number_id, sender: '85474', body, occurredAt } };
+    }
+    async function candidate(externalMessageId: string) {
+      const rows = await findShopDeliveryCandidates(client, since, 50);
+      return rows.find(row => row.externalMessageId === externalMessageId);
+    }
+    async function deliveryCount(externalMessageId: string) {
+      return (await client.query<{ n: number }>('SELECT count(*)::int AS n FROM shop_message_deliveries WHERE provider=$1 AND external_message_id=$2', ['pingcode', externalMessageId])).rows[0]!.n;
+    }
+    async function attemptCount(externalMessageId: string) {
+      return (await client.query<{ n: number }>('SELECT count(*)::int AS n FROM shop_delivery_attempts WHERE provider=$1 AND external_message_id=$2', ['pingcode', externalMessageId])).rows[0]!.n;
+    }
+    const out: Record<string, unknown> = {};
+
+    const s1 = await createReceipt('S1', new Date(Date.now() - 180000).toISOString(), 'Telegram code: 11111');
+    const s1c = await candidate(s1.externalMessageId);
+    const s1ok = s1c ? await processShopDeliveryCandidate(client, s1c, delivery) : false;
+    out.S1 = { selected: Boolean(s1c), delivered: s1ok, deliveryRows: await deliveryCount(s1.externalMessageId),
+      attemptRows: await attemptCount(s1.externalMessageId) };
+
+    const s2 = await createReceipt('S2', new Date(Date.now() - 30000).toISOString(), 'Telegram code: 22222');
+    out.S2 = { selected: Boolean(await candidate(s2.externalMessageId)) };
+
+    const s3 = await createReceipt('S3', '2026-11-10T04:00:00.000Z', 'Telegram code: 33333');
+    out.S3 = { selected: Boolean(await candidate(s3.externalMessageId)) };
+
+    const s4 = await createReceipt('S4', new Date(Date.now() - 180000).toISOString(), 'Telegram code: 44444');
+    const s4c = await candidate(s4.externalMessageId);
+    const history: { attempts: number; status: string }[] = [];
+    for (let round = 1; round <= 5; round += 1) {
+      await processShopDeliveryCandidate(client, s4c!, {
+        deliver: async () => { throw new Error('sweep forced failure'); },
+      });
+      const attempt = (await client.query<{ attempts: number; status: string }>('SELECT attempts,status FROM shop_delivery_attempts WHERE provider=$1 AND external_message_id=$2', ['pingcode', s4.externalMessageId])).rows[0]!;
+      history.push({ attempts: attempt.attempts, status: attempt.status });
+      if (round < 5) await client.query("UPDATE shop_delivery_attempts SET next_attempt_at=now()-interval '1 second' WHERE provider=$1 AND external_message_id=$2", ['pingcode', s4.externalMessageId]);
+    }
+    const s4status = (await client.query<{ status: string }>('SELECT processing_status AS status FROM provider_message_receipts WHERE provider=$1 AND external_message_id=$2', ['pingcode', s4.externalMessageId])).rows[0]!.status;
+    out.S4 = { history, retryStillSelected: Boolean(await candidate(s4.externalMessageId)), agentReceiptStatus: s4status };
+
+    const s4Attempt = (await client.query<{ last_error: string }>('SELECT last_error FROM shop_delivery_attempts WHERE provider=$1 AND external_message_id=$2', ['pingcode', s4.externalMessageId])).rows[0];
+
+    await client.query("UPDATE shop_delivery_attempts SET status='RETRYING',next_attempt_at=now() WHERE provider=$1 AND external_message_id=$2", ['pingcode', s4.externalMessageId]);
+    const adminId = (await client.query<{ id: string }>("SELECT id FROM users WHERE role='ADMIN' LIMIT 1")).rows[0]!.id;
+    await client.query(`INSERT INTO admin_audit(actor_id,action,target_id,reason,before_data,after_data)
+      VALUES($1,'SHOP_DELIVERY_RETRY',$2,'Manual retry',NULL,NULL)`, [adminId, s4.externalMessageId]);
+    const s5ok = await processShopDeliveryCandidate(client, s4c!, delivery);
+    out.S5 = { delivered: s5ok, deliveryRows: await deliveryCount(s4.externalMessageId),
+      attemptRows: await attemptCount(s4.externalMessageId),
+      auditRows: (await client.query<{ n: number }>("SELECT count(*)::int AS n FROM admin_audit WHERE action='SHOP_DELIVERY_RETRY' AND target_id=$1", [s4.externalMessageId])).rows[0]!.n };
+
+    const s6 = await createReceipt('S6', new Date(Date.now() - 180000).toISOString(), 'Telegram code: 66666');
+    await deliverSafely(client, delivery, s6.input);
+    await processShopDeliveryCandidate(client, { source: 'MISSED', ...s6.input }, delivery);
+    out.S6 = { deliveryRows: await deliveryCount(s6.externalMessageId),
+      buyerMessages: (await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM sms_messages m
+        JOIN shop_message_deliveries d ON d.sms_message_id=m.id WHERE d.provider='pingcode' AND d.external_message_id=$1`, [s6.externalMessageId])).rows[0]!.n };
+
+    const pc8 = (await client.query<{ external_message_id: string }>(`UPDATE provider_message_receipts SET ingested_at=now()
+      WHERE external_message_id=(SELECT external_message_id FROM provider_message_receipts
+        WHERE connection_id='eecdf69c-0df4-4ded-9973-196334ff1a43' AND provider='pingcode'
+          AND processing_status='CONNECTION_IMPORTED' AND external_message_id NOT LIKE 'sweep:%'
+        ORDER BY external_message_id LIMIT 1)
+      RETURNING external_message_id`)).rows[0];
+    out.S7 = { pc8Receipt: pc8?.external_message_id ?? null, selected: pc8 ? Boolean(await candidate(pc8.external_message_id)) : null };
+
+    out.S8 = { lastError: s4Attempt?.last_error ?? null, containsBody: s4Attempt?.last_error.includes('Telegram code') ?? false,
+      containsCode: s4Attempt?.last_error.includes('44444') ?? false };
+
+    console.log(JSON.stringify({ sweepSince: since, cases: out }, null, 2));
+  } finally {
+    await client.query('ROLLBACK');
+    client.release();
+  }
+}
+
 try {
   if (process.argv.includes('--report')) await report();
+  else if (argument('sweep-case')) await sweepCase();
   else if (argument('case') === '11') await failureIsolation();
   else if (argument('case') === '8') await case8();
   else await replay();

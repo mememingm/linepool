@@ -7,6 +7,7 @@ import { adminQuerySchema, adminOrdersQuerySchema, adminSummarySchema, adminUser
   adminPlatformSchema, platformInputSchema, type PlatformInput, adminShopsSchema, officialShopInputSchema, type OfficialShopInput,
   agentShopSchema, shopProductInputSchema, adminShopProductSchema, shopProductHoldInputSchema, type ShopProductInput, type ShopProductHoldInput,
   adminShopDeliveryQuerySchema, adminShopDeliveryPageSchema, type AdminShopDeliveryQuery,
+  adminShopDeliveryAttemptQuerySchema, adminShopDeliveryAttemptPageSchema, shopDeliveryRetryResultSchema, type AdminShopDeliveryAttemptQuery,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import {
   accountProfileInputSchema, accountSchema, apiErrorSchema, catalogSchema, createOrderInputSchema, dashboardSchema,
@@ -141,6 +142,13 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
     adminShopProducts(options?: ApiRequestOptions) { return request('/admin/shop-products', dataResponseSchema(z.array(adminShopProductSchema)), options); },
     adminShopDeliveries(input: Partial<AdminShopDeliveryQuery> = {}, options?: ApiRequestOptions) {
       return request(`/admin/shop-deliveries${query(adminShopDeliveryQuerySchema.parse(input))}`, adminShopDeliveryPageSchema, options);
+    },
+    adminShopDeliveryAttempts(input: Partial<AdminShopDeliveryAttemptQuery> = {}, options?: ApiRequestOptions) {
+      return request(`/admin/shop-delivery-attempts${query(adminShopDeliveryAttemptQuerySchema.parse(input))}`, adminShopDeliveryAttemptPageSchema, options);
+    },
+    adminRetryShopDeliveryAttempt(provider: 'pingcode' | 'pingcode-mock', externalMessageId: string) {
+      return request(`/admin/shop-delivery-attempts/${encodeURIComponent(provider)}/${encodeURIComponent(externalMessageId)}/retry`,
+        dataResponseSchema(shopDeliveryRetryResultSchema), { method: 'POST' });
     },
     adminHoldShopProduct(id: string, input: ShopProductHoldInput) {
       return request(`/admin/shop-products/${uuidSchema.parse(id)}/hold`, dataResponseSchema(z.object({ changed: z.boolean() })), { method: 'POST', body: shopProductHoldInputSchema.parse(input) });

@@ -7,6 +7,7 @@ import { uuidSchema, serviceSchema, adminRechargeQuerySchema, rechargeSettingsIn
 import { adminPasswordResetInputSchema, type AdminPasswordResetInput, adminQuerySchema, numberActionInputSchema, productInputSchema, userStatusInputSchema,
   adminWebhookRetryInputSchema, type AdminWebhookRetryInput, productSyncInputSchema, type ProductSyncInput, platformInputSchema, type PlatformInput, officialShopInputSchema, type OfficialShopInput, shopProductHoldInputSchema, type ShopProductHoldInput,
   adminShopDeliveryQuerySchema, type AdminShopDeliveryQuery,
+  adminShopDeliveryAttemptQuerySchema, type AdminShopDeliveryAttemptQuery,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import { SessionGuard, type SessionRequest } from './authentication.js';
 import { SchemaPipe } from './http.js';
@@ -77,6 +78,16 @@ export class AdminController {
   @Get('shop-deliveries')
   async shopDeliveries(@Query(new SchemaPipe(adminShopDeliveryQuerySchema)) input: AdminShopDeliveryQuery) {
     return this.admin.shopDeliveries(input);
+  }
+  @Get('shop-delivery-attempts')
+  async shopDeliveryAttempts(@Query(new SchemaPipe(adminShopDeliveryAttemptQuerySchema)) input: AdminShopDeliveryAttemptQuery) {
+    return this.admin.shopDeliveryAttempts(input);
+  }
+  @Post('shop-delivery-attempts/:provider/:externalMessageId/retry')
+  async retryShopDeliveryAttempt(@Req() req: SessionRequest,
+    @Param('provider', new SchemaPipe(z.enum(['pingcode', 'pingcode-mock']))) provider: 'pingcode' | 'pingcode-mock',
+    @Param('externalMessageId', new SchemaPipe(z.string().trim().min(1).max(200))) externalMessageId: string) {
+    return { data: await this.admin.retryShopDeliveryAttempt(req.user.id, provider, externalMessageId) };
   }
   @Get('shops')
   async shops() { return { data: await this.admin.shops() }; }

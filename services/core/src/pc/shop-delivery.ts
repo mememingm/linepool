@@ -85,6 +85,30 @@ export async function deliverSafely(client: PoolClient, delivery: Pick<ShopDeliv
   } catch (error) {
     await client.query('ROLLBACK TO SAVEPOINT shop_delivery');
     await client.query('RELEASE SAVEPOINT shop_delivery');
+    const raw = error instanceof Error ? `${error.name}: ${error.message}` : 'SHOP_DELIVERY_FAILED';
+    const summary = raw.replace(/\d{4,}/g, '####').replace(/\s+/g, ' ').slice(0, 300) || 'SHOP_DELIVERY_FAILED';
+    await client.query('SAVEPOINT shop_delivery_attempt');
+    try {
+      await client.query(`INSERT INTO shop_delivery_attempts(provider,external_message_id,connection_id,number_id,
+        attempts,last_error,status,next_attempt_at)
+        VALUES($1,$2,$3,$4,1,$5,'RETRYING',now()+interval '2 minutes')
+        ON CONFLICT(provider,external_message_id) DO UPDATE SET
+          attempts=shop_delivery_attempts.attempts+1,
+          last_error=EXCLUDED.last_error,
+          status=CASE WHEN shop_delivery_attempts.attempts+1>=5 THEN 'FAILED' ELSE 'RETRYING' END,
+          next_attempt_at=CASE WHEN shop_delivery_attempts.attempts+1>=5 THEN now()
+            ELSE now()+(LEAST(POWER(2,shop_delivery_attempts.attempts+1),60)*interval '1 minute') END,
+          updated_at=now()`,
+      [input.provider, input.externalMessageId, input.connectionId, input.numberId, summary]);
+      await client.query('RELEASE SAVEPOINT shop_delivery_attempt');
+    } catch (attemptError) {
+      await client.query('ROLLBACK TO SAVEPOINT shop_delivery_attempt');
+      await client.query('RELEASE SAVEPOINT shop_delivery_attempt');
+      console.error('Shop delivery attempt recording failed', {
+        externalMessageId: input.externalMessageId,
+        error: attemptError instanceof Error ? attemptError.message : String(attemptError),
+      });
+    }
     console.error('Shop delivery failed; agent receipt preserved', {
       externalMessageId: input.externalMessageId, connectionId: input.connectionId, numberId: input.numberId,
       error: error instanceof Error ? error.message : String(error),

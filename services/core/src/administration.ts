@@ -4,7 +4,8 @@ import { hash } from 'bcryptjs';
 import { storefrontRegionIds } from '@linepool/contracts';
 import { adminOrdersQuerySchema, type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput, type AdminPasswordResetInput,
   type AdminPlatform, type PlatformInput, type AdminShops, type OfficialShopInput, type AdminShopProduct, type ShopProductHoldInput,
-  type AdminShopDelivery, type AdminShopDeliveryQuery, type AdminShopDeliveryPage } from '@linepool/contracts/admin';
+  type AdminShopDelivery, type AdminShopDeliveryQuery, type AdminShopDeliveryPage,
+  type AdminShopDeliveryAttempt, type AdminShopDeliveryAttemptQuery, type AdminShopDeliveryAttemptPage } from '@linepool/contracts/admin';
 import { type SessionRequest } from './authentication.js';
 import { Database } from './database.js';
 import { ApiFailure, SchemaPipe } from './http.js';
@@ -489,6 +490,56 @@ export class Administration {
         })),
         pagination: pagination(input, count!.total),
       };
+    });
+  }
+
+  /** Read-only failed delivery attempts. No message body or verification code is returned. */
+  async shopDeliveryAttempts(input: AdminShopDeliveryAttemptQuery): Promise<AdminShopDeliveryAttemptPage> {
+    const values: unknown[] = [];
+    const where = input.status ? 'a.status=$1' : 'true';
+    if (input.status) values.push(input.status);
+    return this.db.transaction(async client => {
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const { rows: [count] } = await client.query<{ total: number }>(
+        `SELECT count(*)::int AS total FROM shop_delivery_attempts a WHERE ${where}`, values);
+      const limit = `$${values.length + 1}`, offset = `$${values.length + 2}`;
+      const { rows } = await client.query<{
+        provider: string; external_message_id: string; connection_id: string; number_id: string;
+        attempts: number; last_error: string; status: AdminShopDeliveryAttempt['status'];
+        next_attempt_at: Date; created_at: Date; updated_at: Date; phone_number: string | null; sender: string | null;
+      }>(`SELECT a.provider,a.external_message_id,a.connection_id,a.number_id,a.attempts,a.last_error,a.status,
+        a.next_attempt_at,a.created_at,a.updated_at,n.phone_number,c.normalized_payload->>'sender' AS sender
+        FROM shop_delivery_attempts a
+        LEFT JOIN phone_numbers n ON n.id=a.number_id
+        LEFT JOIN provider_message_receipts c ON c.provider=a.provider AND c.external_message_id=a.external_message_id
+        WHERE ${where} ORDER BY a.next_attempt_at,a.updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
+      [...values, input.pageSize, (input.page - 1) * input.pageSize]);
+      return {
+        data: rows.map(row => ({
+          provider: row.provider === 'pingcode-mock' ? 'pingcode-mock' : 'pingcode',
+          externalMessageId: row.external_message_id, connectionId: row.connection_id, numberId: row.number_id,
+          phoneNumber: row.phone_number, sender: row.sender, attempts: row.attempts, lastError: row.last_error,
+          status: row.status, nextAttemptAt: row.next_attempt_at.toISOString(),
+          createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(),
+        })),
+        pagination: pagination(input, count!.total),
+      };
+    });
+  }
+
+  async retryShopDeliveryAttempt(actorId: string, provider: 'pingcode' | 'pingcode-mock', externalMessageId: string) {
+    return this.db.transaction(async client => {
+      await this.actor(client, actorId);
+      const { rows: [before] } = await client.query(
+        'SELECT * FROM shop_delivery_attempts WHERE provider=$1 AND external_message_id=$2 FOR UPDATE',
+        [provider, externalMessageId]);
+      if (!before) throw new ApiFailure(404, 'SHOP_DELIVERY_ATTEMPT_NOT_FOUND', 'Delivery attempt not found');
+      if (before.status !== 'FAILED') throw new ApiFailure(409, 'SHOP_DELIVERY_ATTEMPT_NOT_FAILED', 'Only failed delivery attempts can be retried');
+      const { rows: [after] } = await client.query(`UPDATE shop_delivery_attempts
+        SET status='RETRYING',next_attempt_at=now(),updated_at=now()
+        WHERE provider=$1 AND external_message_id=$2 RETURNING *`, [provider, externalMessageId]);
+      await this.audit(client, actorId, 'SHOP_DELIVERY_RETRY', externalMessageId, 'Manual shop delivery retry', before, after);
+      return { changed: true };
     });
   }
 }
