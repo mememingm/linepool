@@ -23,6 +23,7 @@ function CodeRuleForm({ platformId, initial, onSaved }: { platformId: string; in
   const p = useDisplayPreferences();
   const [enabled, setEnabled] = useState(initial?.enabled ?? false);
   const [senders, setSenders] = useState(initial?.rule.senderAllowlist.join('\n') ?? '');
+  const [keywords, setKeywords] = useState(initial?.rule.bodyKeywords?.join('\n') ?? '');
   const [prefix, setPrefix] = useState(initial?.rule.bodyPrefix ?? '');
   const [suffix, setSuffix] = useState(initial?.rule.bodySuffix ?? '');
   const [length, setLength] = useState(initial?.rule.codeLength ?? 6);
@@ -34,7 +35,7 @@ function CodeRuleForm({ platformId, initial, onSaved }: { platformId: string; in
     setBusy(true); setError('');
     try {
       await api.adminSavePlatformCodeRule(platformId, {
-        enabled, rule: { senderAllowlist: senders.split(/\r?\n/).map(value => value.trim()).filter(Boolean), bodyPrefix: prefix, bodySuffix: suffix, codeLength: length }, reason,
+        enabled, rule: { senderAllowlist: senders.split(/\r?\n/).map(value => value.trim()).filter(Boolean), bodyKeywords: keywords.split(/\r?\n/).map(value => value.trim()).filter(Boolean), bodyPrefix: prefix, bodySuffix: suffix, codeLength: length }, reason,
       });
       await onSaved();
       toast.success(p.t('平台验证码规则已保存。'));
@@ -45,6 +46,7 @@ function CodeRuleForm({ platformId, initial, onSaved }: { platformId: string; in
     <fieldset className="lp-admin-form-grid" disabled={busy}>
       <p className="lp-admin-context lp-admin-span">{p.t('先确认短信属于所购平台，再按精确发送者和完整文本模板识别首码。未启用规则的一次性商品不能购买。')}</p>
       <label className="lp-admin-span">{p.t('允许的发送者（每行一个）')}<Textarea required rows={3} maxLength={4200} value={senders} onChange={event => setSenders(event.target.value)} /></label>
+      <label className="lp-admin-span">{p.t('正文关键词（每行一个，可留空）')}<Textarea rows={3} maxLength={1200} value={keywords} onChange={event => setKeywords(event.target.value)} /><small>{p.t('托管接码按发送者或正文关键词识别平台；一次性接码仍要求精确发送者和完整模板。')}</small></label>
       <label className="lp-admin-span">{p.t('验证码前文本（保留空格）')}<Textarea rows={2} maxLength={4000} value={prefix} onChange={event => setPrefix(event.target.value)} /></label>
       <label className="lp-admin-span">{p.t('验证码后文本（保留空格）')}<Textarea rows={2} maxLength={4000} value={suffix} onChange={event => setSuffix(event.target.value)} /></label>
       <label>{p.t('验证码位数')}<Input type="number" required min={4} max={8} step={1} value={length} onChange={event => setLength(Number(event.target.value))} /></label>

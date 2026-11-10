@@ -6,6 +6,7 @@ import { uuidSchema, serviceSchema, adminRechargeQuerySchema, rechargeSettingsIn
   type AdminRechargeQuery, type RechargeSettingsInput } from '@linepool/contracts';
 import { adminPasswordResetInputSchema, type AdminPasswordResetInput, adminQuerySchema, numberActionInputSchema, productInputSchema, userStatusInputSchema,
   adminWebhookRetryInputSchema, type AdminWebhookRetryInput, productSyncInputSchema, type ProductSyncInput, platformInputSchema, type PlatformInput, officialShopInputSchema, type OfficialShopInput, shopProductHoldInputSchema, type ShopProductHoldInput,
+  adminShopDeliveryQuerySchema, type AdminShopDeliveryQuery,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import { SessionGuard, type SessionRequest } from './authentication.js';
 import { SchemaPipe } from './http.js';
@@ -72,6 +73,10 @@ export class AdminController {
   async holdShopProduct(@Req() req: SessionRequest, @Param('id', new SchemaPipe(uuidSchema)) id: string,
     @Body(new SchemaPipe(shopProductHoldInputSchema)) input: ShopProductHoldInput) {
     return { data: await this.admin.holdShopProduct(req.user.id, id, input) };
+  }
+  @Get('shop-deliveries')
+  async shopDeliveries(@Query(new SchemaPipe(adminShopDeliveryQuerySchema)) input: AdminShopDeliveryQuery) {
+    return this.admin.shopDeliveries(input);
   }
   @Get('shops')
   async shops() { return { data: await this.admin.shops() }; }

@@ -10,6 +10,7 @@ import { outboundTransition, type OutboundRow } from '../once/message-state.js';
 import { normalizePhone, type ProviderInbound } from './pingcode-adapter.js';
 import { requireMessageSandbox } from '../once/message-access.js';
 import { LinePoolReceiving } from '../linepool-receiving.js';
+import { ShopDelivery, deliverSafely } from '../pc/shop-delivery.js';
 
 const id = z.string().trim().min(1).max(200);
 const phone = z.string().regex(/^\+[1-9][0-9]{1,14}$/);
@@ -41,7 +42,8 @@ type Connection = { id: string; provider: string; owner_kind: 'SELF_SERVICE' | '
 /** Canonical observations derive source and ownership from the trusted connection. Real ingress is pull-only. */
 @Injectable()
 export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
-  constructor(private readonly db: Database, private readonly environment: Environment, private readonly receiving: LinePoolReceiving) {}
+  constructor(private readonly db: Database, private readonly environment: Environment,
+    private readonly receiving: LinePoolReceiving, private readonly delivery: ShopDelivery) {}
   private timer?: NodeJS.Timeout;
   private running?: Promise<unknown>;
 
@@ -353,7 +355,15 @@ export class WebhookInbox implements OnApplicationBootstrap, OnModuleDestroy {
         return this.transition(client, event, 'QUARANTINED', 'CONNECTION_OWNERSHIP_CONFLICT', retry);
       }
       await client.query('UPDATE provider_event_receipts SET number_id=$2 WHERE id=$1', [event.id, receipt.number_id]);
-      return this.transition(client, event, 'IMPORTED', 'CONNECTION_MESSAGE_IMPORTED', retry);
+      const imported = await this.transition(client, event, 'IMPORTED', 'CONNECTION_MESSAGE_IMPORTED', retry);
+      if (this.environment.siteId === 'linepool' && this.environment.values.PC_MODE === 'real'
+        && item.provider === this.environment.pcProvider) {
+        await deliverSafely(client, this.delivery, {
+          provider: item.provider, externalMessageId: item.externalMessageId, connectionId: account.id,
+          numberId: receipt.number_id!, occurredAt: item.occurredAt, sender: item.sender, body: item.content,
+        });
+      }
+      return imported;
     }
     if (receipt.connection_id !== null || receipt.owner_agent_id !== null || receipt.number_id !== null
       || item.connectionId !== undefined || item.ownerAgentId !== undefined) {

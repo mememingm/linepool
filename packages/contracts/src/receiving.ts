@@ -6,6 +6,7 @@ export const receivingStatusSchema = z.enum(['WAITING', 'SUCCESS', 'FAILED']);
 /** Exact sender + complete literal body template; the only variable is one numeric code. */
 export const platformCodeRuleShapeSchema = z.strictObject({
   senderAllowlist: z.array(z.string().trim().min(1).max(200)).min(1).max(20),
+  bodyKeywords: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
   bodyPrefix: z.string().max(4000), bodySuffix: z.string().max(4000),
   codeLength: z.number().int().min(4).max(8),
 }).refine(rule => /[\p{L}]/u.test(rule.bodyPrefix + rule.bodySuffix) && (rule.bodyPrefix + rule.bodySuffix).trim().length >= 3,

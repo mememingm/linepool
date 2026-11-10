@@ -371,10 +371,14 @@ npm run verify:catalog-upstream --workspace @linepool/ui-react
 | --- | --- | --- | --- |
 | R0 | 已验收（现场与责任核对） | 主目录最高032、旧候选最高036；保留原件，新链037–041；领域和共享文件写入责任已冻结 | RUN-20261106-llinepool-16872-03 |
 | R1 | 已验收（本地运行隔离） | 独立库/角色、Cookie、模块、API/worker 及错误标记启动拒绝已观察；正式发布单列 A20 | RUN-20261106-llinepool-16872-06 |
-| R2 | LP两条白名单连接已恢复运行；ONCE不恢复 | 历史两站PC8同步事实沿RUN-9244-04保留；本轮按用户具体批准恢复LP PC8与oncetest两个真实连接的worker，连接subject 8/30与UUID已核对，last_synced_at均更新。ONCE原API/前端保持exited，不恢复其Worker；新SMS端到端仍未验收 | RUN-20261110-llinepool-24092-01 |
+| R2 | LP三条白名单连接已恢复运行（PC8/oncetest/xin）；ONCE不恢复 | 历史两站PC8同步事实沿RUN-9244-04保留；本轮按用户具体批准恢复LP PC8与oncetest两个真实连接的worker，连接subject 8/30与UUID已核对，last_synced_at均更新。2026-11-10用户新授权xin（subject 5，连接`494823db-8ea8-483b-8dd7-fa5ed8f075e7`）；worker加入该UUID后首轮同步630个号码（291 ONLINE/339 OFFLINE，missing 0），last_synced_at `2026-11-10T03:42:47.448Z`，problem=SOURCE_RESOURCE_ISSUE（沿UNAVAILABLE上游问题，不阻断号码读取）。ONCE原API/前端保持exited，不恢复其Worker；新SMS端到端仍未验收 | RUN-20261110-llinepool-24092-01；RUN-20261110-llinepool-24056-09 |
 | R3 | 店铺各自定价闭环已实页验收（本机sandbox）；新接码规则仍待验收 | 既有ONE_TIME/HOSTED规则及047/048/049/050状态见历史RUN。用户确认各店自定商品后，cc-10集成051与店铺商品路径；24092仅对linepool_v42_sandbox/lp_v42_owner应用051，核验46条迁移全齐、shop_products表/索引及orders新列存在，表当前0行。2026-11-10用户手动实页验证：oncetest创建“测试”（美国/Google/30天/100积分），前台仅见该商品，85积分提示不足；只读核对shop_products 1行、admin_hold=false、catalog仅该offer、无新shop订单/Google分配。后续用户将测试改为10积分、新增测试2（Telegram/1积分）；两笔店铺订单COMPLETED，余额85→75→74，Google/Telegram各分配1个号码，catalog可售2/1，快照含shopId/shopProductId/version。管理员下架/恢复已实际发生：`SHOP_PRODUCT_HOLD`（reason 123，v2→v3）与 `SHOP_PRODUCT_RELEASE`（reason 111，v3→v4），当前 `admin_hold=false`，catalog 恢复两项可售 2/1，audit 记录完整 | RUN-20261110-llinepool-cc-10；RUN-20261110-llinepool-24092-01；RUN-20261110-llinepool-24056-05；RUN-20261110-llinepool-24056-06；RUN-20261110-llinepool-24056-07 |
 | R4 | PC代理工作台主体已重建（代码已集成／待实页验收） | LP按“保留PC数据层、移植旧版界面”方案重建：AgentAdminShell只负责身份分流与外壳，主体拆为agent/pc/六页（概览/号码库存/套餐与价格/验证码与短信/PC连接/代理设置），复用旧AgentChartPanel、指标卡、筛选栏、库存表、分页与汇总条；旧pages.tsx九页及/agent-inventory数据层不挂载（写操作仍由LegacyDistributionGuard拒绝）。ONCE无旧版工作台，仅补号码筛选/分页、概览最近消息与消息数。两站tsc、生产构建及upstream117/catalog13校验通过；本轮未做浏览器实页观察。同步继续搁置，UNAVAILABLE不处理 | RUN-20261109-llinepool-cc-01；RUN-20261109-llinepool-9244-04 |
 | R5 | LP/ONCE本机测试服务已启动；ONCE无worker | 原5433集群不初始化；仅linepool_v42_sandbox执行051。LP API使用real应用配置，Worker使用PC8 subject8与oncetest subject30的两个连接UUID白名单，5178前端已启动，三个进程均ready/persistent；直连API、5178代理health和前端首页返回200。两连接最近同步时间更新；本轮未新增店铺商品或下单。ONCE API/前端随后由RUN-24056-02启动（real登录配置，worker未启动），ONCE数据/迁移未操作 | RUN-20261110-llinepool-24092-01；RUN-20261110-llinepool-24056-02 |
+
+2026-11-10 店铺买家收码第一期（托管接码）：迁移 052、投递服务、管理端店铺投递视图、平台关键词表单与回滚回放脚本已集成；052 已应用到 `linepool_v42_sandbox`。平台规则已录入 3 条；用例 2 的 Telegram 历史分配来自 `shop_id=null` 的全站订单，按任务单候选规则为 `NO_BUYER`。当前无持久投递记录；见 RUN-20261110-llinepool-24056-10。
+
+2026-11-10 补充单已实施：`identifyPlatform` 发送方优先、`basis` 只进回放、覆盖度/发送方纯度报告；052 未改、未建 053。纯度结果：Telegram `85474` 2/2、WhatsApp `29283` 3/3；Google `22000` 0 条历史，用户已破例放行。投递失败改为 savepoint 隔离，代理入库不受影响；见 RUN-20261110-llinepool-24056-11/12。
 
 本机 Magpie 已新增 `DeepSeek` 组（`group/deepseek`），标签为 `deepseek`，会话内保持所选成员；初始为 Pro → Flash，2026-11-10 晚些改为仅 Flash（见下条）。现有 GPT 组保留；本轮不改变 R0–R5 阶段状态，见 RUN-20261110-llinepool-24056-01。
 
@@ -1247,6 +1251,54 @@ ONCE代理页反馈已解决，用户确认与三项真实链路授权见RUN-924
 - 暂存：`git add -A` 后 `git restore --staged functions.ask`；暂存 1039 个文件、+45890/-2143；`functions.ask` 仍为未跟踪文件。
 - 密钥检查：`git diff --cached --name-only | grep -iE "\.env($|\.)|\.local/|\.dump$|credential|secret|\.pem$|\.key$"` 仅返回示例文件：`deploy/backend.env.example`、`deploy/once-backend.env.example`、`linepool-ui/backend/.env.example`、`services/core/.env.example`、`services/core/.env.once.example`、`services/once-api-legacy/.env.example`；无真实密钥文件。
 - 提交：`0cb88b074badcf274abe3dfbdc878a7bc3736c4b`（短哈希 `0cb88b0`），`git show --stat HEAD | tail -1` 为 `1039 files changed, 45890 insertions(+), 2143 deletions(-)`。分支 `feature/lp-unified-shop` 未推送；工作区仅剩未跟踪 `functions.ask`。
+
+#### RUN-20261110-llinepool-24056-09
+
+- 用户授权新的 PinClode 连接 xin（subject 5，连接 `494823db-8ea8-483b-8dd7-fa5ed8f075e7`）并询问号码同步；admin 的“请求同步”仅执行 `UPDATE upstream_accounts SET next_poll_at=now()`，实际拉取仍由 worker 按 `PC_WORKER_CONNECTION_IDS` 领取，不能绕过白名单。
+- 原 worker 白名单仅 8/30，xin 的 `last_synced_at` 为 null。本轮停止旧 LP worker（旧 wrapper 38940 / Nest 18972），以三个 UUID（PC8、oncetest、xin）重启 `LinePoolWorker24056`，设置为 persist；worker 使用原 `lp-app.env` real 配置。
+- 首轮同步：`last_synced_at=2026-11-10T03:42:47.448Z`，xin 本地 630 个号码（291 ONLINE、339 OFFLINE，missing 0，sale_enabled 630），`problem=SOURCE_RESOURCE_ISSUE`。该 problem 沿既有 UNAVAILABLE/上游资源问题，不阻断号码读取，按用户此前决定不继续处理。
+- 结论：代理页面不触发上游同步，只读本地库；新增代理连接需要把其连接 UUID 加入 worker 白名单并重启 worker，之后 worker 按 `PC_POLL_IDLE_SECONDS` 自动轮询，“请求同步”仅用于提前触发。
+- 边界：未改代码或 `lp-app.env`，仅重启 worker 并传入环境变量；未操作 ONCE。
+
+#### RUN-20261110-llinepool-cc-11
+
+- 指挥决定（用户确认）：提交已完成（分支`feature/lp-unified-shop`，`c9fedb6`，1039文件；functions.ask按计划排除）。用户确认收码设计R1–R5（`D:/lp-shop-receiving-design.md`），开发暂缓后改为继续。PC5作为替代号码源测试时，新短信同样落到正式PC服务器；用户确认120后台短信已全部转移到正式服务器，120已无可用收信号码。
+- 决定：跳过“新短信实时到达PC→LP”验收，待其他功能全部完成后统一进行；届时连接正式PC须单独出方案并单独授权（正式应用登记/回调地址/数据库目标/撤回方案），不得把本机sandbox直接接入正式服务器。买家收码功能照常开发，以sandbox内PC8的真实历史短信（CONNECTION_IMPORTED 238条，含发送方85474的Telegram验证码）回放验收识别、提取与投递逻辑。
+- 本会话角色：自2026-11-10起仅作指挥（拆任务、出任务单与验收标准、复核报告），执行交由其他执行者。
+
+#### RUN-20261110-llinepool-24056-10
+
+- 任务：按 `D:/lp-shop-receiving-phase1-task.md` 实现 LP 店铺买家收码第一期（仅真实模式、HOSTED）；未操作 ONCE，未提交，未运行测试；构建、类型检查、upstream 校验可用。
+- 迁移：新增 `052_lp_shop_message_deliveries.sql`（投递形状 CHECK、回执联合主键、DELIVERED 买家有效性触发器、UPDATE/DELETE 拒绝），已在 `127.0.0.1:5433/linepool_v42_sandbox` 以 `lp_v42_owner` 应用，输出 `Applied migrations: 052_lp_shop_message_deliveries.sql`，应用时间 `2026-11-10T04:07:23.515Z`。
+- 代码：`ShopDelivery`（发送方/正文关键词识别、宽松验证码提取、买家选择、幂等投递）接入 `webhook-inbox` 的 `CONNECTION_MESSAGE_IMPORTED` 同事务；新增 `GET /admin/shop-deliveries`、后台“店铺投递”视图、平台规则表单“正文关键词”、`replay-shop-delivery.ts`。`bodyKeywords` 为可选字段，无默认值，避免旧一次性规则快照 JSON 与 047 触发器比较失配。
+- 预检：在必回滚事务中临时插入 Telegram/WhatsApp/Google 规则后调用同一 `deliver`：case1 Telegram DELIVERED（code 48291）、case2 Google DELIVERED（482915）、case3 UNMATCHED、case4 两次调用仅 1 条投递、case5 到期 NO_BUYER、case6 回执仍 CONNECTION_IMPORTED。事务已回滚；库内 `lp_platform_code_rules` 0 行、`shop_message_deliveries` 0 行、`sms_messages` 22 行不变。
+- 阻塞/决定：`+12138296885` 的 Telegram 分配来自历史全站订单 `LP-B26E56FB...`，`shop_id=null`；按任务单“订单 shop_id 为本店”规则 case2 Telegram 为 `NO_BUYER`，且该号码/平台已在 `lp_platform_sales` 永久售出，不能新建同平台店铺订单。需用户决定接受仅 Google、调整边界或提供新号码。
+- 构建：`npm run build:all` 退出 0，`Upstream integrity: 117 files unchanged`；`Catalog upstream integrity: 13 files unchanged`。平台规则待管理员在后台录入；报告见 `output/reports/lp-shop-receiving-phase1-20261110.md`。
+
+#### RUN-20261110-llinepool-24056-11
+
+- 按 `D:/lp-shop-receiving-phase1-decisions.md` 实施方案 A：`ShopDelivery` 抽出 `identifyPlatform(rules,sender,body)`，发送方优先、全站启用规则、`basis` 只进返回值/回放/汇报；052 未改，未建 053，未加 `requireCode`/`NO_CODE`/`codeRegex`。
+- 回放脚本增加 `basis`、覆盖度与发送方纯度：PC8 238 条历史；Telegram `85474` 2/2=100%；WhatsApp 17 条，`+19592104809` 6/6、`+12403486504` 5/5、`29283` 3/3、`+18602221429` 3/3 均 100%；Google `22000` 0 条历史、纯度 null，唯一 Google 标记是 `+18337924420` 的 Cash App 付款通知，不是 Google 验证码。
+- 临时规则回滚预检：case1 basis SENDER；case2 Google DELIVERED / Telegram NO_BUYER；case8 两条 Telegram 均 DELIVERED；case9 22000+Telegram 关键词→Google basis SENDER；case10 普通发送方+双关键词→AMBIGUOUS 且无 `sms_messages`。
+- 构建：`build:all` 退出 0，`Upstream integrity: 117 files unchanged`；`Catalog upstream integrity: 13 files unchanged`。API/Worker 已重启加载新代码（API 3010、Worker 白名单 8/30/5）。
+- 阻塞：Google `22000` 无历史样本，无法按决定单证明纯度 100%；WhatsApp 建议用 `+19592104809`。平台规则仍 0 条，待管理员录入；正式用例 1–10 待规则录入后执行。报告见 `output/reports/lp-shop-receiving-phase1-20261110.md`。
+
+#### RUN-20261110-llinepool-24056-12
+
+- 修复投递失败连带回滚代理入库：`shop-delivery.ts` 新增 `deliverSafely`，用 `SAVEPOINT shop_delivery` 包住投递；失败时 `ROLLBACK TO SAVEPOINT` 并 `console.error`，外层代理回执事务继续。`WebhookInbox` 改用该包装。
+- 回放脚本新增 `--case=11`：fake delivery 强制抛错；输出 `agentReceiptStatus=CONNECTION_IMPORTED`、`deliveryRows=0`、`outerTransactionUsable=true`、`errorLogged=true`，随后 ROLLBACK。
+- 报告更新：删除旧建议中的 `G-` 与单写 `WhatsApp`；WhatsApp 白名单改为 `29283`，Google `22000` 按用户决定破例放行；用例 2 按已决定口径 `NO_BUYER`。
+- 规则匹配预检（临时规则、只读）：238 条中 WhatsApp 识别 11 条（≥9），Telegram 2 条，OpenAI/Yahoo 未识别为任何平台。
+- 构建：`build:all` 退出 0，upstream 117 / catalog 13 未变；API/Worker 已重启加载 savepoint 代码。
+- 阻塞：当前无管理员会话，browser relay 未连接，规则表仍 0 条；按决定单不直接写 `lp_platform_code_rules`。需管理员在“平台管理 → 平台验证码识别规则”录入 3 条规则后，才能跑正式用例 1–11。
+
+#### RUN-20261110-llinepool-24056-13
+
+- 用户已在后台录入 Telegram / WhatsApp / Google 三条规则并启用；只读核对：Google `22000`+`Google verification code`/`Google 验证码`、Telegram `85474`+`Telegram code`、WhatsApp `29283`+四个关键词，均 enabled/version 1。
+- 实际录入与决定单差异：Telegram 缺少 `Telegram login code`；三个前文本均无末尾空格。托管接码不使用前文本/后文本，当前无影响；一次性接码启用前需补齐。
+- 正式回放 1–11（全部回滚）：case1 Telegram `DELIVERED` code 80556 basis SENDER；case2 Telegram `NO_BUYER`、Google `DELIVERED` 482915（历史无 Google 验证码，正文为合成样本）；case3 OpenAI/Yahoo `UNMATCHED`；case4 1 条投递/1 条消息；case5 `NO_BUYER`；case6 回执 `CONNECTION_IMPORTED`；case7 WhatsApp 11/17、Telegram 2、OpenAI/Yahoo 0；case8 两条均 `DELIVERED`（80556/52561）；case9 Google basis SENDER；case10 `AMBIGUOUS`；case11 savepoint 隔离通过。
+- 执行后：`shop_message_deliveries` 0 行、`sms_messages` 22 行、规则 3 条；无持久测试数据。构建 `build:all` 通过，upstream 117 / catalog 13 未变。
+- 报告：`output/reports/lp-shop-receiving-phase1-20261110.md`。未提交 Git。
 
 ## 11. 给后续 agent 的启动提示词
 

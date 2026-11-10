@@ -205,3 +205,39 @@ export type ShopProduct = z.infer<typeof shopProductSchema>;
 export type AgentShop = z.infer<typeof agentShopSchema>;
 export type AdminShopProduct = z.infer<typeof adminShopProductSchema>;
 export type ShopProductHoldInput = z.infer<typeof shopProductHoldInputSchema>;
+
+/** Immutable outcome of routing one agent-connection SMS to a shop buyer. */
+export const shopDeliveryOutcomeSchema = z.enum(['DELIVERED', 'UNMATCHED', 'AMBIGUOUS', 'NO_BUYER']);
+export const adminShopDeliveryQuerySchema = paginationQuerySchema.extend({
+  outcome: shopDeliveryOutcomeSchema.optional(),
+});
+export const adminShopDeliverySchema = z.object({
+  provider: z.enum(['pingcode', 'pingcode-mock']),
+  externalMessageId: z.string(),
+  shopId: uuidSchema,
+  connectionId: uuidSchema,
+  numberId: uuidSchema,
+  phoneNumber: z.string().nullable(),
+  sender: z.string().nullable(),
+  platformId: serviceSchema.nullable(),
+  platformName: z.string().nullable(),
+  outcome: shopDeliveryOutcomeSchema,
+  ruleVersion: z.number().int().nullable(),
+  allocationId: uuidSchema.nullable(),
+  smsMessageId: uuidSchema.nullable(),
+  buyerName: z.string().nullable(),
+  buyerEmail: z.string().nullable(),
+  occurredAt: z.string(),
+  createdAt: z.string(),
+});
+export const adminShopDeliveryPageSchema = z.object({
+  data: z.array(adminShopDeliverySchema),
+  pagination: z.object({
+    page: z.number().int().positive(), pageSize: z.number().int().positive(),
+    totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative(),
+  }),
+});
+export type ShopDeliveryOutcome = z.infer<typeof shopDeliveryOutcomeSchema>;
+export type AdminShopDeliveryQuery = z.infer<typeof adminShopDeliveryQuerySchema>;
+export type AdminShopDelivery = z.infer<typeof adminShopDeliverySchema>;
+export type AdminShopDeliveryPage = z.infer<typeof adminShopDeliveryPageSchema>;

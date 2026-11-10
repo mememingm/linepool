@@ -6,6 +6,7 @@ import { adminQuerySchema, adminOrdersQuerySchema, adminSummarySchema, adminUser
   productOptionSchema, productSyncInputSchema, productSyncResultSchema, type ProductSyncInput,
   adminPlatformSchema, platformInputSchema, type PlatformInput, adminShopsSchema, officialShopInputSchema, type OfficialShopInput,
   agentShopSchema, shopProductInputSchema, adminShopProductSchema, shopProductHoldInputSchema, type ShopProductInput, type ShopProductHoldInput,
+  adminShopDeliveryQuerySchema, adminShopDeliveryPageSchema, type AdminShopDeliveryQuery,
   type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput } from '@linepool/contracts/admin';
 import {
   accountProfileInputSchema, accountSchema, apiErrorSchema, catalogSchema, createOrderInputSchema, dashboardSchema,
@@ -138,6 +139,9 @@ export function createLinepoolApi(configuration: ApiClientConfiguration = {}) {
       return request(`/pc/shop/products${id ? `/${uuidSchema.parse(id)}` : ''}`, dataResponseSchema(z.object({ id: uuidSchema })), { method: id ? 'PATCH' : 'POST', body: shopProductInputSchema.parse(input) });
     },
     adminShopProducts(options?: ApiRequestOptions) { return request('/admin/shop-products', dataResponseSchema(z.array(adminShopProductSchema)), options); },
+    adminShopDeliveries(input: Partial<AdminShopDeliveryQuery> = {}, options?: ApiRequestOptions) {
+      return request(`/admin/shop-deliveries${query(adminShopDeliveryQuerySchema.parse(input))}`, adminShopDeliveryPageSchema, options);
+    },
     adminHoldShopProduct(id: string, input: ShopProductHoldInput) {
       return request(`/admin/shop-products/${uuidSchema.parse(id)}/hold`, dataResponseSchema(z.object({ changed: z.boolean() })), { method: 'POST', body: shopProductHoldInputSchema.parse(input) });
     },

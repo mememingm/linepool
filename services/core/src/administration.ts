@@ -3,7 +3,8 @@ import type { PoolClient } from 'pg';
 import { hash } from 'bcryptjs';
 import { storefrontRegionIds } from '@linepool/contracts';
 import { adminOrdersQuerySchema, type AdminQuery, type NumberActionInput, type ProductInput, type UserStatusInput, type AdminPasswordResetInput,
-  type AdminPlatform, type PlatformInput, type AdminShops, type OfficialShopInput, type AdminShopProduct, type ShopProductHoldInput } from '@linepool/contracts/admin';
+  type AdminPlatform, type PlatformInput, type AdminShops, type OfficialShopInput, type AdminShopProduct, type ShopProductHoldInput,
+  type AdminShopDelivery, type AdminShopDeliveryQuery, type AdminShopDeliveryPage } from '@linepool/contracts/admin';
 import { type SessionRequest } from './authentication.js';
 import { Database } from './database.js';
 import { ApiFailure, SchemaPipe } from './http.js';
@@ -446,6 +447,48 @@ export class Administration {
         WHERE id=$1 RETURNING *`, [id, input.hold, input.hold ? input.reason : null]);
       await this.audit(client, actorId, input.hold ? 'SHOP_PRODUCT_HOLD' : 'SHOP_PRODUCT_RELEASE', id, input.reason, before, after);
       return { changed: true };
+    });
+  }
+  /** Read-only shop delivery outcomes; administrators use this to inspect unmatched or ambiguous messages. */
+  async shopDeliveries(input: AdminShopDeliveryQuery): Promise<AdminShopDeliveryPage> {
+    const values: unknown[] = [];
+    const where = input.outcome ? 'd.outcome=$1' : 'true';
+    if (input.outcome) values.push(input.outcome);
+    return this.db.transaction(async client => {
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const { rows: [count] } = await client.query<{ total: number }>(
+        `SELECT count(*)::int AS total FROM shop_message_deliveries d WHERE ${where}`, values);
+      const limit = `$${values.length + 1}`, offset = `$${values.length + 2}`;
+      const { rows } = await client.query<{
+        provider: string; external_message_id: string; shop_id: string; connection_id: string; number_id: string;
+        outcome: AdminShopDelivery['outcome']; platform_id: string | null; platform_name: string | null;
+        rule_version: number | null; allocation_id: string | null; sms_message_id: string | null;
+        occurred_at: Date; created_at: Date; phone_number: string | null; sender: string | null;
+        buyer_name: string | null; buyer_email: string | null;
+      }>(`SELECT d.provider,d.external_message_id,d.shop_id,d.connection_id,d.number_id,d.outcome,d.platform_id,
+        p.name AS platform_name,d.rule_version,d.allocation_id,d.sms_message_id,d.occurred_at,d.created_at,
+        n.phone_number,COALESCE(c.normalized_payload->>'sender',c.raw_payload->>'sender') AS sender,
+        u.display_name AS buyer_name,u.email AS buyer_email
+        FROM shop_message_deliveries d
+        LEFT JOIN phone_numbers n ON n.id=d.number_id
+        LEFT JOIN platforms p ON p.id=d.platform_id
+        LEFT JOIN number_allocations a ON a.id=d.allocation_id
+        LEFT JOIN users u ON u.id=a.user_id
+        LEFT JOIN provider_message_receipts c ON c.provider=d.provider AND c.external_message_id=d.external_message_id
+        WHERE ${where} ORDER BY d.occurred_at DESC,d.provider,d.external_message_id LIMIT ${limit} OFFSET ${offset}`,
+      [...values, input.pageSize, (input.page - 1) * input.pageSize]);
+      return {
+        data: rows.map(row => ({
+          provider: row.provider === 'pingcode-mock' ? 'pingcode-mock' : 'pingcode',
+          externalMessageId: row.external_message_id, shopId: row.shop_id, connectionId: row.connection_id,
+          numberId: row.number_id, phoneNumber: row.phone_number, sender: row.sender,
+          platformId: row.platform_id, platformName: row.platform_name, outcome: row.outcome,
+          ruleVersion: row.rule_version, allocationId: row.allocation_id, smsMessageId: row.sms_message_id,
+          buyerName: row.buyer_name, buyerEmail: row.buyer_email,
+          occurredAt: row.occurred_at.toISOString(), createdAt: row.created_at.toISOString(),
+        })),
+        pagination: pagination(input, count!.total),
+      };
     });
   }
 }

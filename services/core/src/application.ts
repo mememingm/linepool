@@ -58,6 +58,7 @@ import { PcAuthorization, MockPcProvider, PcHttpProvider, PcConnections, PcWorke
 import { SelfServiceGuard } from './self-service-guard.js';
 import { LinePoolReceiving } from './linepool-receiving.js';
 import { PcShopOrdering } from './pc/shop-ordering.js';
+import { ShopDelivery } from './pc/shop-delivery.js';
 
 /** Site and process role are deployment configuration; no request can select a module or database. */
 @Module({})
@@ -69,7 +70,7 @@ export class RuntimeModule {
       { provide: Environment, useValue: environment },
       { provide: Database, useValue: database },
       Authentication, SessionGuard, PasswordRecovery, Workspace, Administration, AdminGuard, Recharge,
-      ReceivingSync, WebhookInbox, LinePoolReceiving, ProviderSyncService, PcHttpProvider, LocalPlatformInventory,
+      ReceivingSync, WebhookInbox, LinePoolReceiving, ShopDelivery, ProviderSyncService, PcHttpProvider, LocalPlatformInventory,
       { provide: MockReceivingProvider, useFactory: (config: Environment) => new MockReceivingProvider(config), inject: [Environment] },
       { provide: ReceivingProvider, useExisting: MockReceivingProvider },
     ];
