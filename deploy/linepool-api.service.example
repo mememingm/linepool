@@ -7,10 +7,12 @@ After=network-online.target
 Type=simple
 User=linepool
 Group=linepool
-WorkingDirectory=/srv/linepool/current/linepool-ui/backend
+WorkingDirectory=/srv/linepool/current/services/core
 # Adjust the absolute Node.js path to the server installation.
-ExecStart=/usr/bin/node --env-file=.env dist/backend/src/main.js
+ExecStart=/usr/bin/node --env-file=.env dist/core/src/main.js
 Environment=NODE_ENV=production
+Environment=SITE_ID=linepool
+Environment=PROCESS_ROLE=api
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=30

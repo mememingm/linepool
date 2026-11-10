@@ -1,0 +1,164 @@
+/* Readable type shared by the public site, workspace and portalled controls.
+   Imported last so compact legacy page rules cannot silently reduce text sizes. */
+:root, .product-ui.once-ui {
+  --ui-font: var(--font-sans);
+  --ui-font-family: var(--font-sans);
+  --ui-font-body: 15px;
+  --ui-font-meta: 13px;
+}
+body, .product-ui.once-ui {
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-body);
+  line-height: 1.6;
+}
+.product-ui.once-ui .font-attribution {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.product-ui.once-ui .font-attribution a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+.product-ui.once-ui .font-attribution a:hover { color: var(--primary); }
+/* Numbers use the same Latin face as text, with aligned tabular figures. */
+.product-ui.once-ui :is(.lease-phone, .overview-number-title h2,
+  .overview-number-row-main strong, .overview-ring strong,
+  .inspector-number strong, .subscription-number h2,
+  .subscription-terms button > strong, .voice-dialpad strong, .voice-dialpad small) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.product-ui.once-ui :is(.primary-btn, .secondary-btn, .ghost-btn, .link-btn,
+  .account-menu, .nav-link, .once-combobox, .auth-form label,
+  [data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]) {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.product-ui.once-ui .sidebar-link, [data-mobile="true"] .sidebar-link {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 24px;
+  height: 44px;
+  min-height: 44px;
+  padding-block: 10px;
+}
+.product-ui.once-ui.workspace-v3 :is(.page-head, .overview-heading, .voice-heading) h1 {
+  font-size: 26px;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+.product-ui.once-ui.workspace-v3 .content :is(.section-row, .overview-section-head, .voice-roadmap) h2,
+.product-ui.once-ui.workspace-v3 :is(.conversation-header, .inbox-list-head, .message-composer, .send-history, .settings-section) h2 {
+  font-size: 18px;
+  line-height: 1.45;
+}
+.product-ui.once-ui .content > .page-head p,
+.product-ui.once-ui .content > .voice-heading p,
+.product-ui.once-ui .content > .overview-heading p,
+.product-ui.once-ui .sms-body {
+  font-size: 15px;
+  line-height: 1.75;
+}
+.product-ui.once-ui .overview-content .overview-number-row-main strong,
+.product-ui.once-ui .numbers-content .asset-row .number-card-phone {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.product-ui.once-ui :is(.overview-content, .numbers-content .number-detail-tabs) .message-card :is(strong, p) {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.product-ui.once-ui :is(.overview-content, .numbers-content .number-detail-tabs) .message-card-meta,
+.product-ui.once-ui :is(.overview-content, .numbers-content .number-detail-tabs) .message-card-meta time {
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* Auxiliary information stays a clear step below the main text. */
+.product-ui.once-ui.workspace-v3 :is(
+  small, .status-tag, .bill-status-badge, .sidebar-label, .workspace-chip > span,
+  .overview-number-row-main small, .overview-number-row-status small,
+  .overview-number-place, .overview-number-kicker > span, .overview-ring span,
+  .overview-ring small, .overview-countdown > p, .overview-meter p, .overview-meter > strong,
+  .overview-section-note, .overview-section-head h2 > span,
+  .overview-number-pagination, .overview-account-note,
+  .numbers-state-note, .numbers-location, .lease-details-trigger,
+  .asset-row > span, .asset-row > small, .numbers-facts span, .numbers-facts small,
+  .capability-name, .capability-note, .send-quota, .send-quota small,
+  .message-toolbar > span:first-child, .message-lease-summary,
+  .inbox-item-meta time, .message-source, .message-source dt, .message-source dd,
+  .message-composer fieldset label, .composer-status, .composer-footnote,
+  .voice-source, .voice-feature-state, .voice-preview-caption, .voice-preview-note,
+  .voice-features p, .subscription-note, .subscription-terms small,
+  .billing-pagination, .billing-pagination [data-once-button], .notice) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.product-ui.once-ui :is(.number-status-tabs, .number-detail-tabs, .inbox-filter-tabs, .communication-nav) [data-slot="tabs-trigger"] {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.product-ui.once-ui .voice-features h3 { font-size: 16px; line-height: 1.5; }
+.product-ui.once-ui .inbox-item strong { font-size: 15px; line-height: 1.5; }
+.product-ui.once-ui .inbox-item p { font-size: 13px; line-height: 1.5; }
+.product-ui.once-ui .billing-surface .order-link { font-size: 15px; line-height: 1.5; }
+.product-ui.once-ui .voice-dialpad small { font-size: 13px; line-height: 1.2; }
+.billing-surface [data-slot="table-head"], .billing-surface [data-slot="table-cell"] small,
+.order-sheet dt, .lease-details-list > div, .billing-pagination,
+.once-dialog :is(.renew-description, .renew-option span, .notice),
+[data-slot="dialog-description"], [data-slot="sheet-description"], [data-slot="drawer-description"] {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.billing-surface [data-slot="table-cell"] { font-size: 15px; line-height: 1.5; }
+.once-combobox-options [data-slot="command-item"] { font-size: 15px; line-height: 1.5; }
+.once-combobox-options [data-slot="command-item"] small { font-size: 13px; line-height: 1.5; }
+[data-slot="select-content"], [data-slot="dropdown-menu-content"] { font-size: 14px; }
+.product-ui.once-ui :is(.wizard-selector label, .auth-form label, .term-card small,
+  .inventory-count, .inventory-actions [data-once-button], .inventory-status,
+  .number-card .number-card-meta, .hero-note, .step-node) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.product-ui.once-ui.workspace-v3 .content .overview-number-title h2 {
+  font-size: clamp(26px, 2.6vw, 36px);
+}
+.product-ui.once-ui.workspace-v3 .content .lease-phone { font-size: 26px; }
+.once-dialog [data-slot="dialog-title"], [data-slot="sheet-title"], .once-dialog [data-slot="drawer-title"] {
+  font-size: 18px;
+}
+/* Keep the existing overview row geometry stable as text becomes more compact. */
+@media (min-width:1100px) and (min-height:680px) {
+  .product-ui.once-ui .overview-content .overview-number-row { height: 72px; min-height: 72px; }
+  .product-ui.once-ui .overview-content .overview-number-row-main { gap: 4px; }
+  .product-ui.once-ui .overview-content .message-card-meta { line-height: 21px; }
+  .product-ui.once-ui .overview-content .message-card :is(strong, p) { line-height: 24px; }
+}
+@media (max-width:767px) {
+  .product-ui.once-ui.workspace-v3 :is(.page-head, .overview-heading, .voice-heading) h1 { font-size: 24px; }
+  .product-ui.once-ui .overview-content .overview-number-row-main strong { font-size: 16px; }
+  .product-ui.once-ui.workspace-v3 .content .overview-number-title h2 { font-size: clamp(24px, 6.5vw, 28px); }
+  .product-ui.once-ui.workspace-v3 .content .lease-phone { font-size: 24px; }
+  /* Keep mobile form text at 16px to prevent focus zoom in Safari. */
+  .product-ui.once-ui :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"], .once-combobox) { font-size: 16px; }
+  .product-ui.once-ui .step-node { font-size: 13px; }
+  .product-ui.once-ui .communication-nav [data-slot="tabs-trigger"] { font-size: 14px; }
+  .product-ui.once-ui .overview-content .overview-countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .product-ui.once-ui .overview-content .overview-ring {
+    width: 132px;
+    height: 132px;
+    flex: 0 0 132px;
+  }
+  .product-ui.once-ui .overview-content .overview-countdown > p {
+    width: auto;
+    margin: 0;
+    text-align: center;
+  }
+}

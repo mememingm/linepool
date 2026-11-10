@@ -1,0 +1,212 @@
+[
+  {
+    "number": "+1 213 555 0148",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 310 555 0182",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 415 555 0166",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 213 555 0194",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 310 555 0117",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 415 555 0131",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ca",
+    "regionName": "加利福尼亚州"
+  },
+  {
+    "number": "+1 212 555 0176",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 347 555 0129",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 646 555 0154",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 212 555 0191",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 347 555 0188",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 646 555 0116",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "ny",
+    "regionName": "纽约州"
+  },
+  {
+    "number": "+1 202 555 0190",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 305 555 0142",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 415 555 0137",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 512 555 0174",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 617 555 0118",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 702 555 0163",
+    "countryCode": "US",
+    "countryName": "美国",
+    "regionId": "all",
+    "regionName": "任意地区"
+  },
+  {
+    "number": "+1 416 555 0145",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 647 555 0193",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 416 555 0126",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 647 555 0164",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 416 555 0181",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 647 555 0109",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "on",
+    "regionName": "安大略省"
+  },
+  {
+    "number": "+1 604 555 0132",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  },
+  {
+    "number": "+1 778 555 0168",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  },
+  {
+    "number": "+1 604 555 0196",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  },
+  {
+    "number": "+1 778 555 0114",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  },
+  {
+    "number": "+1 604 555 0177",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  },
+  {
+    "number": "+1 778 555 0184",
+    "countryCode": "CA",
+    "countryName": "加拿大",
+    "regionId": "bc",
+    "regionName": "不列颠哥伦比亚省"
+  }
+]

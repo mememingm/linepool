@@ -1,0 +1,45 @@
+{
+  "name": "linepool-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "packages/contracts",
+    "services/core",
+    "apps/linepool-web",
+    "apps/once-web"
+  ],
+  "scripts": {
+    "dev:all": "npm run contracts:build && npm run build --workspace @linepool/ui-react && concurrently -k --names web,api,contracts \"npm exec --workspace @linepool/ui-react -- vite --host 127.0.0.1 --port 5178 --strictPort\" \"npm run api:dev\" \"npm run contracts:watch\"",
+    "typecheck:all": "npm run contracts:build && npm run contracts:typecheck && npm run typecheck --workspace @linepool/ui-react && npm run typecheck --workspace once-web && npm run api:typecheck",
+    "build:all": "npm run contracts:build && npm run build:web --workspace @linepool/ui-react && npm run build --workspace once-web && npm run api:build",
+    "contracts:build": "npm run build --workspace @linepool/contracts",
+    "contracts:watch": "npm run build --workspace @linepool/contracts -- --watch",
+    "contracts:typecheck": "npm run typecheck --workspace @linepool/contracts",
+    "api:install": "npm install",
+    "preapi:build": "npm run contracts:build",
+    "api:build": "npm run build --workspace @linepool/react-backend",
+    "preapi:typecheck": "npm run contracts:build",
+    "api:typecheck": "npm run typecheck --workspace @linepool/react-backend",
+    "preapi:dev": "npm run contracts:build",
+    "api:dev": "npm run dev --workspace @linepool/react-backend",
+    "api:start": "npm run start --workspace @linepool/react-backend",
+    "worker:dev": "npm run contracts:build && npm run dev:worker --workspace @linepool/react-backend",
+    "worker:start": "npm run start:worker --workspace @linepool/react-backend",
+    "once:api:dev": "npm run contracts:build && npm run dev:once --workspace @linepool/react-backend",
+    "once:api:start": "npm run start:once --workspace @linepool/react-backend",
+    "once:worker:dev": "npm run contracts:build && npm run dev:once:worker --workspace @linepool/react-backend",
+    "once:worker:start": "npm run start:once:worker --workspace @linepool/react-backend",
+    "db:local:setup": "npm run db:local:setup --prefix services/core",
+    "db:start": "npm run db:start --prefix services/core",
+    "db:stop": "npm run db:stop --prefix services/core",
+    "db:status": "npm run db:status --prefix services/core",
+    "db:create": "npm run db:create --prefix services/core",
+    "db:migrate": "npm run db:migrate --prefix services/core",
+    "db:seed": "npm run db:seed --prefix services/core",
+    "admin:grant": "npm run admin:grant --prefix services/core --"
+  }
+}

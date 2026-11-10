@@ -1,0 +1,37 @@
+/* PC connection views compose the existing admin primitives and theme tokens. */
+.lp-pc-panel { padding: 24px; }
+.lp-pc-panel h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.lp-pc-section-head, .lp-pc-section-head h2 { display: flex; align-items: center; gap: 12px; }
+.lp-pc-section-head { justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px; }
+.lp-pc-panel .lp-admin-facts { margin-bottom: 20px; }
+.lp-pc-panel .lp-admin-warning { margin-bottom: 16px; }
+.lp-pc-capabilities { padding-top: 16px; border-top: 1px solid var(--border); }
+.lp-pc-capabilities .lp-admin-context { margin: 10px 0 0; }
+.lp-pc-status { display: inline-flex; align-items: center; padding: 3px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; white-space: normal; }
+.lp-pc-status[data-tone="success"] { color: var(--admin-success); background: var(--admin-success-bg); }
+.lp-pc-status[data-tone="info"] { color: var(--primary); background: var(--admin-info-bg); }
+.lp-pc-status[data-tone="warning"] { color: var(--admin-warning-ink); background: var(--admin-warning-bg); }
+.lp-pc-login { display: grid; gap: 10px; min-width: 0; }
+.lp-pc-login .lp-admin-error { margin: 0; overflow-wrap: anywhere; }
+.lp-pc-message-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 24px 18px; }
+.lp-pc-message-toolbar > :first-child { min-width: 200px; max-width: 100%; }
+.lp-pc-notice { color: var(--admin-success); font-size: 14px; }
+.lp-pc-wait, .lp-pc-inline { margin: 0; padding: 0 24px 18px; font-size: 14px; }
+.lp-pc-wait { color: var(--muted-foreground); }
+.lp-pc-message-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.lp-admin-table-scroll[aria-label="PC 连接号码"] table, .lp-admin-table-scroll[aria-label="PC 套餐配置"] table { min-width: 720px; }
+.lp-admin-table-scroll[aria-label="PC 连接短信"] table { min-width: 860px; }
+.lp-admin-table-scroll[aria-label="PC 连接短信"] th:nth-child(3) { width: 32%; }
+.lp-admin-table-scroll[aria-label="本站 PC 连接"] table { min-width: 1040px; }
+.lp-admin-table-scroll[aria-label="本站 PC 连接"] th:last-child { width: 125px; }
+.lp-pc-form label { display: grid; gap: 8px; }
+.lp-pc-form .lp-admin-checkbox { display: flex; }
+.lp-agent :is(#pc-connection, #pc-numbers, #pc-plans, #pc-messages) { scroll-margin-top: 88px; }
+.lp-admin-access .lp-pc-login { justify-items: center; margin: 16px 0; }
+.lp-admin-access .lp-pc-login .lp-admin-error { max-width: 520px; }
+@media (max-width: 767px) {
+  .lp-pc-panel { padding: 20px 16px; }
+  .lp-pc-message-toolbar { padding-inline: 16px; }
+  .lp-pc-message-toolbar > :first-child { width: 100%; }
+  .lp-pc-wait, .lp-pc-inline { padding-inline: 16px; }
+}

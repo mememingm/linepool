@@ -1,0 +1,23 @@
+[Unit]
+Description=LINEPOOL worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=linepool
+Group=linepool
+WorkingDirectory=/srv/linepool/current/services/core
+ExecStart=/usr/bin/node --env-file=.env dist/core/src/worker.js
+Environment=NODE_ENV=production
+Environment=SITE_ID=linepool
+Environment=PROCESS_ROLE=worker
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

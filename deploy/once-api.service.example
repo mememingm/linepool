@@ -1,0 +1,23 @@
+[Unit]
+Description=ONCE API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=once
+Group=once
+WorkingDirectory=/srv/once/current/services/core
+ExecStart=/usr/bin/node --env-file=.env.once dist/core/src/main.js
+Environment=NODE_ENV=production
+Environment=SITE_ID=once
+Environment=PROCESS_ROLE=api
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

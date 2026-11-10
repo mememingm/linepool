@@ -1,0 +1,45 @@
+/* Chat owns its two scroll surfaces; the shared shell never gains a third scrollbar. */
+.workspace-viewport:has(>.sms-workspace) { overflow:hidden; scrollbar-gutter:auto; }
+.product-ui.once-ui .sms-workspace { width:100%; max-width:none; margin:0; color:var(--foreground); }
+.product-ui.once-ui .sms-workspace, .product-ui.once-ui .sms-workspace * { box-sizing:border-box; border-color:var(--border); }
+.product-ui.once-ui .sms-workspace :is(ul,ol) { list-style:none; padding:0; margin:0; }
+.product-ui.once-ui .sms-workspace :is(h1,h2,p) { margin:0; }
+.product-ui.once-ui .sms-workspace .sms-conversation[aria-current="true"] { background:color-mix(in srgb,var(--primary) 10%,transparent); color:var(--primary); }
+.product-ui.once-ui .sms-workspace .sms-conversation:hover { background:var(--accent); }
+.product-ui.once-ui .sms-workspace .sms-bubble { padding:10px 16px; }
+.product-ui.once-ui .sms-workspace [data-slot="textarea"] { overflow-y:auto; max-height:128px; padding:10px 16px; border-radius:16px; }
+.product-ui.once-ui .sms-workspace .inbox-search { margin:0; }
+.product-ui.once-ui .sms-workspace .inbox-search input:focus-visible { outline:none; box-shadow:none; }
+.product-ui.once-ui .sms-workspace .sms-conversation { height:auto; min-height:76px; white-space:normal; }
+.product-ui.once-ui .sms-workspace .sms-send-button { min-height:40px; }
+.product-ui.once-ui .sms-workspace .sms-bubble { margin:0; }
+.sms-number-switch { min-width:0; }
+.sms-number-switch [data-slot="combobox-trigger"] { max-width:100%; }
+
+/* React state boundaries keep the existing visual system and page selectors. */
+.react-selection {
+  min-width: 0;
+}
+.react-selection > .context-state {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.react-selection:has(> .context-state) {
+  min-height: 320px;
+}
+.react-selection > .context-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.storage-notice {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+}

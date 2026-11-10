@@ -1,0 +1,118 @@
+/* Product components only. Keep these ui-* values aligned with eSIM Cloud. */
+.product-ui.once-ui {
+  --ui-font:var(--font-sans);
+  --ui-canvas:#f7f8fa; --ui-surface:#ffffff; --ui-soft:#f3f5f8;
+  --ui-text:#1d2533; --ui-secondary:#596579; --ui-muted:#647084;
+  --ui-border:#dce2ea; --ui-border-hover:#b9c5d5;
+  --ui-accent:#2563eb; --ui-accent-hover:#1d4ed8; --ui-selected:#eff6ff;
+  --ui-green:#13794b; --ui-green-soft:#edf8f1; --ui-amber:#9a5b05; --ui-amber-soft:#fff7e8; --ui-red:#b42336; --ui-red-soft:#fff0f2;
+  --ui-control:44px; --ui-icon-control:40px; --ui-radius:10px; --ui-card-radius:16px;
+  --ui-font-family:var(--ui-font); --ui-font-body:15px; --ui-font-meta:13px;
+  --ui-control-height:var(--ui-control); --ui-control-compact:var(--ui-icon-control);
+  --ui-radius-control:var(--ui-radius); --ui-radius-menu:12px; --ui-radius-card:var(--ui-card-radius);
+  --ui-motion-fast:var(--ui-fast); --ui-motion-normal:var(--ui-normal); --ui-shadow-menu:var(--ui-menu-shadow);
+  --ui-space-1:4px; --ui-space-2:8px; --ui-space-3:12px; --ui-space-4:16px; --ui-space-6:24px; --ui-space-8:32px;
+  --ui-fast:140ms; --ui-normal:180ms; --ui-ease:cubic-bezier(.2,.8,.2,1);
+  --ui-focus:0 0 0 3px rgb(37 99 235 / .14);
+  --ui-menu-shadow:0 12px 32px rgb(29 37 51 / .12),0 2px 6px rgb(29 37 51 / .04);
+  --bg:var(--ui-canvas); --surface:var(--ui-surface); --surface-soft:var(--ui-soft); --surface-blue:var(--ui-selected);
+  --text:var(--ui-text); --text-soft:var(--ui-secondary); --text-muted:var(--ui-muted);
+  --line:var(--ui-border); --line-strong:var(--ui-border-hover);
+  --blue:var(--ui-accent); --blue-dark:var(--ui-accent-hover); --blue-soft:#dbeafe;
+  --green:var(--ui-green); --green-soft:var(--ui-green-soft); --amber:var(--ui-amber); --amber-soft:var(--ui-amber-soft); --red:var(--ui-red);
+  font-family:var(--ui-font); font-size:15px; line-height:1.65; color:var(--ui-text);
+  -webkit-font-smoothing:antialiased; font-synthesis:none;
+}
+[data-theme="dark"] .product-ui.once-ui {
+  --ui-canvas:#0b1220; --ui-surface:#111c2e; --ui-soft:#17243a; --ui-text:#f8fafc;
+  --ui-secondary:#cbd5e1; --ui-muted:#a2afc2; --ui-border:#2b3b50; --ui-border-hover:#506580;
+  --ui-accent:#79adff; --ui-accent-hover:#a9caff; --ui-selected:#173453;
+  --ui-green:#6ee7a6; --ui-green-soft:#123c28; --ui-amber:#facc75; --ui-amber-soft:#422b0b; --ui-red:#fda4af; --ui-red-soft:#402430;
+  --ui-focus:0 0 0 3px rgb(121 173 255 / .2);
+}
+.product-ui.once-ui.app { background:var(--ui-canvas); }
+.product-ui.once-ui .topbar { background:var(--ui-surface); backdrop-filter:none; }
+.product-ui.once-ui :is(.option-card,.number-card,.notice,.data-state) { border-radius:var(--ui-card-radius); }
+.product-ui.once-ui .auth-form label { font-weight:500; }
+.product-ui.once-ui .renew-option.selected { box-shadow:0 0 0 1px var(--ui-accent); }
+.product-ui.once-ui :is(button,input,textarea,select,summary) { font-family:var(--ui-font); }
+.product-ui.once-ui :is(.page-head,.overview-heading) h1 { font-size:28px; font-weight:650; letter-spacing:-.025em; line-height:1.35; }
+.product-ui.once-ui :is(.page-head,.overview-heading)>div>p { font-size:14px; color:var(--ui-secondary); line-height:1.6; }
+.product-ui.once-ui :is(.primary-btn,.secondary-btn,.ghost-btn,.account-menu) {
+  min-height:var(--ui-control); padding:10px 16px; border-radius:var(--ui-radius); font-size:14px; line-height:1.5; font-weight:550; gap:8px;
+  box-shadow:none; transition:background-color var(--ui-fast),border-color var(--ui-fast),color var(--ui-fast),box-shadow var(--ui-fast);
+}
+.product-ui.once-ui .primary-btn { background:var(--ui-accent); border-color:var(--ui-accent); color:#fff; }
+.product-ui.once-ui .primary-btn:hover:not(:disabled) { background:var(--ui-accent-hover); border-color:var(--ui-accent-hover); transform:none; box-shadow:none; }
+.product-ui.once-ui :is(.secondary-btn,.account-menu) { background:var(--ui-surface); border:1px solid var(--ui-border); color:var(--ui-secondary); }
+.product-ui.once-ui :is(.secondary-btn,.account-menu,.ghost-btn):hover:not(:disabled) { background:var(--ui-soft); border-color:var(--ui-border-hover); transform:none; }
+.product-ui.once-ui :is(.primary-btn,.secondary-btn,.ghost-btn,.icon-btn):active:not(:disabled) { transform:scale(.985); }
+.product-ui.once-ui :is(.icon-btn,.modal-close) { width:var(--ui-icon-control); min-width:var(--ui-icon-control); height:var(--ui-icon-control); min-height:var(--ui-icon-control); border-radius:var(--ui-radius); }
+.product-ui.once-ui :is(.icon-btn,.modal-close):hover:not(:disabled) { background:var(--ui-soft); transform:none; }
+.product-ui.once-ui :is(.link-btn,.sidebar-help) { font-size:13px; }
+.product-ui.once-ui :is(button,a,summary,input,textarea,select):focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }
+.product-ui.once-ui :is(.auth-form input,.message-composer input,.message-composer textarea) {
+  min-height:var(--ui-control); border:1px solid var(--ui-border); border-radius:var(--ui-radius); padding:10px 12px;
+  background:var(--ui-surface); color:var(--ui-text); font-size:14px; line-height:1.6;
+  transition:border-color var(--ui-fast),box-shadow var(--ui-fast),background-color var(--ui-fast);
+}
+.product-ui.once-ui :is(input,textarea)::placeholder { color:var(--ui-muted); opacity:1; }
+.product-ui.once-ui :is(.auth-form input,.message-composer input,.message-composer textarea):focus { border-color:var(--ui-accent); box-shadow:var(--ui-focus); outline:none; }
+.product-ui.once-ui :is(.message-composer input,.message-composer textarea):disabled { background:var(--ui-soft); color:var(--ui-muted); opacity:1; cursor:not-allowed; }
+.product-ui.once-ui .numbers-content .asset-search { min-height:var(--ui-control); border-radius:var(--ui-radius); border:1px solid var(--ui-border); background:var(--ui-surface); }
+.product-ui.once-ui .numbers-content .asset-search input { min-height:42px; font-size:14px; background:transparent; }
+.product-ui.once-ui .numbers-content .asset-search:focus-within { border-color:var(--ui-accent); box-shadow:var(--ui-focus); outline:none; }
+.product-ui.once-ui .asset-search input:focus-visible { outline:none; }
+.product-ui.once-ui .sidebar { background:var(--ui-surface); border-color:var(--ui-border); }
+.product-ui.once-ui .sidebar-link { min-height:44px; border-radius:var(--ui-radius); padding:10px 14px; gap:12px; font-size:14px; font-weight:500; color:var(--ui-secondary); transition:background-color var(--ui-fast),color var(--ui-fast); }
+.product-ui.once-ui .sidebar-link.active { color:var(--ui-accent); background:var(--ui-selected); font-weight:600; }
+.product-ui.once-ui .sidebar-link:hover { color:var(--ui-text); background:var(--ui-soft); }
+.product-ui.once-ui .sidebar-link.active:hover { color:var(--ui-accent); background:var(--ui-selected); }
+.product-ui.once-ui .sidebar-label { font-size:12px; color:var(--ui-muted); }
+.product-ui.once-ui :is(.overview-number-hero,.overview-usage,.overview-recent,.overview-numbers,.asset-list,.subscription-hero,.subscription-section,.message-workspace,.message-toolbar,.auth-panel,.confirm-panel) { border-color:var(--ui-border); border-radius:var(--ui-card-radius); background:var(--ui-surface); box-shadow:none; }
+.product-ui.once-ui :is(.overview-number-hero,.subscription-hero) { background:var(--ui-surface); }
+.product-ui.once-ui .numbers-content :is(.number-hero,.number-related) { border-color:var(--ui-border); border-radius:var(--ui-card-radius); background:var(--ui-surface); }
+.product-ui.once-ui .numbers-content .asset-row { border-radius:var(--ui-radius); }
+.product-ui.once-ui .numbers-content .asset-row.selected { border-color:var(--ui-accent); background:var(--ui-selected); }
+.product-ui.once-ui :is(.status-tabs,.message-filters,.composer-types,.addon-types) button { min-height:40px; padding:8px 12px; border-radius:8px; font-size:14px; line-height:1.5; transition:background-color var(--ui-fast),color var(--ui-fast); }
+.product-ui.once-ui .numbers-content .status-tabs button { min-height:40px; padding:8px 12px; font-size:14px; }
+.product-ui.once-ui :is(.status-tabs,.message-filters,.composer-types,.addon-types) button[aria-pressed="true"] { color:var(--ui-accent); }
+.product-ui.once-ui :is(.status-tag,.numbers-content .asset-row .status-tag) { padding:3px 8px; border-radius:6px; font-size:12px; line-height:1.5; font-weight:500; }
+.product-ui.once-ui :is(.asset-list-label p,.lease-subtitle,.number-hero-caption,.message-scroll>p,.inbox-list-head>p,.composer-status,.composer-footnote,.overview-meter p,.overview-numbers-note,.subscription-note,.auth-note,.capability-note) { font-size:12px; color:var(--ui-muted); line-height:1.65; }
+.product-ui.once-ui :is(.info-grid,.lease-meta,.settings-list,.message-inspector dl) { font-size:14px; }
+.product-ui.once-ui .number-picker { max-width:100%; z-index:20; }
+.product-ui.once-ui .number-picker summary {
+  min-height:var(--ui-control); padding:10px 12px; gap:8px; border:1px solid var(--ui-border); border-radius:var(--ui-radius);
+  color:var(--ui-text); background:var(--ui-surface); font-size:14px; line-height:1.5; font-weight:500;
+  transition:border-color var(--ui-fast),background-color var(--ui-fast),box-shadow var(--ui-fast);
+}
+.product-ui.once-ui .number-picker summary:hover { border-color:var(--ui-border-hover); background:var(--ui-soft); }
+.product-ui.once-ui .number-picker[open] summary { border-color:var(--ui-accent); box-shadow:var(--ui-focus); }
+.product-ui.once-ui .number-picker summary>.ui-icon:last-child { transition:transform var(--ui-normal) var(--ui-ease); }
+.product-ui.once-ui .number-picker[open] summary>.ui-icon:last-child { transform:rotate(-90deg); }
+/* More specific than the existing Motion group rule: menus must stay out of flow. */
+.product-ui.once-ui .number-picker>.picker-options {
+  position:absolute; inset:calc(100% + 6px) auto auto 0; z-index:20; padding:6px; width:340px; max-width:calc(100vw - 48px);
+  max-height:min(360px,60vh); overflow:auto; overscroll-behavior:contain;
+  border:1px solid var(--ui-border); border-radius:12px; background:var(--ui-surface); box-shadow:var(--ui-menu-shadow);
+}
+.product-ui.once-ui .picker-options button { min-height:48px; padding:10px; border:0; border-radius:8px; font-size:14px; line-height:1.5; }
+.product-ui.once-ui .picker-options button:hover { background:var(--ui-soft); }
+.product-ui.once-ui .picker-options button[aria-pressed="true"] { color:var(--ui-accent); background:var(--ui-selected); }
+.product-ui.once-ui .picker-options small { font-size:12px; line-height:1.5; color:var(--ui-muted); }
+.product-ui.once-ui .picker-options [data-motion-indicator] { border:0; border-radius:8px; background:var(--ui-selected); }
+.product-ui.once-ui .modal { border:1px solid var(--ui-border); border-radius:18px; background:var(--ui-surface); box-shadow:0 24px 64px rgb(29 37 51 / .16); }
+.product-ui.once-ui.modal-backdrop { background:rgb(29 37 51 / .28); backdrop-filter:none; }
+.product-ui.once-ui :is(.modal-head,.modal-body) { padding:20px 24px; }
+.product-ui.once-ui .modal-head h2 { font-size:18px; font-weight:600; }
+.product-ui.once-ui .renew-option { border-radius:var(--ui-radius); }
+@media (prefers-reduced-motion:reduce) {
+  .product-ui.once-ui :is(button,a,input,textarea,select,summary,.picker-options,.status-tag),
+  .product-ui.once-ui :is(.number-picker summary>.ui-icon,[data-motion-indicator]) { transition:none; animation:none; }
+}
+@media (max-width:680px) {
+  .product-ui.once-ui :is(.page-head,.overview-heading) h1 { font-size:25px; }
+  .product-ui.once-ui .number-picker>.picker-options { width:100%; max-width:none; }
+  .product-ui.once-ui :is(.modal-head,.modal-body) { padding:16px 18px; }
+  .product-ui.once-ui .numbers-content .status-tabs button { padding-inline:9px; font-size:13px; }
+}

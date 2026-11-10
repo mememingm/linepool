@@ -1,5 +1,7 @@
 # LinePool × ONCE 合并 · 执行方案（交给 agent）
 
+> 2026-11-06 起，当前执行依据为 [v4.2 总执行文档](lp-once-v41-master-plan.md)（保留原路径）。本文 S1–S8、跨站共享账号/钱包、代理进货分货/结算及逐步等待确认的指令保留为历史，不再决定当前范围。代理使用自有 PC 连接，平台不经手其销售款。按 R0–R5 接续并记录实际结果；旧授权不自动扩大为新数据库、真实接入或切换授权。
+
 编写：2026-11-04
 设计依据：[../unified-architecture.md](../unified-architecture.md)（为什么这样设计）。本文件只写**怎么做、能动什么、不能动什么**。
 
@@ -16,8 +18,9 @@
 | D3 | 号码按 PC 账户划分：**PC 账户 A 只给 LinePool，PC 账户 B 只给 ONCE**。两个门店的号码互不调配，因此不需要跨门店的互斥规则 |
 | D4 | 语音（SIP）**不接 LinePool**。电话站是**单独的网站**，也是主业务，作为第三个门店 `phone` 挂在同一个核心后端上（2026-11-04 更新）。ONCE 是否也加语音，以后再定 |
 | D5 | 钱包使用**积分**，LinePool 和 ONCE 的 C 端用户共用一套积分钱包 |
-| D6 | **不做白标，暂不做开放 API。** 代理的客户继续使用 LinePool 网站；客户归属沿用 `customers.agent_id`（为空表示平台直营）。不新增商户层（tenants），不改邮箱唯一规则。⚠ 2026-11-04：同事提出"每个代理要有自己的域名"，可能推翻这一条，正在确认。在确认之前，S2 不要把门店写死成固定的几个（见 S2） |
+| D6 | **不做白标，暂不做开放 API。** 代理的客户继续使用 LinePool 网站；客户归属沿用 `customers.agent_id`（为空表示平台直营）。不新增商户层（tenants），不改邮箱唯一规则。⚠ 2026-11-04 更新：以后会做代理白标站（S7，采用方案 B：每个代理的账号相互独立），放在 S1–S6 之后。S1–S6 仍按"不做白标"执行，但 S2 不要把门店写死成固定的几个 |
 | D7 | LinePool 和 ONCE 的 C 端账号共用（同一个 `users` 表） |
+| D8 | **数据库方案按 [unified-core-database-proposal.md](./unified-core-database-proposal.md) 执行，并采用该文件第 0 节列出的删减**（2026-11-04 批准）。核心要点：<br>① 保留 `number_allocations`，作为唯一的"谁在什么时间使用哪个号码"和收信归属依据，并扩展出整号类型；代理继续使用现有的持有和授权表；**不建统一持有链，不停用 `number_allocations`**。<br>② 号码属于哪个门店，从它所属的 PC 账户推出，号码上不另存门店字段。<br>③ 代理结算保留币种金额，不改成积分。<br>本文件与该方案冲突时，以该方案（含删减）为准 |
 
 ## 2. 全局规则（每一步都必须遵守）
 
@@ -42,7 +45,7 @@
 
 ```
 前置（用户做） → S1 目录重组 → S2 门店配置 → S3 统一积分钱包 → S4 迁入 ONCE 功能
-             → S5 ONCE 前端切换 → S6 合并运营后台 → （S7 不做） → S8 电话站
+             → S5 ONCE 前端切换 → S6 合并运营后台 → S7 代理白标站（待确认细节） → S8 电话站
              → 收尾清理（需用户批准）
 ```
 
@@ -137,22 +140,24 @@ D:\llinepool
 
 ## 6. S2 · 门店配置
 
-**目标：** 核心知道有 LinePool 和 ONCE 两个门店，以及每个门店对应哪个 PC 账户。**LinePool 现有行为完全不变。**
+**目标：** 核心知道有 LinePool 和 ONCE 两个门店，以及每个号码来自哪个 PC 账户、因而属于哪个门店。**LinePool 现有行为完全不变。**
 
-**允许改动：** `services/core/db/migrations/031_*.sql`（新增）、`services/core/src/**` 中与门店和上游账户相关的新文件，以及少量装配代码、`packages/contracts/src/**`（新增类型）、`services/core/.env.example`。
+**允许改动：** `services/core/db/migrations/031_*.sql`（新增）；`services/core/src/**` 中门店和上游账户相关的新文件；号码同步、Webhook 路由中**写入或读取上游账户**的那几处代码；`packages/contracts/src/**`（新增类型）；`services/core/.env.example`。
 
 **做法：**
 1. 新增迁移：
-   - `storefronts` 表：`id`（文本主键，**不要用 CHECK 限定成只有两个值**，以后还会有 `phone` 门店，可能还有代理自己的门店）、`name`、`product`（`SMS_CODE`、`NUMBER_LEASE`、`VOICE`）、`voice_enabled`（默认 false）、`created_at`。只写入 `linepool` 和 `once` 两条初始数据。
-   - `upstream_accounts` 表：`id`、`provider`、`external_account_id`、`storefront_id`（外键）、`status`、`created_at`，`(provider, external_account_id)` 唯一。**不存密钥**，密钥仍然放在环境变量里。
-   - `phone_numbers` 增加 `storefront_id`（非空，默认 `'linepool'`，现有数据全部归 LinePool）。如有必要，再增加可空的 `upstream_account_id`。
-2. 环境变量：LinePool 现有的 PingCode 变量名保持不变，视为"LinePool 门店的账户 A"。在 `.env.example` 里为 ONCE 预留一组变量名，只写占位符。
-3. 号码同步（`provider-sync` 等）在写入号码时带上门店。只给 Mock 实现加这个参数，不碰真实对接。
-4. 在 contracts 中新增 `StorefrontId` 等类型。
+   - `storefronts` 表：`id`（文本主键，**不要用 CHECK 限定成固定几个值**，以后还会有 `phone` 和代理门店）、`name`、`product`（`SMS_CODE`、`NUMBER_LEASE`、`VOICE`）、`voice_enabled`（默认 false）、`created_at`。只写入 `linepool` 和 `once` 两条初始数据。
+   - `upstream_accounts` 表：`id`、`provider`、`external_account_id`、`storefront_id`（外键）、`status`、`created_at`，`(provider, external_account_id)` 唯一。**不存密钥**，密钥留在环境变量。建两个 Mock 账户：一个属于 `linepool`，一个属于 `once`。
+   - `phone_numbers` 增加 `upstream_account_id`（外键）。现有号码全部指向 LinePool 的 Mock 账户，然后设为非空。**号码上不加 `storefront_id`**：门店一律通过 `upstream_accounts.storefront_id` 取得，避免同一信息存两份。
+   - 只在需要知道"消息或资源来自哪个账户"的地方补账户字段：`provider_projects`，以及 Webhook 收件箱里用于路由的记录。不要为了加字段而加字段。
+2. **不改上游相关表现有的唯一键和主键**（`provider_resource_bindings`、`provider_message_receipts`、`provider_event_receipts`、同步任务和冲突表的 `(provider, 外部ID)` 等）。两个 PC 账户在同一个 PC 系统里，外部 ID 在全平台本来就唯一。如果执行中发现某个外部 ID 确实只在账户内唯一，停下汇报，不要自行改键。
+3. 环境变量：LinePool 现有的 PingCode 变量名保持不变，对应 LinePool 的账户。在 `.env.example` 里为 ONCE 账户预留一组变量名，只写占位符。
+4. 号码同步写入号码时带上账户；Webhook 收到消息时，根据可信的连接配置确定账户。只改 Mock 链路，不接真实对接。
+5. 在 contracts 中新增 `StorefrontId`、`UpstreamAccountId` 等类型。
 
-**不做：** 不改登录和会话，不改价格，不改前端，不新增 tenants 表（D6）。
+**不做：** 不改登录和会话，不改价格，不改前端，不新增 tenants 表（D6），不重写上游表的唯一键和外键。
 
-**验收：** 在本地数据库执行 `db:migrate` 成功，`build:all` 和 `typecheck:all` 成功；LinePool 现有的接口和页面不需要任何改动。
+**验收：** 在本地数据库执行 `db:migrate` 成功，`build:all` 和 `typecheck:all` 成功；LinePool 现有的接口和页面不需要任何改动；汇报中列出补了账户字段的表，以及每张表补字段的理由。
 
 ---
 
@@ -168,10 +173,17 @@ D:\llinepool
    - 冻结 → 扣除 / 解冻 → 退款；
    - 用业务 ID 保证幂等；
    - 流水只追加不修改，并记录变动后的余额；
-   - 是否保留 ONCE 的"积分批次（lot）"：需要说明理由，以及对退款的影响。
+   - 积分批次（`point_lots`、`point_allocations`）只服务于一件事：现金退款时，区分"花钱买的积分"和"赠送的积分"。设计说明开头要先请用户确认**近期是否做现金退款**：
+     - 做：按数据库方案保留批次和分摊；
+     - 不做：S3 只实现账户、冻结、流水，批次等退款规则定了再加。
+     用户确认之前，不要开始写代码。
+   - 冻结后的结算现在只能"全部扣除"或"全部释放"。电话站以后需要"扣实际费用、释放剩余"，S3 只在设计里预留，不实现。
 3. **代理结算余额**（`balance_accounts`）：建议保持不变，单独列为"需要用户确认"的问题，也就是代理的余额是否也改成积分。
 4. LinePool 现有的扣积分流程（下单、续费失败退回等）怎么迁到新钱包；旧的 `users.points_balance` 和 `point_ledger` 怎么处理。现在没有生产数据，可以直接转换。
 5. 新增的迁移清单和接口变化清单。
+6. **两套价格体系怎么对齐**：`offers.unit_points` 是积分，`price_rules.unit_amount_minor` 是币种金额。说明代理批发价和 C 端积分价之间怎么换算，或者为什么保持分开。
+
+**号码模型（已定，见 D8）：** 保留 `number_allocations`，它是唯一的使用期间和收信归属依据（030 迁移已经把代理授权接到这张表上）。不建统一持有链，不停用这张表。S3 只需在设计说明中确认这一点，并列出 S4 要给它加的字段和约束。`phone_numbers` 上旧的 `assigned_user_id`、`order_id`、`expires_at` 字段是否清理，在 S4 设计里决定。
 
 **第二阶段（批准后）：** 按设计实现。允许改动 `services/core/**`、`packages/contracts/**`，以及 `apps/linepool-web/src/linepool/**` 中显示积分的部分（只限接口适配）。
 
@@ -183,10 +195,12 @@ D:\llinepool
 
 ### S4 · 迁入 ONCE 功能（先出设计说明，批准后再写代码）
 - **设计说明：** `docs/design/s4-once-in-core.md`。逐个对照 `services/once-api-legacy/src/**` 的功能，说明它在核心里的落点：
-  - 整号租约（Lease）：租期价格改为后台可配置，不要写死 7 天 $12、30 天 $35；
-  - 收信归属：按租约时间窗口判断归谁；
-  - 发短信（OutboundMessage）：带幂等键，并跟踪状态；
-  - 充值和退款订单：使用 Mock 支付；
+  - **整号使用权：** 在 `number_allocations` 上增加类型 `PLATFORM` / `WHOLE_NUMBER`，按数据库方案第 3 节加约束：整号按"号码 + 时间区间"禁止重叠，并调整原来强制关联平台的外键和触发器。不伪造 `number_platforms` 记录。
+  - **租约（`leases`）：** 保留租约 ID、续租关系和到期保留状态（`EXPIRED_HELD`）。一个租约对应多段使用期间，服务时间以 `number_allocations` 为准。租期价格放进可配置的 `lease_plans`，不要写死 7 天 $12、30 天 $35。
+  - **收信归属：** 按"账户 + 号码 + 消息发生时间"匹配整号使用权，半开区间；迟到的消息按当时的使用人归属。
+  - **到期与可售分开判断：** LinePool 原来的到期任务只处理按平台的使用权，不能误释放 ONCE 保留中的号码。
+  - **发短信（OutboundMessage）：** 带幂等键，跟踪状态，结果不确定时可以核对。
+  - **充值和退款订单：** 使用 Mock 支付。**不迁** ONCE 的 `PaymentAttempt`、`PaymentReceipt`、`PaymentEvent` 三张表，等支付渠道选定后再按渠道设计。
   - 管理端接口、Webhook 收件箱。
 - **接口原则：** 尽量保持 ONCE 现有接口的路径和数据结构（见 `services/once-api-legacy/API.md`），以减少 S5 的前端改动。必须有差异的地方，在设计说明里列成表。
 - **只对 `storefront = 'once'` 的号码生效。** 上游一律使用 Mock（PC 账户 B）。
@@ -206,12 +220,25 @@ D:\llinepool
 - 遵守 `apps/linepool-web/AGENTS.md`：只能用组合方式和上游组件现有的属性，不改上游组件。
 - **不做：** 不删除 `apps/once-web/src/admin/**`。是否删除由用户在收尾时决定。
 
-### S7 · 不做
-对应决策 D6。
+### S7 · 代理白标站（细节待同事确认后补全执行方案；在此之前不要开始）
+已定（2026-11-04）：
+- 采用**方案 B**：每个代理的账号相互独立。同一个邮箱可以在不同代理的网站各注册一次，两个账号互不相通，余额、号码、短信各自分开。
+- 自营的 LinePool、ONCE、电话站之间仍然共用一套账号。
+- 所有代理和客户的数据都在我们的同一个数据库里，按商户隔离。代理只能通过代理后台看到自己名下的数据，不能直接访问数据库。
+
+待同事确认：代理用自己的域名还是我们给的二级域名；是否换成代理的品牌；哪些门店需要白标。
+
+预计改动（确认后再写成具体步骤）：
+- 新增商户层，用来把代理的数据分开；
+- 门店按域名识别，每个门店配置自己的品牌；
+- `users` 的邮箱从全局唯一改为在同一商户内唯一，会话按门店域名区分；
+- 去掉代码里写死的 LinePool 品牌名；
+- 代理域名的 HTTPS 证书自动签发。
 
 ### S8 · 电话站（单独网站，主业务）
 - 新建 `apps/phone-web`，作为门店 `phone` 挂在核心后端上，和 LinePool、ONCE 共用账号、积分钱包和运营后台。不另起后端。
 - 计费和拨号设计按 `D:\phone\DESIGN.md`：美国区号白名单、6+6 计费、最低 $0.07/分钟、先冻结后结算。
+- 需要扩展积分钱包，支持"按实际费用扣除、释放剩余冻结"（现在只能全部扣除或全部释放），并新增 `calls`、`rate_cards` 两张表。同一个通话结束事件重复到达时不能重复扣款。
 - 上游先用 Mock 的 VoiceProvider。同事的 SIP 就绪后再接真实上游，接入需要用户授权。
 - 开始前，单独写一份设计说明交用户批准。
 - 前端界面不受 LinePool vendor 规则约束，按 `D:\phone\DESIGN.md` 的技术栈来做（Tailwind + shadcn/ui）。

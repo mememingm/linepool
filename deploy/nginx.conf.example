@@ -13,7 +13,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/linepool.example.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    root /srv/linepool/current/linepool-ui/web-dist;
+    root /srv/linepool/current/apps/linepool-web/web-dist;
     index index.html;
 
     # No trailing slash in proxy_pass: preserve the /api prefix.

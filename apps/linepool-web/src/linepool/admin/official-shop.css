@@ -1,0 +1,11 @@
+/* Official shop panel on the PC connections page. Only lp-admin-official-shop* selectors. */
+.lp-admin-official-shop { margin: 0 0 24px; }
+.lp-admin-official-shop .lp-admin-section-heading h2 { display: inline-flex; align-items: center; gap: 8px; }
+.lp-admin-official-shop-body { display: grid; gap: 16px; padding: 0 24px 24px; }
+.lp-admin-official-shop-body > .lp-admin-context { margin: 0; }
+.lp-admin-official-shop-form fieldset { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) auto; align-items: end; gap: 12px; margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+.lp-admin-official-shop-form label { display: grid; gap: 6px; min-width: 0; color: var(--muted-foreground); font-size: 13px; }
+@media (max-width: 767px) {
+  .lp-admin-official-shop-body { padding-inline: 16px; }
+  .lp-admin-official-shop-form fieldset { grid-template-columns: minmax(0, 1fr); }
+}
