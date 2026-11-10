@@ -13,6 +13,7 @@ This is a multi-application workspace. Read `docs/handoff/lp-once-v41-master-pla
 ## Global rules
 
 - Do not run tests, including `npm test`, `test:points`, `test:integrations`, or test scripts. Build, typecheck, `verify:upstream` and `verify:catalog-upstream` are allowed; follow the stage's explicitly required installation and generation commands.
+  例外（2026-11-10 用户授权）：允许运行 `npm run test:integration`。它只能连接名称以 `_itest` 结尾、位于 127.0.0.1 的一次性数据库，运行结束即删除；不得连接 sandbox 或任何远程库；其余测试脚本仍然禁止。
 - Do not commit, push, create branches or change Git configuration without explicit user authorization.
 - Preserve the bytes of LinePool `src/vendor/**`, `public/**`, `upstream-lock.json` and `catalog-upstream-lock.json`. Do not regenerate upstream locks. S1 may move these directories intact.
 - Do not connect real PingCode/PC, SIP or payment providers, or add real keys. Use Mock implementations. Keep local `.env*` and credentials ignored; never force-add them or print secrets.

@@ -24,6 +24,7 @@
     "api:build": "npm run build --workspace @linepool/react-backend",
     "preapi:typecheck": "npm run contracts:build",
     "api:typecheck": "npm run typecheck --workspace @linepool/react-backend",
+    "test:integration": "npm run api:build && node services/core/dist/core/scripts/itest/run.js",
     "preapi:dev": "npm run contracts:build",
     "api:dev": "npm run dev --workspace @linepool/react-backend",
     "api:start": "npm run start --workspace @linepool/react-backend",
