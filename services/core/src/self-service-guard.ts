@@ -24,7 +24,7 @@ export class SelfServiceGuard implements CanActivate {
     if (agentControllers.has(controller)
       || (controller === WorkspaceController && agentWorkspaceHandlers.has(context.getHandler()))) return true;
     const session = await this.authentication.getSession(context.switchToHttp().getRequest<Request>());
-    if (session?.user.authKind === 'PINCLODE') {
+    if (session?.user.authKind === 'PINCLODE' && session.user.role !== 'ADMIN') {
       throw new ApiFailure(403, 'SELF_SERVICE_REQUIRED', 'A local self-service account is required');
     }
     return true;
