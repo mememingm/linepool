@@ -384,6 +384,8 @@ npm run verify:catalog-upstream --workspace @linepool/ui-react
 
 2026-11-10 MISSED 候选窗口追加 `GREATEST(SINCE, now()-7天)` 上限；S1–S3 回滚重跑通过（S1 投递、S2/S3 不选中），S4–S8 同时复跑通过；补投代码提交信息 `feat: LP shop delivery retry sweep`；见 RUN-20261110-llinepool-48480-01。
 
+2026-11-10 维护 M1 已执行：备份 tag/忽略文件/sandbox dump 完成；删除旧代理工作台 30 个文件及两个后端禁用桩；代理会话改为默认拒绝白名单；Worker 语句超时 60s、API 10s；health 返回真实 `real`；新增 3 条 `_itest` 集成测试并通过两次。提交见 RUN-20261110-llinepool-48480-02。
+
 本机 Magpie 已新增 `DeepSeek` 组（`group/deepseek`），标签为 `deepseek`，会话内保持所选成员；初始为 Pro → Flash，2026-11-10 晚些改为仅 Flash（见下条）。现有 GPT 组保留；本轮不改变 R0–R5 阶段状态，见 RUN-20261110-llinepool-24056-01。
 
 2026-11-10 Magpie 的 DeepSeek 现状：`group/deepseek` 已改为只用 Flash（第二把密钥所在的中转 `deepseek-flash-soul/deepseek-v4.1-flash` 优先，官方 `deepseek/deepseek-flash` 兜底），`deepseek/deepseek-v4-pro` 已从官方供应商的可选模型隐藏。官方主密钥余额 ¥11.48；第二把密钥只被 `ai.soulecho.cc` 接受且仅服务 V4.1 Flash。原误挂到官方供应商的 `soul` 密钥已移除；见 RUN-20261110-llinepool-40352-02/03。
@@ -1321,6 +1323,20 @@ ONCE代理页反馈已解决，用户确认与三项真实链路授权见RUN-924
 - 回滚重跑：S1 选中并 `DELIVERED`、投递 1/尝试 0；S2 30 秒前不选中；S3 SINCE 之前不选中；S4–S8 同时复跑通过（S4 1→5 FAILED、S5 重试成功、S6 1 投递/1 消息、S7 PC8 不选中、S8 错误不含正文/验证码）。
 - 当前库：投递 0、尝试 0、sms 22、规则 3；无持久测试数据。
 - 提交：本轮补投代码提交信息 `feat: LP shop delivery retry sweep`，排除 `functions.ask`，未 push。报告 `output/reports/lp-shop-redelivery-20261110.md`。
+
+#### RUN-20261110-llinepool-48480-02
+
+- 用户要求按 `D:/lp-maintenance-m1-task.md` 执行维护，并多 agent 并行；本轮完成 M1 全部步骤。
+- 安全网：本地 tag `pre-maintenance-m1-20261110` @ `13fa80d`；备份 `D:/llinepool-backup/pre-m1-20261110`（core-local 1.0G、output 114M、sandbox dump 38M、`functions.ask`、`D:/lp-*.md`）；根 `.local` 不存在，未复制；tag 已推送到 `origin`。
+- 提交（`feature/lp-unified-shop`）：
+  - `4954499` `refactor: remove legacy LP agent workbench`：30 个旧代理文件删除；`agent/legacy-shared.tsx` 保留 PC 页仍需的 Filter/exportCsv/money/AgentChartPanel；PC 页和结算抽屉改引用；CSS 删除 `AgentShell.css`、`Subagents.css`；i18n 键未动。
+  - `3b6f96f` `chore: remove disabled backend stubs`：删除 `agent-inventory-expiry.ts`、`mock-whole-inventory-provider.ts`；仅 `docs/code-reading/**` 与设计文档保留历史引用。
+  - `9b610d7` `fix: harden self-service access and runtime settings`：PINCLODE 默认拒绝，仅放行 Auth/PasswordRecovery/PcAuth/PcController 及 Workspace catalog/account/profile/preferences；其余 403 `SELF_SERVICE_REQUIRED`；`LegacyDistributionGuard` 未改；Worker 语句超时 60s、API 10s；health `mode` 按 `pcProvider` 返回 `real`/`mock`；修正 `shop-ordering.ts` 注释。
+  - `bfae905` `test: add minimal LP integration tests`：根与 UI AGENTS 测试例外；`services/core/scripts/itest/{run,cases}.ts`；根 `test:integration`；三条测试（下单扣分/分配、失败退分、投递只一次）。
+- 检查：四次 `build:all` 均通过；每步 upstream 117 / catalog 13 未变。测试连续两次通过（3/3），使用随机 `_itest` 库、48 个迁移、结束删除；无 `_itest` 残留。sandbox 的 `orders` 56、`point_ledger` 81、`sms_messages` 22 与备份 ID 集合完全一致；投递 0/尝试 0。
+- 回归：PINCLODE 会话 GET `/auth/me` 200、`/account` 200、`/agent-inventory/customers` 403 `SELF_SERVICE_REQUIRED`、`/admin/summary` 403；普通用户 GET `/account`、`/catalog` 均 200。API `/api/health` 返回 `mode=real`；API 11s 查询在 10s 超时，Worker 11s 查询完成；Worker 带 sweep since 启动。
+- 未删除/保留：`docs/code-reading/**`、上游来源、`welcome`/workspace 未用文件、ONCE 视觉文件、未使用依赖和 lockfile；历史文档中的旧模块引用保留。
+- 未完成：无阻塞；本轮推送由收尾执行。报告 `output/reports/lp-maintenance-m1-20261110.md`。
 
 ## 11. 给后续 agent 的启动提示词
 
