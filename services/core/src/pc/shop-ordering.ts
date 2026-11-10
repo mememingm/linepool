@@ -10,7 +10,7 @@ import { localProjectPrefix } from './local-inventory.js';
  * Real LinePool storefront ordering in the unified agent model: the official storefront sells numbers of the
  * agent connection behind the site's ACTIVE OFFICIAL shop, through LinePool-local platform slots. No upstream
  * call is made: PC numbers already belong to that agent, so a sale is a local allocation. Code receiving for
- * these allocations is not enabled yet. All writes stay in the caller's transaction.
+ * these allocations is handled by ShopDelivery. All writes stay in the caller's transaction.
  */
 @Injectable()
 export class PcShopOrdering {

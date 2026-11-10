@@ -10,7 +10,7 @@ export class Database implements OnModuleDestroy {
       connectionString: environment.values.DATABASE_URL, max: 10,
       options: environment.testSchema ? `-c search_path=${environment.testSchema}` : undefined,
       connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000,
-      statement_timeout: 10000,
+      statement_timeout: environment.processRole === 'worker' ? 60000 : 10000,
     });
     this.pool.on('error', () => console.error('PostgreSQL idle connection failed'));
   }

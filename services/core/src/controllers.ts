@@ -13,6 +13,7 @@ import {
 import { Authentication, SessionGuard, type SessionRequest } from './authentication.js';
 import { SchemaPipe } from './http.js';
 import { Database } from './database.js';
+import { Environment } from './environment.js';
 import { Ordering } from './ordering.js';
 import { Workspace } from './workspace.js';
 import { NumberServices } from './number-services.js';
@@ -144,10 +145,10 @@ export class NumberServicesController {
 }
 @Controller('health')
 export class HealthController {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly db: Database, private readonly environment: Environment) {}
   @Get()
   async health() {
     await this.db.query('SELECT 1');
-    return { data: { status: 'ok', database: 'ok', mode: 'demo' } };
+    return { data: { status: 'ok', database: 'ok', mode: this.environment.pcProvider === 'pingcode' ? 'real' : 'mock' } };
   }
 }
