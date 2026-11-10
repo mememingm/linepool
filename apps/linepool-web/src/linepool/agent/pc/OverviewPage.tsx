@@ -7,8 +7,7 @@ import { Card } from '../../ui/card';
 import { DateText, State } from '../../admin/primitives';
 import { CopyValue } from '../../business';
 import { useDisplayPreferences } from '../../preferences/useDisplayPreferences';
-import { AgentChartPanel } from '../dashboard/AgentCharts';
-import type { MetricPeriod } from '../dashboard/types';
+import { AgentChartPanel, type MetricPeriod } from '../legacy-shared';
 import { PcConnectionStatus, pcCapabilityLabels, pcError } from '../pc-components';
 import { canReceive, numberState, numberStateLabels, numberStates, PcBars, PcEmpty, PcMetricCards, PcTextLink, usePcMessages, type PcPageProps } from './shared';
 

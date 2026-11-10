@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryClient, workspaceApi as api } from '../api/query-client';
 import { DateText, Facts, Modal, State, Table, regionName } from '../admin/primitives';
 import { AgentPager, agentError } from './subagent-shared';
-import { money } from './pages/shared';
+import { money } from './legacy-shared';
 
 export default function SettlementOrderDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const [page, setPage] = useState(1);

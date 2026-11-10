@@ -6,7 +6,7 @@ import { ActionButton, DateText, Facts, Modal, Table, regionName } from '../../a
 import { useDisplayPreferences } from '../../preferences/useDisplayPreferences';
 import { navigate } from '../../../app/router';
 import { AgentPager } from '../subagent-shared';
-import { exportCsv, Filter } from '../pages/shared';
+import { exportCsv, Filter } from '../legacy-shared';
 import { pcCapabilityLabels } from '../pc-components';
 import { canReceive, numberState, numberStateLabels, numberStates, NumberStateBadge, PcEmpty, PcTextLink, type NumberState, type PcPageProps } from './shared';
 
